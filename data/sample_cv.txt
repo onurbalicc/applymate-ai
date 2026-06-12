@@ -1,0 +1,8 @@
+Onur Balic
+M.Sc. Data Analytics student at University of Hildesheim with experience in Python, SQL, dbt, data analytics, machine learning, and business intelligence.
+
+Experience:
+Worked on data analytics and data engineering tasks at Eczacıbaşı-Monrol, including SQL queries, dbt workflows, data documentation, analytical reporting, and data quality improvements.
+
+Skills:
+Python, SQL, dbt, Machine Learning, Data Analytics, Business Intelligence, Data Visualization, Git, Statistics, Data Cleaning, Reporting

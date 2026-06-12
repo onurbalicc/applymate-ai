@@ -1,0 +1,20 @@
+Junior AI Engineer / Data Scientist
+
+We are looking for a motivated Junior AI Engineer or Data Scientist to support the development of practical AI and data solutions.
+
+Responsibilities:
+- Build machine learning and AI applications using Python
+- Work with structured and unstructured data
+- Develop LLM-based features and NLP workflows
+- Analyze datasets and communicate insights
+- Support data pipelines and improve data quality
+- Collaborate with business and technical teams
+
+Requirements:
+- Python programming experience
+- SQL knowledge
+- Machine learning fundamentals
+- Experience with data analytics and visualization
+- Familiarity with LLMs, NLP, or Hugging Face
+- Git and basic software engineering skills
+- Nice to have: FastAPI, Docker, cloud deployment, dbt
