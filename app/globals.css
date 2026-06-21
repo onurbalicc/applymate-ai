@@ -422,7 +422,16 @@ body {
   transform: translateY(-1px);
 }
 
+/* ── Dashboard: panel (list container) ─────────────────── */
+.dash-panel {
+  border-radius: 0.75rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
 /* ── Scrollbar ─────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg-base); }
 ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+

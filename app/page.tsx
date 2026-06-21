@@ -59,7 +59,7 @@ function Header() {
           className="btn-primary"
           style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
         >
-          Start free →
+          Open dashboard →
         </a>
       </div>
     </header>
@@ -118,7 +118,7 @@ function HeroSection() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-up-d3">
           <a href="/dashboard" id="hero-primary-cta" className="btn-primary w-full sm:w-auto justify-center">
-            Start free →
+            Open dashboard →
           </a>
           <a
             href="/analyze"
