@@ -163,6 +163,134 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {/* ── Profile Impact Preview ────── */}
+            <section>
+              <SectionHeader title="Profile Impact Preview" />
+
+              {/* Product message */}
+              <div
+                className="rounded-lg px-4 py-2.5 mb-4 text-[12px]"
+                style={{ background: "rgba(59,130,246,0.04)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}
+              >
+                🤖 ApplyMate does not just store your profile.{" "}
+                <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
+                  It uses your profile to decide which jobs are worth your time.
+                </span>
+              </div>
+
+              {/* Match potential + opportunity impact */}
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-4">
+                {/* Match potential card */}
+                <div className="lg:col-span-2 dash-panel p-4 flex items-center gap-4">
+                  <div className="relative w-16 h-16 flex-shrink-0">
+                    <svg className="w-16 h-16 -rotate-90" viewBox="0 0 120 120">
+                      <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border-subtle)" strokeWidth="10" />
+                      <circle
+                        cx="60" cy="60" r="50" fill="none"
+                        stroke="url(#impactGrad)" strokeWidth="10" strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 50 * 0.82} ${2 * Math.PI * 50}`}
+                        className="score-ring"
+                      />
+                      <defs>
+                        <linearGradient id="impactGrad" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#2563eb" />
+                          <stop offset="100%" stopColor="#22d3ee" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-bold gradient-text">82%</span>
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold mb-0.5" style={{ color: "var(--text-primary)" }}>Match potential</p>
+                    <span
+                      className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                      style={{ background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" }}
+                    >
+                      Strong foundation
+                    </span>
+                    <p className="text-[11px] mt-2 leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                      Ready for Data Analyst and AI Engineer roles. A few details can improve match quality.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Job opportunity impact */}
+                <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {impactMetrics.map((m) => (
+                    <div key={m.label} className="dash-stat-card">
+                      <p className="text-lg font-bold leading-tight" style={{ color: m.color }}>{m.value}</p>
+                      <p className="text-[10px] leading-snug mt-0.5" style={{ color: "var(--text-muted)" }}>{m.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recommended improvements */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                {recommendations.map((rec) => (
+                  <div key={rec.title} className="dash-panel p-4 flex flex-col">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-xs flex-shrink-0"
+                        style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)" }}
+                      >
+                        {rec.icon}
+                      </span>
+                      <p className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>{rec.title}</p>
+                    </div>
+                    <p className="text-[11px] leading-relaxed mb-2 flex-1" style={{ color: "var(--text-muted)" }}>{rec.reason}</p>
+                    <span
+                      className="text-[11px] font-medium px-2 py-0.5 rounded-full self-start"
+                      style={{ background: "rgba(34,197,94,0.06)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.12)" }}
+                    >
+                      {rec.impact}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Role readiness breakdown */}
+              <div className="dash-panel overflow-hidden">
+                <div
+                  className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider"
+                  style={{ color: "var(--text-muted)", background: "var(--bg-raised)", borderBottom: "1px solid var(--border-subtle)" }}
+                >
+                  Role Readiness
+                </div>
+                {roleReadiness.map((r, i) => (
+                  <div
+                    key={r.role}
+                    className="flex items-center gap-3 px-4 py-2.5"
+                    style={{ borderBottom: i < roleReadiness.length - 1 ? "1px solid var(--border-subtle)" : "none" }}
+                  >
+                    <span className="text-sm flex-1" style={{ color: "var(--text-primary)" }}>{r.role}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border-subtle)" }}>
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${r.pct}%`,
+                            background: r.pct >= 85 ? "linear-gradient(90deg, #2563eb, #22d3ee)" : r.pct >= 75 ? "#93c5fd" : "#fb923c",
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs font-bold tabular-nums w-8 text-right" style={{ color: r.pct >= 85 ? "#60a5fa" : r.pct >= 75 ? "#93c5fd" : "#fb923c" }}>
+                        {r.pct}%
+                      </span>
+                    </div>
+                    <span
+                      className="text-[10px] font-medium px-2 py-0.5 rounded-full w-[72px] text-center"
+                      style={r.badgeStyle}
+                    >
+                      {r.badge}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             {/* ── CV / Profile ───────────────── */}
             <section>
               <SectionHeader title="Your Profile" />
@@ -434,4 +562,55 @@ const appPreferences = [
   { label: "Recruiter message", value: "Friendly and concise" },
   { label: "Approval mode", value: "Always review before sending" },
   { label: "Follow-up reminder", value: "After 7 days" },
+];
+
+const impactMetrics = [
+  { value: "49", label: "High-match jobs available", color: "#60a5fa" },
+  { value: "12", label: "Blocked by missing work auth", color: "#fb923c" },
+  { value: "18", label: "Could improve with German B2", color: "#fde047" },
+  { value: "9", label: "AI roles need Docker / FastAPI", color: "#93c5fd" },
+];
+
+const recommendations = [
+  {
+    icon: "📋",
+    title: "Add work authorization",
+    reason: "Improves filtering for Germany-based jobs.",
+    impact: "Unlocks 12 hidden jobs",
+  },
+  {
+    icon: "🐳",
+    title: "Add Docker / FastAPI project",
+    reason: "Strengthens AI Engineer and backend-related matches.",
+    impact: "+9 stronger AI matches",
+  },
+  {
+    icon: "🇩🇪",
+    title: "Clarify German level",
+    reason: "Helps hide jobs requiring fluent German and prioritize realistic roles.",
+    impact: "Better Germany filtering",
+  },
+];
+
+const roleReadiness: { role: string; pct: number; badge: string; badgeStyle: React.CSSProperties }[] = [
+  {
+    role: "Data Analyst", pct: 91, badge: "Strong",
+    badgeStyle: { background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" },
+  },
+  {
+    role: "Analytics Engineer", pct: 84, badge: "Good",
+    badgeStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" },
+  },
+  {
+    role: "AI Engineer", pct: 82, badge: "Good",
+    badgeStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" },
+  },
+  {
+    role: "Data Scientist", pct: 78, badge: "Good",
+    badgeStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" },
+  },
+  {
+    role: "ML Engineer", pct: 69, badge: "Needs work",
+    badgeStyle: { background: "rgba(251,146,60,0.06)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" },
+  },
 ];
