@@ -1,0 +1,437 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+/* ─────────────────────────────────────────────────────────
+   ApplyMate AI – Profile Setup (frontend-only prototype)
+   "Create one profile. Let AI handle the rest."
+   ───────────────────────────────────────────────────────── */
+
+type NavId =
+  | "auto-apply"
+  | "review"
+  | "matches"
+  | "inbox"
+  | "profile"
+  | "preferences"
+  | "tracker"
+  | "saved";
+
+export default function ProfilePage() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([
+    "Data Analyst",
+    "AI Engineer",
+    "Data Scientist",
+    "Analytics Engineer",
+  ]);
+
+  function toggleRole(role: string) {
+    setSelectedRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen" style={{ background: "var(--bg-base)" }}>
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* ── Sidebar ──────────────────────── */}
+      <aside className={`dash-sidebar ${sidebarOpen ? "dash-sidebar--open" : ""}`}>
+        <div className="flex items-center gap-2.5 px-5 pt-5 pb-4">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white"
+              style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
+            >
+              A
+            </div>
+            <span className="font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>
+              ApplyMate <span className="gradient-text">AI</span>
+            </span>
+          </Link>
+        </div>
+
+        <nav className="flex-1 px-3 py-2 flex flex-col gap-0.5 overflow-y-auto">
+          <NavGroup label="Workflow">
+            {navItems.slice(0, 4).map((item) => (
+              <SidebarLink key={item.id} item={item} active={false} />
+            ))}
+          </NavGroup>
+          <NavGroup label="Manage">
+            {navItems.slice(4).map((item) => (
+              <SidebarLink key={item.id} item={item} active={item.id === "profile"} />
+            ))}
+          </NavGroup>
+        </nav>
+
+        <div
+          className="mx-3 mb-2 px-3 py-2 rounded-lg text-center"
+          style={{ background: "rgba(59,130,246,0.04)", border: "1px dashed var(--border-mid)" }}
+        >
+          <p className="text-[11px] font-medium" style={{ color: "#93c5fd" }}>Free beta · Pro plans later</p>
+        </div>
+
+        <div
+          className="px-4 py-3 mx-3 mb-3 rounded-xl flex items-center gap-3"
+          style={{ background: "var(--bg-raised)", border: "1px solid var(--border-subtle)" }}
+        >
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
+          >
+            OB
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>Onur Balic</p>
+            <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>Beta user</p>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main ─────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <header
+          className="h-14 flex items-center px-5 lg:px-6 flex-shrink-0"
+          style={{ background: "rgba(6, 13, 26, 0.8)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border-subtle)" }}
+        >
+          <button className="mr-3 md:hidden text-lg" onClick={() => setSidebarOpen(true)} aria-label="Open menu">☰</button>
+          <h1 className="text-base font-bold truncate flex-1" style={{ color: "var(--text-primary)" }}>Profile Setup</h1>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-5 lg:p-6">
+          <div className="max-w-4xl mx-auto flex flex-col gap-5">
+
+            {/* ── Page intro ─────────────────── */}
+            <div>
+              <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                Create one profile so ApplyMate can find, rank, and prepare the right applications for you.
+              </p>
+            </div>
+
+            {/* ── Profile readiness ──────────── */}
+            <div className="dash-panel p-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                {/* Progress ring */}
+                <div className="relative w-16 h-16 flex-shrink-0">
+                  <svg className="w-16 h-16 -rotate-90" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border-subtle)" strokeWidth="10" />
+                    <circle
+                      cx="60" cy="60" r="50" fill="none"
+                      stroke="url(#profileGrad)" strokeWidth="10" strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 50 * 0.82} ${2 * Math.PI * 50}`}
+                      className="score-ring"
+                    />
+                    <defs>
+                      <linearGradient id="profileGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#2563eb" />
+                        <stop offset="100%" stopColor="#22d3ee" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold gradient-text">82%</span>
+                  </div>
+                </div>
+
+                {/* Checklist */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold mb-2" style={{ color: "var(--text-primary)" }}>Profile readiness</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                    {readinessItems.map((item) => (
+                      <span key={item.label} className="flex items-center gap-1.5 text-[12px]">
+                        <span style={{ color: item.done ? "#4ade80" : "#fb923c" }}>
+                          {item.done ? "✓" : "○"}
+                        </span>
+                        <span style={{ color: item.done ? "var(--text-secondary)" : "#fb923c" }}>
+                          {item.label}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-[11px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+                  Better profile data = better matches
+                </p>
+              </div>
+            </div>
+
+            {/* ── CV / Profile ───────────────── */}
+            <section>
+              <SectionHeader title="Your Profile" />
+              <div className="dash-panel p-5">
+                <div className="flex items-start gap-4 mb-4">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold text-white flex-shrink-0"
+                    style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
+                  >
+                    OB
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-bold mb-0.5" style={{ color: "var(--text-primary)" }}>
+                      Onur Balic
+                    </p>
+                    <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                      M.Sc. Data Analytics student with experience in Python, SQL, dbt, machine learning, data analytics, and AI engineering projects.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Skills */}
+                <div className="mb-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Skills</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profileSkills.map((s) => (
+                      <span key={s} className="skill-chip skill-chip--match">{s}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <button className="dash-btn dash-btn--outline text-[12px]">
+                  ✏️ Update profile
+                </button>
+              </div>
+            </section>
+
+            {/* ── Target Roles ───────────────── */}
+            <section>
+              <SectionHeader title="Target Roles" />
+              <div className="dash-panel p-4">
+                <div className="flex flex-wrap gap-2">
+                  {allRoles.map((role) => {
+                    const isActive = selectedRoles.includes(role);
+                    return (
+                      <button
+                        key={role}
+                        onClick={() => toggleRole(role)}
+                        className="profile-role-chip"
+                        style={{
+                          background: isActive ? "var(--blue-dim)" : "var(--bg-raised)",
+                          color: isActive ? "#93c5fd" : "var(--text-muted)",
+                          borderColor: isActive ? "rgba(59,130,246,0.3)" : "var(--border-subtle)",
+                        }}
+                      >
+                        {isActive && <span style={{ color: "#60a5fa" }}>✓</span>}
+                        {role}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] mt-3" style={{ color: "var(--text-muted)" }}>
+                  {selectedRoles.length} role{selectedRoles.length !== 1 ? "s" : ""} selected · Jobs matching these roles will be prioritized.
+                </p>
+              </div>
+            </section>
+
+            {/* ── Job Preferences ────────────── */}
+            <section>
+              <SectionHeader title="Job Preferences" />
+              <div className="dash-panel p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {jobPreferences.map((pref) => (
+                    <PreferenceField key={pref.label} pref={pref} />
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ── Dealbreakers ───────────────── */}
+            <section>
+              <SectionHeader title="Dealbreakers" />
+              <div className="dash-panel p-4">
+                <div className="flex flex-col gap-2">
+                  {dealbreakers.map((d) => (
+                    <div key={d} className="flex items-center gap-2.5">
+                      <span
+                        className="w-5 h-5 rounded flex items-center justify-center text-[10px] flex-shrink-0"
+                        style={{ background: "rgba(248,113,113,0.08)", color: "#f87171", border: "1px solid rgba(248,113,113,0.15)" }}
+                      >
+                        ✕
+                      </span>
+                      <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{d}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] mt-3" style={{ color: "var(--text-muted)" }}>
+                  Jobs matching any dealbreaker will be automatically hidden.
+                </p>
+              </div>
+            </section>
+
+            {/* ── Application Preferences ────── */}
+            <section>
+              <SectionHeader title="Application Preferences" />
+              <div className="dash-panel p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {appPreferences.map((pref) => (
+                    <div key={pref.label} className="flex items-center justify-between py-1.5">
+                      <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{pref.label}</span>
+                      <span
+                        className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                        style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" }}
+                      >
+                        {pref.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ── CTA ────────────────────────── */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              <button className="dash-btn dash-btn--primary w-full sm:w-auto justify-center">
+                💾 Save profile
+              </button>
+              <Link href="/dashboard" className="dash-btn dash-btn--outline w-full sm:w-auto justify-center text-center">
+                Preview matched jobs →
+              </Link>
+              <Link href="/dashboard" className="dash-btn dash-btn--ghost w-full sm:w-auto justify-center text-center">
+                Go to dashboard
+              </Link>
+            </div>
+
+            {/* ── Product note ───────────────── */}
+            <p className="text-[11px] text-center pb-4" style={{ color: "var(--text-muted)" }}>
+              Your profile is used locally for demo purposes only. No data is saved or shared.
+            </p>
+
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/* ── Shared components ──────────────────────────────────── */
+
+function NavGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <>
+      <p className="text-[10px] font-semibold tracking-widest uppercase px-3 pt-4 pb-1" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </p>
+      {children}
+    </>
+  );
+}
+
+function SidebarLink({ item, active }: { item: (typeof navItems)[number]; active: boolean }) {
+  const isLink = item.href !== undefined;
+  const className = `dash-nav-link ${active ? "dash-nav-link--active" : ""}`;
+
+  const inner = (
+    <>
+      <span className="text-sm w-5 text-center">{item.icon}</span>
+      <span className="flex-1 text-left">{item.label}</span>
+      {item.badge && (
+        <span
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+          style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)", color: "#fff" }}
+        >
+          {item.badge}
+        </span>
+      )}
+    </>
+  );
+
+  if (isLink) {
+    return <Link href={item.href!} className={className}>{inner}</Link>;
+  }
+  return <button className={className}>{inner}</button>;
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>{title}</h2>;
+}
+
+function PreferenceField({ pref }: { pref: { label: string; value: string | string[] } }) {
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+        {pref.label}
+      </p>
+      {Array.isArray(pref.value) ? (
+        <div className="flex flex-wrap gap-1">
+          {pref.value.map((v) => (
+            <span
+              key={v}
+              className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+              style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" }}
+            >
+              {v}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{pref.value}</p>
+      )}
+    </div>
+  );
+}
+
+/* ── DATA ───────────────────────────────────────────────── */
+
+const navItems: { id: NavId; icon: string; label: string; badge?: string; href?: string }[] = [
+  { id: "auto-apply", icon: "🚀", label: "Auto Apply", badge: "8", href: "/dashboard" },
+  { id: "review", icon: "📋", label: "Review Queue", badge: "3", href: "/dashboard" },
+  { id: "matches", icon: "🎯", label: "Job Matches", href: "/dashboard" },
+  { id: "inbox", icon: "📬", label: "Inbox", href: "/dashboard" },
+  { id: "profile", icon: "👤", label: "Profile Setup", href: "/profile" },
+  { id: "preferences", icon: "⚙️", label: "Job Preferences", href: "/profile" },
+  { id: "tracker", icon: "📊", label: "Application Tracker", href: "/dashboard" },
+  { id: "saved", icon: "⭐", label: "Saved Jobs", href: "/dashboard" },
+];
+
+const readinessItems = [
+  { label: "CV added", done: true },
+  { label: "Preferences set", done: true },
+  { label: "Match rules active", done: true },
+  { label: "Work authorization details", done: false },
+];
+
+const profileSkills = [
+  "Python", "SQL", "dbt", "Machine Learning",
+  "Data Analytics", "Git", "LLMs", "RAG",
+];
+
+const allRoles = [
+  "Data Analyst",
+  "AI Engineer",
+  "Data Scientist",
+  "Analytics Engineer",
+  "Machine Learning Engineer",
+  "Working Student AI/Data",
+];
+
+const jobPreferences: { label: string; value: string | string[] }[] = [
+  { label: "Location", value: "Germany / Remote" },
+  { label: "Work type", value: ["Working student", "Internship", "Junior", "Entry-level"] },
+  { label: "Language", value: "English + German preferred" },
+  { label: "Min match score", value: "75%" },
+  { label: "Remote preference", value: "Hybrid / Remote" },
+  { label: "Job sources", value: ["LinkedIn", "StepStone", "Indeed", "Company pages"] },
+];
+
+const dealbreakers = [
+  "Hide jobs below 75% match",
+  "Hide senior roles requiring 5+ years experience",
+  "Hide jobs requiring fluent German if profile is below B2",
+  "Hide unrelated marketing / sales roles",
+  "Prioritize visa / work authorization friendly roles",
+];
+
+const appPreferences = [
+  { label: "Tone", value: "Professional but natural" },
+  { label: "Cover letter", value: "Short and tailored" },
+  { label: "Recruiter message", value: "Friendly and concise" },
+  { label: "Approval mode", value: "Always review before sending" },
+  { label: "Follow-up reminder", value: "After 7 days" },
+];

@@ -14,6 +14,7 @@ type NavId =
   | "review"
   | "matches"
   | "inbox"
+  | "profile"
   | "preferences"
   | "tracker"
   | "saved";
@@ -356,8 +357,9 @@ function NavGroup({ label, children }: { label: string; children: React.ReactNod
 }
 
 function SidebarLink({ item, active, onClick }: { item: (typeof navItems)[number]; active: boolean; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className={`dash-nav-link ${active ? "dash-nav-link--active" : ""}`}>
+  const className = `dash-nav-link ${active ? "dash-nav-link--active" : ""}`;
+  const inner = (
+    <>
       <span className="text-sm w-5 text-center">{item.icon}</span>
       <span className="flex-1 text-left">{item.label}</span>
       {item.badge && (
@@ -368,8 +370,13 @@ function SidebarLink({ item, active, onClick }: { item: (typeof navItems)[number
           {item.badge}
         </span>
       )}
-    </button>
+    </>
   );
+
+  if (item.href) {
+    return <Link href={item.href} className={className}>{inner}</Link>;
+  }
+  return <button onClick={onClick} className={className}>{inner}</button>;
 }
 
 function SectionHeader({ title, inline }: { title: string; inline?: boolean }) {
@@ -562,12 +569,13 @@ function JobMatchesTable() {
 
 /* ── DATA ───────────────────────────────────────────────── */
 
-const navItems: { id: NavId; icon: string; label: string; badge?: string }[] = [
+const navItems: { id: NavId; icon: string; label: string; badge?: string; href?: string }[] = [
   { id: "auto-apply", icon: "🚀", label: "Auto Apply", badge: "8" },
   { id: "review", icon: "📋", label: "Review Queue", badge: "3" },
   { id: "matches", icon: "🎯", label: "Job Matches" },
   { id: "inbox", icon: "📬", label: "Inbox" },
-  { id: "preferences", icon: "⚙️", label: "Job Preferences" },
+  { id: "profile", icon: "👤", label: "Profile Setup", href: "/profile" },
+  { id: "preferences", icon: "⚙️", label: "Job Preferences", href: "/profile" },
   { id: "tracker", icon: "📊", label: "Application Tracker" },
   { id: "saved", icon: "⭐", label: "Saved Jobs" },
 ];
