@@ -54,12 +54,12 @@ function Header() {
         </nav>
 
         <a
-          href="/dashboard"
+          href="/profile"
           id="header-start-free-btn"
           className="btn-primary"
           style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
         >
-          Open dashboard →
+          Get started →
         </a>
       </div>
     </header>
@@ -117,8 +117,8 @@ function HeroSection() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-up-d3">
-          <a href="/dashboard" id="hero-primary-cta" className="btn-primary w-full sm:w-auto justify-center">
-            Open dashboard →
+          <a href="/profile" id="hero-primary-cta" className="btn-primary w-full sm:w-auto justify-center">
+            Set up your profile →
           </a>
           <a
             href="/analyze"
@@ -743,7 +743,7 @@ function PricingSection() {
               ))}
             </ul>
             <a
-              href="/dashboard"
+              href="/profile"
               id="pricing-free-btn"
               className="btn-primary w-full justify-center"
             >
@@ -847,8 +847,8 @@ function CtaBanner() {
           >
             Join the beta. High-fit jobs, tailored applications, full control.
           </p>
-          <a href="/dashboard" id="cta-banner-btn" className="btn-primary inline-flex">
-            Start free today →
+          <a href="/profile" id="cta-banner-btn" className="btn-primary inline-flex">
+            Set up your profile →
           </a>
           <p
             className="relative mt-5 text-xs"
