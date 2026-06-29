@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ── Design tokens ─────────────────────────────────────── */
+/* ── Design tokens (dark — default) ───────────────────── */
 :root {
   --bg-base:    #060d1a;
   --bg-surface: #0b1529;
@@ -23,6 +23,31 @@
 
   --green: #22c55e;
   --red:   #f87171;
+}
+
+/* ── Design tokens (light) ────────────────────────────── */
+[data-theme="light"] {
+  --bg-base:    #f5f7fa;
+  --bg-surface: #ffffff;
+  --bg-raised:  #f0f2f5;
+  --bg-overlay: #e8ecf1;
+
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+
+  --border-subtle: #e2e8f0;
+  --border-mid:    #cbd5e1;
+  --border-strong: #94a3b8;
+
+  --blue:      #2563eb;
+  --blue-dark: #1d4ed8;
+  --blue-dim:  rgba(37, 99, 235, 0.08);
+  --cyan:      #0891b2;
+  --cyan-dim:  rgba(8, 145, 178, 0.06);
+
+  --green: #16a34a;
+  --red:   #ef4444;
 }
 
 @theme inline {
@@ -72,6 +97,24 @@ body {
 @keyframes bar-84 { from { width: 0% } to { width: 84% } }
 @keyframes bar-52 { from { width: 0% } to { width: 52% } }
 
+/* Swipe review card animations — smooth and premium */
+@keyframes swipe-left {
+  0%   { opacity: 1; transform: translateY(0) translateX(0) rotate(0); }
+  100% { opacity: 0; transform: translateY(-4px) translateX(-80px) rotate(-1.5deg); }
+}
+@keyframes swipe-right {
+  0%   { opacity: 1; transform: translateY(0) translateX(0) rotate(0); }
+  100% { opacity: 0; transform: translateY(-4px) translateX(80px) rotate(1.5deg); }
+}
+@keyframes swipe-down {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(30px) scale(0.97); }
+}
+@keyframes card-enter {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.985); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .animate-fade-up    { animation: fade-up 0.6s ease-out forwards; }
 .animate-fade-up-d1 { animation: fade-up 0.6s ease-out 0.12s forwards; opacity: 0; }
 .animate-fade-up-d2 { animation: fade-up 0.6s ease-out 0.24s forwards; opacity: 0; }
@@ -80,6 +123,49 @@ body {
 .animate-bar-91     { width: 0; animation: bar-91 1.4s ease-out 0.5s forwards; }
 .animate-bar-84     { width: 0; animation: bar-84 1.4s ease-out 0.7s forwards; }
 .animate-bar-52     { width: 0; animation: bar-52 1.4s ease-out 0.9s forwards; }
+.animate-swipe-left  { animation: swipe-left 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.animate-swipe-right { animation: swipe-right 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.animate-swipe-down  { animation: swipe-down 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.animate-card-enter  { animation: card-enter 0.5s cubic-bezier(0, 0, 0.2, 1) forwards; }
+
+/* ── Theme toggle ──────────────────────────────────────── */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.theme-toggle:hover {
+  border-color: var(--border-mid);
+  color: var(--text-primary);
+}
+
+/* ── Light mode overrides for gradient text ────────────── */
+[data-theme="light"] .gradient-text {
+  background: linear-gradient(120deg, #2563eb 0%, #0891b2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Light mode: grid bg ──────────────────────────────── */
+[data-theme="light"] .grid-bg {
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.04) 1px, transparent 1px);
+}
+
+/* ── Light mode: scrollbar ────────────────────────────── */
+[data-theme="light"] ::-webkit-scrollbar-track { background: var(--bg-base); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--border-mid); }
 
 /* ── Buttons ───────────────────────────────────────────── */
 .btn-primary {

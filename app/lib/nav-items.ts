@@ -19,14 +19,14 @@ export interface NavItem {
   icon: string;
   label: string;
   badge?: string;
-  href?: string;          // inter-page navigation
+  href: string;
   group: "workflow" | "manage";
 }
 
 export const navItems: NavItem[] = [
   // ── Workflow ──
   { id: "auto-apply",  icon: "🚀", label: "Auto Apply",          badge: "8", group: "workflow", href: "/dashboard" },
-  { id: "review",      icon: "📋", label: "Review Queue",        badge: "3", group: "workflow", href: "/dashboard" },
+  { id: "review",      icon: "📋", label: "Review Queue",        badge: "4", group: "workflow", href: "/review-queue" },
   { id: "matches",     icon: "🎯", label: "Job Matches",                     group: "workflow", href: "/dashboard" },
   { id: "inbox",       icon: "📬", label: "Inbox",                           group: "workflow", href: "/dashboard" },
   // ── Manage ──

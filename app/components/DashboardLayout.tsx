@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { navItems, type NavId } from "@/app/lib/nav-items";
 
@@ -24,6 +24,24 @@ export default function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  /* Read persisted theme on mount */
+  useEffect(() => {
+    const saved = localStorage.getItem("applymate-theme");
+    if (saved === "light") setTheme("light");
+  }, []);
+
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    if (next === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+    localStorage.setItem("applymate-theme", next);
+  }
 
   const resolvedTitle =
     pageTitle ?? navItems.find((n) => n.id === activeNavId)?.label ?? "Dashboard";
@@ -85,6 +103,14 @@ export default function DashboardLayout({
           </NavGroup>
         </nav>
 
+        {/* Theme toggle */}
+        <div className="px-3 mb-2 flex justify-center">
+          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+            <span>{theme === "dark" ? "🌙" : "☀️"}</span>
+            <span>{theme === "dark" ? "Dark" : "Light"}</span>
+          </button>
+        </div>
+
         {/* Pricing hint */}
         <div
           className="mx-3 mb-2 px-3 py-2 rounded-lg text-center"
@@ -135,7 +161,7 @@ export default function DashboardLayout({
         <header
           className="h-14 flex items-center px-5 lg:px-6 flex-shrink-0"
           style={{
-            background: "rgba(6, 13, 26, 0.8)",
+            background: theme === "dark" ? "rgba(6, 13, 26, 0.8)" : "rgba(255, 255, 255, 0.85)",
             backdropFilter: "blur(16px)",
             borderBottom: "1px solid var(--border-subtle)",
           }}
