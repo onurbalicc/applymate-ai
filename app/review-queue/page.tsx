@@ -282,7 +282,7 @@ function ReviewCard({
         <button className="dash-btn dash-btn--ghost" onClick={onDecline} disabled={disabled}>✕ Decline</button>
         <button className="dash-btn dash-btn--ghost" onClick={onSkip} disabled={disabled}>⏭ Skip</button>
         <div className="flex-1" />
-        <button className="dash-btn dash-btn--outline" disabled={disabled}>Review application →</button>
+        <Link href="/review" className="dash-btn dash-btn--outline" style={{ pointerEvents: disabled ? "none" : "auto", opacity: disabled ? 0.5 : 1 }}>Review application →</Link>
         <button className="dash-btn dash-btn--primary" onClick={onApprove} disabled={disabled}>✓ Approve &amp; apply</button>
       </div>
 
