@@ -159,7 +159,7 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <section className="lg:col-span-3">
+          <section className="lg:col-span-3" id="matches">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <SectionHeader title="Job Matches" inline />
@@ -177,7 +177,7 @@ export default function DashboardPage() {
 
         {/* ── Tracker + Inbox ─────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <section>
+          <section id="tracker">
             <SectionHeader title="Active Applications" />
             <div className="dash-panel">
               {trackerItems.map((t, i) => (
@@ -193,7 +193,7 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <section>
+          <section id="inbox">
             <SectionHeader title="Inbox" />
             <div className="dash-panel">
               {inboxItems.map((item, i) => (
@@ -292,16 +292,16 @@ const jobMatches = [
 ];
 
 const trackerItems = [
-  { role: "Data Analyst", company: "Google", time: "2d ago", status: "Applied", statusStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } as React.CSSProperties },
-  { role: "Product Manager", company: "Notion", time: "5d ago", status: "Reply pending", statusStyle: { background: "rgba(250,204,21,0.06)", color: "#fde047", border: "1px solid rgba(250,204,21,0.15)" } as React.CSSProperties },
-  { role: "UX Designer", company: "Figma", time: "Follow-up in 2d", status: "Follow-up due", statusStyle: { background: "rgba(251,146,60,0.06)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" } as React.CSSProperties },
-  { role: "AI Engineer", company: "Anthropic", time: "Tomorrow 14:00", status: "Interview", statusStyle: { background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" } as React.CSSProperties },
+  { role: "Junior Data Analyst", company: "DataCorp", time: "2d ago", status: "Applied", statusStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } as React.CSSProperties },
+  { role: "Analytics Engineer", company: "FinStack", time: "5d ago", status: "Reply pending", statusStyle: { background: "rgba(250,204,21,0.06)", color: "#fde047", border: "1px solid rgba(250,204,21,0.15)" } as React.CSSProperties },
+  { role: "AI Engineer", company: "ExampleTech", time: "Follow-up in 2d", status: "Follow-up due", statusStyle: { background: "rgba(251,146,60,0.06)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" } as React.CSSProperties },
+  { role: "Data Scientist Intern", company: "BioML Labs", time: "Tomorrow 14:00", status: "Interview", statusStyle: { background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" } as React.CSSProperties },
 ];
 
 const inboxItems: { subject: string; detail: string; tag: string; dotColor: string; tagStyle: React.CSSProperties }[] = [
-  { subject: "Interview invitation — Anthropic", detail: "Tomorrow at 14:00 · AI Engineer role", tag: "Interview", dotColor: "#4ade80", tagStyle: { background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" } },
-  { subject: "Reply from Notion recruiter", detail: "Wants to schedule a call this week", tag: "Reply pending", dotColor: "#fde047", tagStyle: { background: "rgba(250,204,21,0.06)", color: "#fde047", border: "1px solid rgba(250,204,21,0.15)" } },
-  { subject: "Follow-up due — Figma", detail: "No response after 7 days · Auto-reminder set", tag: "Follow-up", dotColor: "#fb923c", tagStyle: { background: "rgba(251,146,60,0.06)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" } },
+  { subject: "Interview invitation — BioML Labs", detail: "Tomorrow at 14:00 · Data Scientist Intern role", tag: "Interview", dotColor: "#4ade80", tagStyle: { background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" } },
+  { subject: "Reply from FinStack recruiter", detail: "Wants to schedule a call this week", tag: "Reply pending", dotColor: "#fde047", tagStyle: { background: "rgba(250,204,21,0.06)", color: "#fde047", border: "1px solid rgba(250,204,21,0.15)" } },
+  { subject: "Follow-up due — ExampleTech", detail: "No response after 7 days · Auto-reminder set", tag: "Follow-up", dotColor: "#fb923c", tagStyle: { background: "rgba(251,146,60,0.06)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" } },
   { subject: "Rejection — SocialMetrics", detail: "Position filled · Archived automatically", tag: "Archived", dotColor: "var(--text-muted)", tagStyle: { background: "var(--bg-overlay)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" } },
   { subject: "New email detected", detail: "From careers@datacorp.de · Needs classification", tag: "New", dotColor: "#60a5fa", tagStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } },
 ];

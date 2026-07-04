@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ApplyMate AI — Smart Job Application Assistant",
+  title: "ApplyMate AI — Your AI Job Application Operating System",
   description:
-    "Analyze job descriptions, match your CV, identify skill gaps, and generate tailored cover letters, recruiter messages, and interview prep — powered by AI.",
+    "One profile. ApplyMate scans trusted job sources, hides low-fit roles, prepares tailored applications, and waits for your approval — then tracks every reply.",
 };
 
 /* Inline script that runs before React hydrates to prevent flash of wrong theme.

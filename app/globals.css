@@ -94,8 +94,15 @@ body {
 }
 /* Per-bar width animations for job match bars */
 @keyframes bar-91 { from { width: 0% } to { width: 91% } }
+@keyframes bar-86 { from { width: 0% } to { width: 86% } }
 @keyframes bar-84 { from { width: 0% } to { width: 84% } }
 @keyframes bar-52 { from { width: 0% } to { width: 52% } }
+
+/* Floating signal cards around the hero preview */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
 
 /* Swipe review card animations — smooth and premium */
 @keyframes swipe-left {
@@ -121,8 +128,12 @@ body {
 .animate-fade-up-d3 { animation: fade-up 0.6s ease-out 0.36s forwards; opacity: 0; }
 .animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
 .animate-bar-91     { width: 0; animation: bar-91 1.4s ease-out 0.5s forwards; }
+.animate-bar-86     { width: 0; animation: bar-86 1.4s ease-out 0.6s forwards; }
 .animate-bar-84     { width: 0; animation: bar-84 1.4s ease-out 0.7s forwards; }
 .animate-bar-52     { width: 0; animation: bar-52 1.4s ease-out 0.9s forwards; }
+.animate-float      { animation: float-y 5s ease-in-out infinite; }
+.animate-float-d1   { animation: float-y 6s ease-in-out 0.8s infinite; }
+.animate-float-d2   { animation: float-y 5.5s ease-in-out 1.6s infinite; }
 .animate-swipe-left  { animation: swipe-left 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 .animate-swipe-right { animation: swipe-right 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 .animate-swipe-down  { animation: swipe-down 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
@@ -203,6 +214,66 @@ body {
   border-color: var(--blue);
   color: var(--text-primary);
   background: var(--blue-dim);
+}
+
+/* ── Landing header (theme-aware translucent bar) ──────── */
+.landing-header {
+  background: rgba(6, 13, 26, 0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+[data-theme="light"] .landing-header {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+/* ── Landing: floating signal card ─────────────────────── */
+/* display is controlled by Tailwind utilities (hidden lg:flex) */
+.float-card {
+  position: absolute;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 24px rgba(37, 99, 235, 0.08);
+  white-space: nowrap;
+  z-index: 10;
+}
+[data-theme="light"] .float-card {
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+/* ── Landing: before/after list rows ───────────────────── */
+.compare-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* ── Landing: differentiation feature card ─────────────── */
+.feature-card {
+  padding: 1.375rem;
+  border-radius: 1.125rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+.feature-card:hover {
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Offset anchored sections below the sticky top bar */
+section[id] {
+  scroll-margin-top: 80px;
 }
 
 /* ── Nav link ──────────────────────────────────────────── */

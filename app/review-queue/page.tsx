@@ -3,11 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
+import { reviewJobs, type ReviewJob } from "@/app/lib/mock-data";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Review Queue
    Dedicated page for reviewing prepared applications.
+   Job data comes from the shared mock-data module.
    ───────────────────────────────────────────────────────── */
+
+const reviewQueue = reviewJobs;
 
 export default function ReviewQueuePage() {
   const [reviewIdx, setReviewIdx] = useState(0);
@@ -146,6 +150,7 @@ export default function ReviewQueuePage() {
           <div key={cardKey} className={swipeAnim ?? "animate-card-enter"}>
             <ReviewCard
               job={currentReview}
+              jobIdx={reviewIdx}
               disabled={isAnimating}
               onApprove={() => advanceToNext("approved")}
               onDecline={() => advanceToNext("declined")}
@@ -180,12 +185,14 @@ export default function ReviewQueuePage() {
 /* ── Review Card ─────────────────────────────────────────── */
 function ReviewCard({
   job,
+  jobIdx,
   disabled,
   onApprove,
   onDecline,
   onSkip,
 }: {
-  job: (typeof reviewQueue)[number];
+  job: ReviewJob;
+  jobIdx: number;
   disabled: boolean;
   onApprove: () => void;
   onDecline: () => void;
@@ -282,7 +289,7 @@ function ReviewCard({
         <button className="dash-btn dash-btn--ghost" onClick={onDecline} disabled={disabled}>✕ Decline</button>
         <button className="dash-btn dash-btn--ghost" onClick={onSkip} disabled={disabled}>⏭ Skip</button>
         <div className="flex-1" />
-        <Link href="/review" className="dash-btn dash-btn--outline" style={{ pointerEvents: disabled ? "none" : "auto", opacity: disabled ? 0.5 : 1 }}>Review application →</Link>
+        <Link href={`/review?job=${jobIdx}`} className="dash-btn dash-btn--outline" style={{ pointerEvents: disabled ? "none" : "auto", opacity: disabled ? 0.5 : 1 }}>Review application →</Link>
         <button className="dash-btn dash-btn--primary" onClick={onApprove} disabled={disabled}>✓ Approve &amp; apply</button>
       </div>
 
@@ -295,31 +302,3 @@ function ReviewCard({
   );
 }
 
-/* ── MOCK DATA ──────────────────────────────────────────── */
-
-const reviewQueue = [
-  {
-    role: "AI Engineer Working Student", company: "ExampleTech GmbH", location: "Berlin / Remote", score: 86, threshold: 75,
-    whyFits: "Strong overlap with Python, SQL, and ML requirements. Your LLM projects and data analytics background match the team's applied AI focus.",
-    matches: ["Python", "SQL", "Machine Learning", "Data Analytics"], gaps: ["FastAPI", "Docker"],
-    materials: [{ icon: "✉️", label: "Cover letter" }, { icon: "💬", label: "Recruiter message" }, { icon: "🎤", label: "Interview prep" }],
-  },
-  {
-    role: "Junior Data Analyst", company: "DataCorp", location: "Berlin", score: 91, threshold: 75,
-    whyFits: "Your SQL and data analytics skills are a direct match. Python experience and dashboard projects align perfectly with the role requirements.",
-    matches: ["SQL", "Python", "Data Analytics", "Tableau"], gaps: ["Looker"],
-    materials: [{ icon: "✉️", label: "Cover letter" }, { icon: "💬", label: "Recruiter message" }],
-  },
-  {
-    role: "Data Scientist Intern", company: "BioML Labs", location: "Munich", score: 79, threshold: 75,
-    whyFits: "Your ML coursework and Python projects cover the core requirements. Statistics background helps. Some gaps in bioinformatics domain knowledge.",
-    matches: ["Python", "Machine Learning", "Statistics"], gaps: ["R", "Bioinformatics", "TensorFlow"],
-    materials: [{ icon: "✉️", label: "Cover letter" }, { icon: "🎤", label: "Interview prep" }],
-  },
-  {
-    role: "Analytics Engineer", company: "FinStack", location: "Remote — Germany", score: 84, threshold: 75,
-    whyFits: "Your dbt and SQL experience directly match the core stack. Data pipeline work aligns with the team's analytics engineering focus.",
-    matches: ["SQL", "dbt", "Python", "Git"], gaps: ["Airflow", "Snowflake"],
-    materials: [{ icon: "✉️", label: "Cover letter" }, { icon: "💬", label: "Recruiter message" }, { icon: "🎤", label: "Interview prep" }],
-  },
-];

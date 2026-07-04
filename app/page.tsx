@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────
-   ApplyMate AI – Landing Page (v4)
-   Visual-first · Less text · Platform framing
+   ApplyMate AI – Landing Page (v5)
+   Premium platform framing · "Job application operating system"
 ───────────────────────────────────────────────────────── */
 export default function Home() {
   return (
@@ -11,6 +11,8 @@ export default function Home() {
         <TrustStrip />
         <WorkflowSection />
         <DashboardSection />
+        <CompareSection />
+        <DifferentiationSection />
         <PricingSection />
         <CtaBanner />
       </main>
@@ -22,14 +24,7 @@ export default function Home() {
 /* ── HEADER ────────────────────────────────────────────── */
 function Header() {
   return (
-    <header
-      className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center"
-      style={{
-        background: "rgba(6, 13, 26, 0.88)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--border-subtle)",
-      }}
-    >
+    <header className="landing-header fixed top-0 left-0 right-0 z-50 h-16 flex items-center">
       <div className="max-w-6xl mx-auto w-full px-6 flex items-center justify-between">
         <a href="#" className="flex items-center gap-2.5" aria-label="ApplyMate AI home">
           <div
@@ -45,8 +40,9 @@ function Header() {
 
         <nav className="hidden md:flex items-center gap-7" aria-label="Main navigation">
           {[
-            { label: "Product",      href: "#product" },
             { label: "How it works", href: "#how-it-works" },
+            { label: "Product",      href: "#product" },
+            { label: "Why ApplyMate", href: "#why" },
             { label: "Pricing",      href: "#pricing" },
           ].map(({ label, href }) => (
             <a key={label} href={href} className="nav-link text-sm">{label}</a>
@@ -70,7 +66,7 @@ function Header() {
 function HeroSection() {
   return (
     <section
-      className="relative pt-36 pb-10 px-6 overflow-hidden grid-bg"
+      className="relative pt-36 pb-16 px-6 overflow-hidden grid-bg"
       aria-labelledby="hero-headline"
     >
       {/* Ambient glow */}
@@ -89,31 +85,31 @@ function HeroSection() {
           style={{
             border: "1px solid rgba(59,130,246,0.3)",
             background: "rgba(59,130,246,0.07)",
-            color: "#93c5fd",
+            color: "var(--blue)",
           }}
         >
           <span
             className="w-1.5 h-1.5 rounded-full animate-pulse"
-            style={{ background: "#60a5fa" }}
+            style={{ background: "var(--blue)" }}
           />
           Free beta · No credit card required
         </div>
 
         <h1
           id="hero-headline"
-          className="text-5xl md:text-6xl lg:text-[4rem] font-bold tracking-tight leading-[1.1] mb-5 animate-fade-up-d1"
+          className="text-5xl md:text-6xl lg:text-[4rem] font-bold tracking-tight leading-[1.08] mb-5 animate-fade-up-d1"
         >
-          Focus on getting better.
+          Your AI job application{" "}
           <br className="hidden sm:block" />
-          <span className="gradient-text">Let AI handle the applications.</span>
+          <span className="gradient-text">operating system.</span>
         </h1>
 
         <p
           className="text-lg md:text-xl leading-relaxed max-w-2xl mx-auto mb-10 animate-fade-up-d2"
           style={{ color: "var(--text-secondary)" }}
         >
-          Find high-match jobs, prepare tailored applications, and track every reply —
-          from one simple dashboard.
+          Set up one profile. ApplyMate scans trusted job sources, hides low-fit roles,
+          prepares each application — and waits for your approval before anything is sent.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-up-d3">
@@ -121,11 +117,11 @@ function HeroSection() {
             Set up your profile →
           </a>
           <a
-            href="/analyze"
+            href="/dashboard"
             id="hero-secondary-cta"
             className="btn-ghost w-full sm:w-auto justify-center"
           >
-            Analyze a job →
+            See the dashboard →
           </a>
         </div>
       </div>
@@ -136,10 +132,10 @@ function HeroSection() {
   );
 }
 
-/* ── HERO PREVIEW (compact job list) ───────────────────── */
+/* ── HERO PREVIEW (stats + job list + floating signals) ── */
 function HeroPreview() {
   return (
-    <div className="relative max-w-2xl mx-auto mt-14 animate-fade-up-d3">
+    <div className="relative max-w-2xl mx-auto mt-16 animate-fade-up-d3">
       {/* Glow under frame */}
       <div
         className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-16 pointer-events-none"
@@ -149,6 +145,26 @@ function HeroPreview() {
           filter: "blur(18px)",
         }}
       />
+
+      {/* Floating signal cards (desktop only) */}
+      <div className="float-card animate-float hidden lg:flex" style={{ top: "-18px", left: "-190px" }}>
+        <span aria-hidden="true">🎯</span>
+        <span>
+          <span className="font-bold" style={{ color: "#60a5fa" }}>91% match</span> — Junior Data Analyst
+        </span>
+      </div>
+      <div className="float-card animate-float-d1 hidden lg:flex" style={{ top: "70px", right: "-185px" }}>
+        <span aria-hidden="true">🔒</span>
+        <span>Waiting for <span className="font-semibold" style={{ color: "var(--text-primary)" }}>your approval</span></span>
+      </div>
+      <div className="float-card animate-float-d2 hidden lg:flex" style={{ bottom: "36px", left: "-165px" }}>
+        <span aria-hidden="true">📬</span>
+        <span>Reply received — <span className="font-semibold" style={{ color: "#4ade80" }}>interview invite</span></span>
+      </div>
+      <div className="float-card animate-float hidden lg:flex" style={{ bottom: "-14px", right: "-150px" }}>
+        <span aria-hidden="true">🚫</span>
+        <span>45 low-fit jobs hidden</span>
+      </div>
 
       {/* Browser frame */}
       <div
@@ -160,47 +176,32 @@ function HeroPreview() {
             "0 24px 64px rgba(0,0,0,0.55), 0 0 40px rgba(37,99,235,0.08)",
         }}
       >
-        {/* Chrome bar */}
+        <BrowserChrome url="app.applymate.ai/dashboard" />
+
+        {/* Scan stats strip */}
         <div
-          className="flex items-center gap-2 px-4 h-9"
-          style={{
-            background: "var(--bg-overlay)",
-            borderBottom: "1px solid var(--border-subtle)",
-          }}
+          className="grid grid-cols-4 px-4 py-3 gap-2"
+          style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
-          <div className="flex gap-1.5">
-            {["#f87171", "#facc15", "#4ade80"].map((c) => (
-              <span
-                key={c}
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ background: c, opacity: 0.65 }}
-              />
-            ))}
-          </div>
-          <div
-            className="flex-1 mx-3 rounded flex items-center px-2.5 text-xs"
-            style={{
-              height: "20px",
-              background: "var(--bg-raised)",
-              color: "var(--text-muted)",
-              border: "1px solid var(--border-subtle)",
-            }}
-          >
-            app.applymate.ai/jobs
-          </div>
+          {heroStats.map((s) => (
+            <div key={s.label} className="text-center">
+              <p className="text-sm font-bold leading-tight" style={{ color: s.color }}>{s.value}</p>
+              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{s.label}</p>
+            </div>
+          ))}
         </div>
 
         {/* Job list */}
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-              Job matches
+              High-match jobs
             </span>
             <span
               className="text-xs px-2.5 py-0.5 rounded-full"
               style={{
                 background: "var(--blue-dim)",
-                color: "#93c5fd",
+                color: "var(--blue)",
                 border: "1px solid rgba(59,130,246,0.2)",
               }}
             >
@@ -210,80 +211,114 @@ function HeroPreview() {
 
           <div className="flex flex-col gap-2">
             {jobs.map((job) => (
-              <div
-                key={job.role}
-                className="job-row"
-                style={{ opacity: job.match < 70 ? 0.35 : 1 }}
-              >
-                {/* Logo */}
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                  style={{
-                    background:
-                      job.match >= 75
-                        ? "linear-gradient(135deg, #2563eb, #0ea5e9)"
-                        : "var(--bg-overlay)",
-                  }}
-                >
-                  {job.company[0]}
-                </div>
-
-                {/* Info + bar */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span
-                        className="text-xs font-semibold truncate"
-                        style={{ color: "var(--text-primary)" }}
-                      >
-                        {job.role}
-                      </span>
-                      <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>
-                        · {job.company}
-                      </span>
-                    </div>
-                    <span
-                      className="text-xs font-bold ml-2 flex-shrink-0"
-                      style={{
-                        color:
-                          job.match >= 85
-                            ? "#60a5fa"
-                            : job.match >= 75
-                            ? "#93c5fd"
-                            : "var(--text-muted)",
-                      }}
-                    >
-                      {job.match}%
-                    </span>
-                  </div>
-                  <div
-                    className="h-1 rounded-full overflow-hidden"
-                    style={{ background: "var(--border-subtle)" }}
-                  >
-                    <div
-                      className={`h-full rounded-full ${job.barClass}`}
-                      style={{
-                        background:
-                          job.match >= 75
-                            ? "linear-gradient(90deg, #2563eb, #22d3ee)"
-                            : "#f87171",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Status chip */}
-                <span
-                  className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
-                  style={job.statusStyle}
-                >
-                  {job.status}
-                </span>
-              </div>
+              <JobRow key={job.role} job={job} compact />
             ))}
           </div>
+
+          <p className="text-[11px] text-center pt-3" style={{ color: "var(--text-muted)" }}>
+            🔒 Nothing is submitted without your approval
+          </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Shared: browser chrome bar ────────────────────────── */
+function BrowserChrome({ url }: { url: string }) {
+  return (
+    <div
+      className="flex items-center gap-2 px-4 h-9"
+      style={{
+        background: "var(--bg-overlay)",
+        borderBottom: "1px solid var(--border-subtle)",
+      }}
+    >
+      <div className="flex gap-1.5">
+        {["#f87171", "#facc15", "#4ade80"].map((c) => (
+          <span
+            key={c}
+            className="w-2.5 h-2.5 rounded-full"
+            style={{ background: c, opacity: 0.65 }}
+          />
+        ))}
+      </div>
+      <div
+        className="flex-1 mx-3 rounded flex items-center px-2.5 text-xs"
+        style={{
+          height: "20px",
+          background: "var(--bg-raised)",
+          color: "var(--text-muted)",
+          border: "1px solid var(--border-subtle)",
+        }}
+      >
+        {url}
+      </div>
+    </div>
+  );
+}
+
+/* ── Shared: job row ───────────────────────────────────── */
+function JobRow({ job, compact }: { job: (typeof jobs)[number]; compact?: boolean }) {
+  return (
+    <div className="job-row" style={{ opacity: job.match < 70 ? 0.35 : 1 }}>
+      <div
+        className={`${compact ? "w-8 h-8 text-xs" : "w-9 h-9 text-sm"} rounded-lg flex items-center justify-center font-bold text-white flex-shrink-0`}
+        style={{
+          background:
+            job.match >= 75
+              ? "linear-gradient(135deg, #2563eb, #0ea5e9)"
+              : "var(--bg-overlay)",
+        }}
+      >
+        {job.company[0]}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span
+              className="text-xs font-semibold truncate"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {job.role}
+            </span>
+            <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+              · {job.company}
+            </span>
+          </div>
+          <span
+            className="text-xs font-bold ml-2 flex-shrink-0"
+            style={{
+              color:
+                job.match >= 85 ? "#60a5fa" : job.match >= 75 ? "var(--blue)" : "var(--text-muted)",
+            }}
+          >
+            {job.match}%
+          </span>
+        </div>
+        <div
+          className="h-1 rounded-full overflow-hidden"
+          style={{ background: "var(--border-subtle)" }}
+        >
+          <div
+            className={`h-full rounded-full ${job.barClass}`}
+            style={{
+              background:
+                job.match >= 75
+                  ? "linear-gradient(90deg, #2563eb, #22d3ee)"
+                  : "#f87171",
+            }}
+          />
+        </div>
+      </div>
+
+      <span
+        className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
+        style={job.statusStyle}
+      >
+        {job.status}
+      </span>
     </div>
   );
 }
@@ -307,6 +342,38 @@ function TrustStrip() {
   );
 }
 
+/* ── Shared: section heading ───────────────────────────── */
+function SectionHeading({
+  eyebrow,
+  title,
+  subtitle,
+  headingId,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  headingId: string;
+}) {
+  return (
+    <div className="text-center mb-12">
+      <p
+        className="text-xs font-semibold tracking-widest uppercase mb-3"
+        style={{ color: "var(--blue)" }}
+      >
+        {eyebrow}
+      </p>
+      <h2 id={headingId} className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
+        {title}
+      </h2>
+      {subtitle && (
+        <p className="text-base max-w-xl mx-auto" style={{ color: "var(--text-secondary)" }}>
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ── WORKFLOW ──────────────────────────────────────────── */
 function WorkflowSection() {
   return (
@@ -316,26 +383,17 @@ function WorkflowSection() {
       style={{ borderTop: "1px solid var(--border-subtle)" }}
       aria-labelledby="workflow-heading"
     >
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-14">
-          <p
-            className="text-xs font-semibold tracking-widest uppercase mb-3"
-            style={{ color: "#60a5fa" }}
-          >
-            How it works
-          </p>
-          <h2
-            id="workflow-heading"
-            className="text-3xl md:text-4xl font-bold tracking-tight"
-          >
-            Your complete job search workflow
-          </h2>
-        </div>
+      <div className="max-w-6xl mx-auto">
+        <SectionHeading
+          eyebrow="How it works"
+          title="One profile. One repeatable workflow."
+          subtitle="The same five steps run for every job — you only step in where your judgment matters."
+          headingId="workflow-heading"
+        />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {workflowSteps.map((step, i) => (
             <div key={step.title} className="workflow-step flex flex-col gap-4">
-              {/* Icon + step number */}
               <div className="flex items-center justify-between">
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center text-xl"
@@ -386,28 +444,12 @@ function DashboardSection() {
       aria-labelledby="dashboard-heading"
     >
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <p
-            className="text-xs font-semibold tracking-widest uppercase mb-3"
-            style={{ color: "#60a5fa" }}
-          >
-            Platform preview
-          </p>
-          <h2
-            id="dashboard-heading"
-            className="text-3xl md:text-4xl font-bold tracking-tight mb-3"
-          >
-            Everything in one dashboard
-          </h2>
-          <p
-            className="text-base max-w-md mx-auto"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Find jobs, check your fit, prepare applications, and track replies —
-            without switching tools.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="Platform preview"
+          title="Your whole job search, one dashboard"
+          subtitle="Scanning, matching, prepared applications, and reply tracking — without switching tools."
+          headingId="dashboard-heading"
+        />
 
         {/* Browser frame */}
         <div
@@ -419,34 +461,7 @@ function DashboardSection() {
               "0 0 0 1px var(--border-subtle), 0 32px 80px rgba(0,0,0,0.55), 0 0 60px rgba(37,99,235,0.07)",
           }}
         >
-          {/* Chrome */}
-          <div
-            className="flex items-center gap-2 px-4 h-10"
-            style={{
-              background: "var(--bg-overlay)",
-              borderBottom: "1px solid var(--border-subtle)",
-            }}
-          >
-            <div className="flex gap-1.5">
-              {["#f87171", "#facc15", "#4ade80"].map((c) => (
-                <span
-                  key={c}
-                  className="w-3 h-3 rounded-full"
-                  style={{ background: c, opacity: 0.65 }}
-                />
-              ))}
-            </div>
-            <div
-              className="flex-1 mx-4 h-5 rounded-md flex items-center px-3 text-xs"
-              style={{
-                background: "var(--bg-raised)",
-                color: "var(--text-muted)",
-                border: "1px solid var(--border-subtle)",
-              }}
-            >
-              app.applymate.ai/dashboard
-            </div>
-          </div>
+          <BrowserChrome url="app.applymate.ai/dashboard" />
 
           {/* Dashboard body */}
           <div className="flex" style={{ minHeight: "400px" }}>
@@ -480,7 +495,6 @@ function DashboardSection() {
               className="flex-1 flex flex-col p-5 gap-3"
               style={{ borderRight: "1px solid var(--border-subtle)" }}
             >
-              {/* Panel header */}
               <div className="flex items-center justify-between">
                 <p
                   className="text-sm font-semibold"
@@ -491,11 +505,11 @@ function DashboardSection() {
                     className="ml-2 font-normal text-xs"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    12 found
+                    49 found today
                   </span>
                 </p>
                 <div className="flex gap-2">
-                  {["75%+ match", "Remote"].map((f) => (
+                  {["75%+ match", "Germany / Remote"].map((f) => (
                     <span
                       key={f}
                       className="text-xs px-2 py-0.5 rounded-full"
@@ -511,88 +525,16 @@ function DashboardSection() {
                 </div>
               </div>
 
-              {/* Job rows */}
               {jobs.map((job) => (
-                <div
-                  key={job.role}
-                  className="job-row"
-                  style={{ opacity: job.match < 70 ? 0.32 : 1 }}
-                >
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                    style={{
-                      background:
-                        job.match >= 75
-                          ? "linear-gradient(135deg, #2563eb, #0ea5e9)"
-                          : "var(--bg-overlay)",
-                    }}
-                  >
-                    {job.company[0]}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="text-sm font-semibold"
-                          style={{ color: "var(--text-primary)" }}
-                        >
-                          {job.role}
-                        </span>
-                        <span
-                          className="text-xs"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          · {job.company}
-                        </span>
-                      </div>
-                      <span
-                        className="text-sm font-bold ml-2 flex-shrink-0"
-                        style={{
-                          color:
-                            job.match >= 85
-                              ? "#60a5fa"
-                              : job.match >= 75
-                              ? "#93c5fd"
-                              : "var(--text-muted)",
-                        }}
-                      >
-                        {job.match}%
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="flex-1 h-1.5 rounded-full overflow-hidden"
-                        style={{ background: "var(--border-subtle)" }}
-                      >
-                        <div
-                          className={`h-full rounded-full ${job.barClass}`}
-                          style={{
-                            background:
-                              job.match >= 75
-                                ? "linear-gradient(90deg, #2563eb, #22d3ee)"
-                                : "#f87171",
-                          }}
-                        />
-                      </div>
-                      <span
-                        className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={job.statusStyle}
-                      >
-                        {job.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <JobRow key={job.role} job={job} />
               ))}
 
               <p
                 className="text-xs text-center pt-1"
                 style={{ color: "var(--text-muted)" }}
               >
-                3 low-fit jobs hidden ·{" "}
-                <span style={{ color: "#60a5fa" }}>Show all</span>
+                45 low-fit jobs hidden automatically ·{" "}
+                <span style={{ color: "var(--blue)" }}>Show all</span>
               </p>
             </div>
 
@@ -645,7 +587,7 @@ function DashboardSection() {
                 </div>
               ))}
 
-              {/* Reply tracking teaser */}
+              {/* Approval note */}
               <div
                 className="mt-1 p-3 rounded-xl"
                 style={{
@@ -657,14 +599,145 @@ function DashboardSection() {
                   className="text-xs font-medium mb-0.5"
                   style={{ color: "var(--text-secondary)" }}
                 >
-                  📬 Email reply tracking
+                  ✋ Approval required
                 </p>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  Coming soon — auto-detect replies and set follow-up reminders.
+                  Every application waits in your review queue until you approve it.
                 </p>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── BEFORE / AFTER ────────────────────────────────────── */
+function CompareSection() {
+  return (
+    <section
+      className="py-20 px-6"
+      style={{ borderTop: "1px solid var(--border-subtle)" }}
+      aria-labelledby="compare-heading"
+    >
+      <div className="max-w-4xl mx-auto">
+        <SectionHeading
+          eyebrow="The difference"
+          title="Job searching is a workflow. Treat it like one."
+          headingId="compare-heading"
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Before */}
+          <div
+            className="rounded-2xl p-7"
+            style={{
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+            }}
+          >
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-5"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Without ApplyMate
+            </p>
+            <div className="flex flex-col gap-3.5">
+              {beforeItems.map((item) => (
+                <div key={item} className="compare-row">
+                  <span
+                    className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5"
+                    style={{
+                      background: "rgba(248,113,113,0.08)",
+                      color: "#f87171",
+                      border: "1px solid rgba(248,113,113,0.15)",
+                    }}
+                  >
+                    ✕
+                  </span>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* After */}
+          <div
+            className="rounded-2xl p-7"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(37,99,235,0.09), rgba(14,165,233,0.05))",
+              border: "1px solid rgba(59,130,246,0.3)",
+            }}
+          >
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-5"
+              style={{ color: "var(--blue)" }}
+            >
+              With ApplyMate
+            </p>
+            <div className="flex flex-col gap-3.5">
+              {afterItems.map((item) => (
+                <div key={item} className="compare-row" style={{ color: "var(--text-primary)" }}>
+                  <span
+                    className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5"
+                    style={{
+                      background: "rgba(34,197,94,0.1)",
+                      color: "#4ade80",
+                      border: "1px solid rgba(34,197,94,0.2)",
+                    }}
+                  >
+                    ✓
+                  </span>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── DIFFERENTIATION ───────────────────────────────────── */
+function DifferentiationSection() {
+  return (
+    <section
+      id="why"
+      className="py-20 px-6"
+      style={{ borderTop: "1px solid var(--border-subtle)" }}
+      aria-labelledby="why-heading"
+    >
+      <div className="max-w-6xl mx-auto">
+        <SectionHeading
+          eyebrow="Why ApplyMate"
+          title="Built for quality, not application volume"
+          subtitle="Mass auto-apply tools spray hundreds of weak applications. ApplyMate sends fewer, better ones — and only with your sign-off."
+          headingId="why-heading"
+        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {differentiators.map((d) => (
+            <div key={d.title} className="feature-card">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3"
+                style={{
+                  background: "var(--bg-raised)",
+                  border: "1px solid var(--border-mid)",
+                }}
+              >
+                {d.icon}
+              </div>
+              <h3 className="text-base font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>
+                {d.title}
+              </h3>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                {d.description}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -681,23 +754,12 @@ function PricingSection() {
       aria-labelledby="pricing-heading"
     >
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <p
-            className="text-xs font-semibold tracking-widest uppercase mb-3"
-            style={{ color: "#60a5fa" }}
-          >
-            Pricing
-          </p>
-          <h2
-            id="pricing-heading"
-            className="text-3xl md:text-4xl font-bold tracking-tight mb-3"
-          >
-            Free while we build.
-          </h2>
-          <p style={{ color: "var(--text-secondary)" }}>
-            Full product access during beta. Transparent pricing before anything changes.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="Pricing"
+          title="Free while we build."
+          subtitle="Full product access during beta. Transparent pricing before anything changes."
+          headingId="pricing-heading"
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-2xl mx-auto">
           {/* Free card */}
@@ -839,13 +901,14 @@ function CtaBanner() {
             }}
           />
           <h2 className="relative text-3xl md:text-4xl font-bold tracking-tight mb-4">
-            Ready to apply smarter?
+            Build your profile once.
           </h2>
           <p
-            className="relative text-base mb-8"
+            className="relative text-base mb-8 max-w-xl mx-auto"
             style={{ color: "var(--text-secondary)" }}
           >
-            Join the beta. High-fit jobs, tailored applications, full control.
+            Let ApplyMate handle the repetitive workflow — scanning, filtering, and drafting —
+            while you make the decisions that matter.
           </p>
           <a href="/profile" id="cta-banner-btn" className="btn-primary inline-flex">
             Set up your profile →
@@ -902,11 +965,11 @@ function Footer() {
 
 /* ── DATA ──────────────────────────────────────────────── */
 
-/** Shared job data — used in hero preview and dashboard */
+/** Shared job data — used in hero preview and dashboard mockup */
 const jobs = [
   {
-    role: "Data Analyst",
-    company: "Google",
+    role: "Junior Data Analyst",
+    company: "DataCorp",
     match: 91,
     barClass: "animate-bar-91",
     status: "Ready",
@@ -917,20 +980,20 @@ const jobs = [
     },
   },
   {
-    role: "AI Engineer",
-    company: "OpenAI",
-    match: 84,
-    barClass: "animate-bar-84",
+    role: "AI Engineer (Working Student)",
+    company: "ExampleTech",
+    match: 86,
+    barClass: "animate-bar-86",
     status: "Draft ready",
     statusStyle: {
       background: "var(--blue-dim)",
-      color: "#93c5fd",
+      color: "var(--blue)",
       border: "1px solid rgba(59,130,246,0.2)",
     },
   },
   {
-    role: "Mktg Analyst",
-    company: "Meta",
+    role: "Marketing Analyst",
+    company: "SocialMetrics",
     match: 52,
     barClass: "animate-bar-52",
     status: "Low fit · Hidden",
@@ -942,85 +1005,98 @@ const jobs = [
   },
 ];
 
+const heroStats = [
+  { value: "1,240", label: "Jobs scanned", color: "var(--text-primary)" },
+  { value: "49", label: "High-match", color: "#60a5fa" },
+  { value: "45", label: "Low-fit hidden", color: "var(--text-muted)" },
+  { value: "4", label: "Awaiting approval", color: "#4ade80" },
+];
+
 const trustPills = [
   { icon: "🎯", label: "High-match jobs only" },
-  { icon: "✋", label: "User-approved applications" },
+  { icon: "✋", label: "You approve every application" },
   { icon: "🚫", label: "No mass auto-apply" },
-  { icon: "📊", label: "Application tracking" },
-  { icon: "🔔", label: "Follow-up reminders" },
+  { icon: "🇪🇺", label: "Germany & Europe aware" },
+  { icon: "📬", label: "Reply & follow-up tracking" },
 ];
 
 const workflowSteps = [
   {
-    icon: "🔍",
-    title: "Find",
+    icon: "🔭",
+    title: "Scan",
     description:
-      "Discover relevant jobs from trusted sources, matched to your skills and experience.",
+      "ApplyMate watches trusted sources — LinkedIn, StepStone, Indeed, and company career pages.",
   },
   {
     icon: "🎯",
     title: "Match",
     description:
-      "See your fit score instantly. Jobs under 75% are hidden so you focus on real opportunities.",
+      "Every job is scored against your profile. Roles under your 75% threshold are hidden automatically.",
   },
   {
     icon: "✍️",
-    title: "Apply",
+    title: "Prepare",
     description:
-      "Generate a tailored cover letter, CV notes, and recruiter message. You review before sending.",
+      "A tailored cover letter, recruiter message, CV notes, and interview prep — drafted per role.",
+  },
+  {
+    icon: "✋",
+    title: "Approve",
+    description:
+      "Nothing is submitted without you. Review the full package, then approve, skip, or decline.",
   },
   {
     icon: "📊",
     title: "Track",
     description:
-      "Monitor every application — status, replies, and follow-up reminders in one place.",
+      "Every application, reply, and follow-up reminder lives in one tracker — no spreadsheet needed.",
   },
 ];
 
 const sidebarIcons = [
-  { icon: "🏠", active: false },
-  { icon: "🔍", active: true },
+  { icon: "🚀", active: false },
+  { icon: "🎯", active: true },
   { icon: "📋", active: false },
   { icon: "⚙️", active: false },
 ];
 
 const trackerEntries = [
   {
-    role: "Data Analyst",
-    company: "Google",
+    role: "Junior Data Analyst",
+    company: "DataCorp",
     time: "Applied · 2d ago",
     status: "Applied",
     statusStyle: {
       background: "var(--blue-dim)",
-      color: "#93c5fd",
+      color: "var(--blue)",
       border: "1px solid rgba(59,130,246,0.2)",
     },
   },
   {
-    role: "Product Manager",
-    company: "Notion",
+    role: "Analytics Engineer",
+    company: "FinStack",
     time: "Sent · 5d ago",
     status: "Reply pending",
     statusStyle: {
       background: "rgba(250,204,21,0.1)",
-      color: "#fde047",
+      color: "#eab308",
       border: "1px solid rgba(250,204,21,0.2)",
     },
   },
   {
-    role: "UX Designer",
-    company: "Figma",
+    role: "AI Engineer",
+    company: "ExampleTech",
     time: "Follow-up in 2d",
     status: "Follow-up due",
     statusStyle: {
       background: "rgba(251,146,60,0.1)",
-      color: "#fb923c",
+      color: "#f97316",
       border: "1px solid rgba(251,146,60,0.2)",
     },
   },
   {
-    role: "AI Engineer",
-    company: "Anthropic",
+    role: "Data Scientist Intern",
+    company: "BioML Labs",
     time: "Interview · Tomorrow",
     status: "Interview",
     statusStyle: {
@@ -1031,13 +1107,68 @@ const trackerEntries = [
   },
 ];
 
+const beforeItems = [
+  "Manually searching five job boards every day",
+  "Saving random links in tabs, notes, and bookmarks",
+  "Rewriting the same cover letter for every role",
+  "Applying to jobs that were never a realistic fit",
+  "Forgetting who replied and when to follow up",
+];
+
+const afterItems = [
+  "ApplyMate scans trusted sources continuously",
+  "Low-fit roles are hidden before they waste your time",
+  "Tailored drafts prepared for every high-match job",
+  "You review and approve before anything is sent",
+  "Replies and follow-up reminders tracked in one inbox",
+];
+
+const differentiators = [
+  {
+    icon: "🎯",
+    title: "High-match only",
+    description:
+      "A 75%+ match threshold keeps weak applications out of your queue. Quality over spray-and-pray.",
+  },
+  {
+    icon: "✋",
+    title: "You approve everything",
+    description:
+      "Every application waits for your explicit sign-off. ApplyMate prepares — you decide.",
+  },
+  {
+    icon: "🇪🇺",
+    title: "Germany & Europe aware",
+    description:
+      "Visa and work-authorization awareness, German language filtering, and regional boards like StepStone.",
+  },
+  {
+    icon: "🛡️",
+    title: "Quality & risk analysis",
+    description:
+      "Each application gets a quality score and risk flags — skill gaps, language level, authorization — before you approve.",
+  },
+  {
+    icon: "📬",
+    title: "Reply tracking",
+    description:
+      "Interview invites, pending replies, and follow-up reminders organized automatically.",
+  },
+  {
+    icon: "🧠",
+    title: "Profile that compounds",
+    description:
+      "Improve your profile once and every future match, draft, and score gets better with it.",
+  },
+];
+
 const freePlanFeatures = [
   "Job matching & fit scores",
-  "Skill gap analysis",
-  "Tailored cover letters",
-  "Recruiter outreach messages",
+  "Low-fit filtering & skill gap analysis",
+  "Tailored cover letters & recruiter messages",
+  "Application review & approval queue",
   "Application tracker",
-  "Unlimited analyses during beta",
+  "Unlimited use during beta",
 ];
 
 const proPlanFeatures = [
