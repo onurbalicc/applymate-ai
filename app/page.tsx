@@ -104,17 +104,16 @@ function HeroSection() {
           id="hero-headline"
           className="text-5xl md:text-6xl lg:text-[4rem] font-bold tracking-tight leading-[1.08] mb-5 animate-fade-up-d1"
         >
-          Your AI job application{" "}
-          <br className="hidden sm:block" />
-          <span className="gradient-text">operating system.</span>
+          Let AI handle <br className="hidden sm:block" />
+          the <span className="gradient-text">applications.</span>
         </h1>
 
         <p
           className="text-lg md:text-xl leading-relaxed max-w-2xl mx-auto mb-10 animate-fade-up-d2"
           style={{ color: "var(--text-secondary)" }}
         >
-          Set up one profile. ApplyMate scans trusted job sources, hides low-fit roles,
-          prepares each application — and waits for your approval before anything is sent.
+          You focus on improving your profile, skills, and interviews. ApplyMate scans jobs,
+          prepares tailored applications, and waits for your approval.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-up-d3">
