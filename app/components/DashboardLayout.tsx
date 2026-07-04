@@ -29,7 +29,9 @@ export default function DashboardLayout({
   /* Read persisted theme on mount */
   useEffect(() => {
     const saved = localStorage.getItem("applymate-theme");
-    if (saved === "light") setTheme("light");
+    if (saved === "light") {
+      setTimeout(() => setTheme("light"), 0);
+    }
   }, []);
 
   function toggleTheme() {
