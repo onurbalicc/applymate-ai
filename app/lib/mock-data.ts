@@ -1,6 +1,8 @@
 /* ─────────────────────────────────────────────────────────
-   Shared mock data for review queue + review detail.
-   Single source of truth. Used by /review-queue and /review.
+   Shared mock data — single source of truth.
+   Review flow:  /review-queue, /review
+   Inbox:        /inbox, dashboard inbox panel
+   Tracker:      /tracker, dashboard applications panel
    ───────────────────────────────────────────────────────── */
 
 export interface ReviewJob {
@@ -292,5 +294,187 @@ I'd love to learn more about the analytics engineering team. Open to a quick cal
       "What's the difference between a view, a table, and an incremental model in dbt?",
       "How would you handle a situation where raw data from a source changes schema unexpectedly?",
     ],
+  },
+];
+
+/* ─────────────────────────────────────────────────────────
+   Inbox — application reply center
+   ───────────────────────────────────────────────────────── */
+
+export type InboxType = "interview" | "reply" | "follow-up" | "rejection" | "new";
+
+export interface InboxMessage {
+  id: number;
+  type: InboxType;
+  company: string;
+  role: string;
+  from: string;
+  subject: string;
+  preview: string;
+  time: string;
+  unread: boolean;
+  suggestedAction: string;
+}
+
+/** Visual metadata per inbox message type (shared by /inbox and dashboard panel) */
+export const inboxTypeMeta: Record<InboxType, { label: string; color: string; bg: string; border: string }> = {
+  interview:   { label: "Interview",     color: "#4ade80",           bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.15)" },
+  reply:       { label: "Reply pending", color: "#fde047",           bg: "rgba(250,204,21,0.06)",  border: "rgba(250,204,21,0.15)" },
+  "follow-up": { label: "Follow-up",     color: "#fb923c",           bg: "rgba(251,146,60,0.06)",  border: "rgba(251,146,60,0.15)" },
+  rejection:   { label: "Archived",      color: "var(--text-muted)", bg: "var(--bg-overlay)",      border: "var(--border-subtle)" },
+  new:         { label: "New",           color: "#93c5fd",           bg: "var(--blue-dim)",        border: "rgba(59,130,246,0.18)" },
+};
+
+export const inboxMessages: InboxMessage[] = [
+  {
+    id: 1,
+    type: "interview",
+    company: "BioML Labs",
+    role: "Data Scientist Intern",
+    from: "talent@bioml-labs.de",
+    subject: "Interview invitation — Data Scientist Intern",
+    preview: "Hi Onur, thank you for your application. We'd like to invite you to a 45-minute video interview tomorrow at 14:00…",
+    time: "2h ago",
+    unread: true,
+    suggestedAction: "Prepare interview",
+  },
+  {
+    id: 2,
+    type: "reply",
+    company: "FinStack",
+    role: "Analytics Engineer",
+    from: "recruiting@finstack.io",
+    subject: "Re: Analytics Engineer application",
+    preview: "Thanks for reaching out! Your dbt background looks interesting. Would you have time for a short call this week?",
+    time: "6h ago",
+    unread: true,
+    suggestedAction: "Draft reply",
+  },
+  {
+    id: 3,
+    type: "new",
+    company: "DataCorp",
+    role: "Junior Data Analyst",
+    from: "careers@datacorp.de",
+    subject: "Your application has been received",
+    preview: "Dear applicant, this is a confirmation that your application for Junior Data Analyst has entered our review process…",
+    time: "1d ago",
+    unread: true,
+    suggestedAction: "Classify",
+  },
+  {
+    id: 4,
+    type: "follow-up",
+    company: "ExampleTech GmbH",
+    role: "AI Engineer Working Student",
+    from: "you → jobs@exampletech.de",
+    subject: "Follow-up due — no reply after 7 days",
+    preview: "A polite follow-up draft is ready for your review. It references your original application from last week…",
+    time: "Due in 2d",
+    unread: false,
+    suggestedAction: "Send follow-up",
+  },
+  {
+    id: 5,
+    type: "rejection",
+    company: "SocialMetrics",
+    role: "Marketing Analyst",
+    from: "no-reply@socialmetrics.com",
+    subject: "Update on your application",
+    preview: "Thank you for your interest. We have decided to move forward with other candidates for this position…",
+    time: "3d ago",
+    unread: false,
+    suggestedAction: "Archive",
+  },
+];
+
+/** Draft reply shown in the inbox suggested-reply card (for message id 2). */
+export const suggestedReply = {
+  forMessageId: 2,
+  to: "recruiting@finstack.io",
+  subject: "Re: Analytics Engineer application",
+  body: `Hi, thanks a lot for getting back to me!
+
+I'd be glad to have a short call this week. I'm generally available Tuesday to Thursday between 10:00 and 16:00 — happy to adapt to whatever suits your schedule.
+
+Looking forward to speaking about the Analytics Engineer role and the team's dbt setup.
+
+Best regards,
+Onur Balic`,
+};
+
+export const followUpRules = [
+  "No reply after 7 days → prepare a polite follow-up draft",
+  "Stop after 2 follow-up attempts per application",
+  "Never follow up after a rejection — archive automatically",
+  "Interview invitations → suggest prep material immediately",
+];
+
+/* ─────────────────────────────────────────────────────────
+   Tracker — application pipeline
+   ───────────────────────────────────────────────────────── */
+
+export type TrackerStage = "applied" | "reply" | "follow-up" | "interview" | "archived";
+
+export interface TrackerApp {
+  role: string;
+  company: string;
+  stage: TrackerStage;
+  score: number;
+  lastEvent: string;
+  nextAction: string;
+}
+
+/** Visual + label metadata per pipeline stage (shared by /tracker and dashboard panel) */
+export const trackerStageMeta: Record<TrackerStage, { label: string; color: string; bg: string; border: string; dot: string }> = {
+  applied:     { label: "Applied",       color: "#93c5fd",           bg: "var(--blue-dim)",        border: "rgba(59,130,246,0.18)", dot: "#60a5fa" },
+  reply:       { label: "Reply pending", color: "#fde047",           bg: "rgba(250,204,21,0.06)",  border: "rgba(250,204,21,0.15)", dot: "#fde047" },
+  "follow-up": { label: "Follow-up due", color: "#fb923c",           bg: "rgba(251,146,60,0.06)",  border: "rgba(251,146,60,0.15)", dot: "#fb923c" },
+  interview:   { label: "Interview",     color: "#4ade80",           bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.15)",  dot: "#4ade80" },
+  archived:    { label: "Archived",      color: "var(--text-muted)", bg: "var(--bg-overlay)",      border: "var(--border-subtle)",  dot: "var(--text-muted)" },
+};
+
+export const trackerStageOrder: TrackerStage[] = ["applied", "reply", "follow-up", "interview", "archived"];
+
+export const trackerApps: TrackerApp[] = [
+  {
+    role: "Junior Data Analyst",
+    company: "DataCorp",
+    stage: "applied",
+    score: 91,
+    lastEvent: "Applied 2d ago · confirmation received",
+    nextAction: "Wait — follow-up scheduled in 5d",
+  },
+  {
+    role: "Analytics Engineer",
+    company: "FinStack",
+    stage: "reply",
+    score: 84,
+    lastEvent: "Recruiter replied 6h ago",
+    nextAction: "Draft reply ready for your review",
+  },
+  {
+    role: "AI Engineer Working Student",
+    company: "ExampleTech GmbH",
+    stage: "follow-up",
+    score: 86,
+    lastEvent: "No reply after 7 days",
+    nextAction: "Approve follow-up draft",
+  },
+  {
+    role: "Data Scientist Intern",
+    company: "BioML Labs",
+    stage: "interview",
+    score: 79,
+    lastEvent: "Interview tomorrow · 14:00",
+    nextAction: "Open interview prep",
+  },
+  {
+    role: "Marketing Analyst",
+    company: "SocialMetrics",
+    stage: "archived",
+    score: 52,
+    lastEvent: "Rejected 3d ago · position filled",
+    nextAction: "No action — archived",
   },
 ];

@@ -168,10 +168,13 @@ export default function ReviewQueuePage() {
               ApplyMate will keep scanning for new high-match roles. You&apos;ll be notified when new applications are ready.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/dashboard" className="dash-btn dash-btn--primary">
+              <Link href="/tracker" className="dash-btn dash-btn--primary">
+                📊 Open Application Tracker →
+              </Link>
+              <Link href="/dashboard" className="dash-btn dash-btn--outline">
                 ← Back to Auto Apply
               </Link>
-              <button className="dash-btn dash-btn--outline" onClick={resetQueue}>
+              <button className="dash-btn dash-btn--ghost" onClick={resetQueue}>
                 ↺ Review again
               </button>
             </div>

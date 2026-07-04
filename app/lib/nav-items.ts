@@ -27,10 +27,10 @@ export const navItems: NavItem[] = [
   { id: "auto-apply",  icon: "🚀", label: "Auto Apply",          badge: "8", group: "workflow", href: "/dashboard" },
   { id: "review",      icon: "📋", label: "Review Queue",        badge: "4", group: "workflow", href: "/review-queue" },
   { id: "matches",     icon: "🎯", label: "Job Matches",                     group: "workflow", href: "/dashboard#matches" },
-  { id: "inbox",       icon: "📬", label: "Inbox",                           group: "workflow", href: "/dashboard#inbox" },
+  { id: "inbox",       icon: "📬", label: "Inbox",               badge: "3", group: "workflow", href: "/inbox" },
   // ── Manage ──
   { id: "profile",     icon: "👤", label: "Profile Setup",                   group: "manage",   href: "/profile" },
   { id: "preferences", icon: "⚙️", label: "Job Preferences",                group: "manage",   href: "/profile#preferences" },
-  { id: "tracker",     icon: "📊", label: "Application Tracker",             group: "manage",   href: "/dashboard#tracker" },
+  { id: "tracker",     icon: "📊", label: "Application Tracker",             group: "manage",   href: "/tracker" },
   { id: "analyzer",    icon: "🔬", label: "Manual Analyzer",                 group: "manage",   href: "/analyze" },
 ];

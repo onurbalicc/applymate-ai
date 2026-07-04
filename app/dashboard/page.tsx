@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
+import { inboxMessages, inboxTypeMeta, trackerApps, trackerStageMeta } from "@/app/lib/mock-data";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Dashboard v6 (Operations Overview)
@@ -178,34 +179,46 @@ export default function DashboardPage() {
         {/* ── Tracker + Inbox ─────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <section id="tracker">
-            <SectionHeader title="Active Applications" />
+            <div className="flex items-center justify-between mb-3">
+              <SectionHeader title="Active Applications" inline />
+              <Link href="/tracker" className="text-[11px] font-medium" style={{ color: "#93c5fd" }}>Open Tracker →</Link>
+            </div>
             <div className="dash-panel">
-              {trackerItems.map((t, i) => (
-                <div key={t.role} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: i < trackerItems.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)", opacity: 0.8 }}>{t.company[0]}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{t.role} <span className="font-normal" style={{ color: "var(--text-muted)" }}>· {t.company}</span></p>
+              {activeApps.map((t, i) => {
+                const meta = trackerStageMeta[t.stage];
+                return (
+                  <div key={t.role} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: i < activeApps.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)", opacity: 0.8 }}>{t.company[0]}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{t.role} <span className="font-normal" style={{ color: "var(--text-muted)" }}>· {t.company}</span></p>
+                    </div>
+                    <span className="text-[10px] hidden sm:block flex-shrink-0 truncate" style={{ color: "var(--text-muted)", maxWidth: "140px" }}>{t.lastEvent}</span>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>{meta.label}</span>
                   </div>
-                  <span className="text-[10px] hidden sm:block flex-shrink-0" style={{ color: "var(--text-muted)" }}>{t.time}</span>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0" style={t.statusStyle}>{t.status}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 
           <section id="inbox">
-            <SectionHeader title="Inbox" />
+            <div className="flex items-center justify-between mb-3">
+              <SectionHeader title="Inbox" inline />
+              <Link href="/inbox" className="text-[11px] font-medium" style={{ color: "#93c5fd" }}>Open Inbox →</Link>
+            </div>
             <div className="dash-panel">
-              {inboxItems.map((item, i) => (
-                <div key={item.subject} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: i < inboxItems.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.dotColor }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{item.subject}</p>
-                    <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{item.detail}</p>
+              {inboxMessages.map((item, i) => {
+                const meta = inboxTypeMeta[item.type];
+                return (
+                  <div key={item.id} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: i < inboxMessages.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.unread ? "#60a5fa" : "var(--border-mid)" }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{item.subject}</p>
+                      <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{item.from} · {item.time}</p>
+                    </div>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>{meta.label}</span>
                   </div>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0" style={item.tagStyle}>{item.tag}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         </div>
@@ -259,7 +272,7 @@ const automationStats = [
   { value: "49", label: "High-match found" },
   { value: "45", label: "Low-fit hidden" },
   { value: "4", label: "Ready for review" },
-  { value: "5", label: "Replies pending" },
+  { value: "3", label: "Unread in inbox" },
 ];
 
 const jobSources: { name: string; icon: string; status: string; detail: string; statusStyle: React.CSSProperties }[] = [
@@ -291,17 +304,5 @@ const jobMatches = [
   { role: "Marketing Analyst", company: "SocialMetrics", location: "Hamburg", match: 52, status: "Hidden · Low fit", statusStyle: { background: "var(--bg-overlay)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" } },
 ];
 
-const trackerItems = [
-  { role: "Junior Data Analyst", company: "DataCorp", time: "2d ago", status: "Applied", statusStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } as React.CSSProperties },
-  { role: "Analytics Engineer", company: "FinStack", time: "5d ago", status: "Reply pending", statusStyle: { background: "rgba(250,204,21,0.06)", color: "#fde047", border: "1px solid rgba(250,204,21,0.15)" } as React.CSSProperties },
-  { role: "AI Engineer", company: "ExampleTech", time: "Follow-up in 2d", status: "Follow-up due", statusStyle: { background: "rgba(251,146,60,0.06)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" } as React.CSSProperties },
-  { role: "Data Scientist Intern", company: "BioML Labs", time: "Tomorrow 14:00", status: "Interview", statusStyle: { background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" } as React.CSSProperties },
-];
-
-const inboxItems: { subject: string; detail: string; tag: string; dotColor: string; tagStyle: React.CSSProperties }[] = [
-  { subject: "Interview invitation — BioML Labs", detail: "Tomorrow at 14:00 · Data Scientist Intern role", tag: "Interview", dotColor: "#4ade80", tagStyle: { background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" } },
-  { subject: "Reply from FinStack recruiter", detail: "Wants to schedule a call this week", tag: "Reply pending", dotColor: "#fde047", tagStyle: { background: "rgba(250,204,21,0.06)", color: "#fde047", border: "1px solid rgba(250,204,21,0.15)" } },
-  { subject: "Follow-up due — ExampleTech", detail: "No response after 7 days · Auto-reminder set", tag: "Follow-up", dotColor: "#fb923c", tagStyle: { background: "rgba(251,146,60,0.06)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" } },
-  { subject: "Rejection — SocialMetrics", detail: "Position filled · Archived automatically", tag: "Archived", dotColor: "var(--text-muted)", tagStyle: { background: "var(--bg-overlay)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" } },
-  { subject: "New email detected", detail: "From careers@datacorp.de · Needs classification", tag: "New", dotColor: "#60a5fa", tagStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } },
-];
+/* Active (non-archived) applications from the shared tracker data */
+const activeApps = trackerApps.filter((a) => a.stage !== "archived");

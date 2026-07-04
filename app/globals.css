@@ -104,6 +104,38 @@ body {
   50%      { transform: translateY(-10px); }
 }
 
+/* Scanning sweep over the hero job list */
+@keyframes scan-sweep {
+  0%   { top: -12%; opacity: 0; }
+  8%   { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { top: 108%; opacity: 0; }
+}
+.scan-sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 42px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(34, 211, 238, 0.05) 35%,
+    rgba(59, 130, 246, 0.12) 100%
+  );
+  border-bottom: 1.5px solid rgba(34, 211, 238, 0.45);
+  animation: scan-sweep 4.5s ease-in-out 1s infinite;
+}
+[data-theme="light"] .scan-sweep {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(8, 145, 178, 0.04) 35%,
+    rgba(37, 99, 235, 0.09) 100%
+  );
+  border-bottom-color: rgba(8, 145, 178, 0.35);
+}
+
 /* Swipe review card animations — smooth and premium */
 @keyframes swipe-left {
   0%   { opacity: 1; transform: translateY(0) translateX(0) rotate(0); }

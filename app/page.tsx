@@ -1,6 +1,10 @@
+import WaitlistButton from "@/app/components/WaitlistButton";
+
 /* ─────────────────────────────────────────────────────────
-   ApplyMate AI – Landing Page (v5)
+   ApplyMate AI – Landing Page (v6)
    Premium platform framing · "Job application operating system"
+   v6: scanning motion, approval + inbox control-room section,
+   Pro waitlist signal.
 ───────────────────────────────────────────────────────── */
 export default function Home() {
   return (
@@ -11,6 +15,7 @@ export default function Home() {
         <TrustStrip />
         <WorkflowSection />
         <DashboardSection />
+        <ControlRoomSection />
         <CompareSection />
         <DifferentiationSection />
         <PricingSection />
@@ -192,10 +197,13 @@ function HeroPreview() {
         </div>
 
         {/* Job list */}
-        <div className="p-4">
+        <div className="p-4 relative overflow-hidden">
+          {/* Animated scanning sweep */}
+          <div className="scan-sweep" aria-hidden="true" />
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-              High-match jobs
+            <span className="text-xs font-semibold inline-flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#22d3ee" }} />
+              Scanning sources · high-match jobs
             </span>
             <span
               className="text-xs px-2.5 py-0.5 rounded-full"
@@ -613,6 +621,159 @@ function DashboardSection() {
   );
 }
 
+/* ── CONTROL ROOM (approval + inbox previews) ──────────── */
+function ControlRoomSection() {
+  return (
+    <section
+      className="py-20 px-6"
+      style={{ borderTop: "1px solid var(--border-subtle)" }}
+      aria-labelledby="control-heading"
+    >
+      <div className="max-w-5xl mx-auto">
+        <SectionHeading
+          eyebrow="You stay in control"
+          title="AI prepares. You approve. It tracks."
+          subtitle="The two moments that make ApplyMate different: nothing goes out without your sign-off, and every reply comes back to one inbox."
+          headingId="control-heading"
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+          {/* Approval card mock */}
+          <div
+            className="rounded-2xl p-6 flex flex-col"
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+          >
+            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--blue)" }}>
+              📋 Review queue
+            </p>
+            <div
+              className="rounded-xl p-4 flex-1"
+              style={{ background: "var(--bg-raised)", border: "1px solid var(--border-mid)" }}
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                  style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
+                >
+                  E
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                    AI Engineer Working Student
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>ExampleTech GmbH · Berlin / Remote</p>
+                </div>
+                <span className="text-sm font-bold flex-shrink-0" style={{ color: "#60a5fa" }}>86%</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {["✉️ Cover letter", "💬 Recruiter message", "🎤 Interview prep"].map((m) => (
+                  <span
+                    key={m}
+                    className="text-[11px] font-medium px-2 py-0.5 rounded-md"
+                    style={{ background: "rgba(34,197,94,0.06)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.12)" }}
+                  >
+                    {m}
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                  style={{ color: "var(--text-muted)", border: "1px solid var(--border-mid)" }}
+                >
+                  ✕ Decline
+                </span>
+                <span className="flex-1" />
+                <span
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
+                  style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
+                >
+                  ✓ Approve &amp; apply
+                </span>
+              </div>
+            </div>
+            <p className="text-xs mt-4" style={{ color: "var(--text-secondary)" }}>
+              Full application package — cover letter, risks, quality score — reviewed before anything is sent.
+            </p>
+          </div>
+
+          {/* Inbox reply mock */}
+          <div
+            className="rounded-2xl p-6 flex flex-col"
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+          >
+            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--blue)" }}>
+              📬 Inbox
+            </p>
+            <div
+              className="rounded-xl p-4 flex-1"
+              style={{ background: "var(--bg-raised)", border: "1px solid var(--border-mid)" }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-2 h-2 rounded-full" style={{ background: "#4ade80" }} />
+                <p className="text-sm font-bold flex-1 truncate" style={{ color: "var(--text-primary)" }}>
+                  Interview invitation — BioML Labs
+                </p>
+                <span className="text-[10px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>2h ago</span>
+              </div>
+              <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--text-secondary)" }}>
+                &ldquo;We&rsquo;d like to invite you to a 45-minute video interview tomorrow at 14:00…&rdquo;
+              </p>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <span
+                  className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                  style={{ background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" }}
+                >
+                  Interview
+                </span>
+                <span
+                  className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: "var(--blue-dim)", color: "var(--blue)", border: "1px solid rgba(59,130,246,0.18)" }}
+                >
+                  → Prepare interview
+                </span>
+              </div>
+              <div
+                className="rounded-lg px-3 py-2 text-[11px]"
+                style={{ background: "rgba(59,130,246,0.05)", border: "1px dashed var(--border-mid)", color: "var(--text-secondary)" }}
+              >
+                🤖 Prep questions and talking points generated from the job requirements.
+              </div>
+            </div>
+            <p className="text-xs mt-4" style={{ color: "var(--text-secondary)" }}>
+              Replies triaged automatically — with suggested next steps, never auto-sent emails.
+            </p>
+          </div>
+        </div>
+
+        {/* Small supporting cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div
+            className="rounded-xl px-5 py-4 flex items-center gap-3"
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+          >
+            <span className="text-xl" aria-hidden="true">🚫</span>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Low-fit roles hidden automatically</span>{" "}
+              — you never see jobs below your match threshold.
+            </p>
+          </div>
+          <div
+            className="rounded-xl px-5 py-4 flex items-center gap-3"
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+          >
+            <span className="text-xl" aria-hidden="true">⏰</span>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Follow-ups on autopilot</span>{" "}
+              — polite reminder drafts after 7 days of silence, waiting for your approval.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ── BEFORE / AFTER ────────────────────────────────────── */
 function CompareSection() {
   return (
@@ -859,17 +1020,7 @@ function PricingSection() {
                 </li>
               ))}
             </ul>
-            <button
-              id="pricing-pro-btn"
-              disabled
-              className="w-full py-3 rounded-xl text-sm font-semibold cursor-not-allowed opacity-40"
-              style={{
-                border: "1px solid var(--border-mid)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Notify me when available
-            </button>
+            <WaitlistButton />
           </div>
         </div>
       </div>
