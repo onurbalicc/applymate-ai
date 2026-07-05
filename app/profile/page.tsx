@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import DashboardLayout from "@/app/components/DashboardLayout";
+// ssr: false — MasterCvPreview reads localStorage on mount; disabling SSR
+// prevents a hydration mismatch between the server-rendered (no-preview) state
+// and the client-restored (preview-exists) state. Pattern from Next.js lazy-loading guide.
+const MasterCvPreview = dynamic(() => import("@/app/components/MasterCvPreview"), { ssr: false });
 import { useI18n } from "@/app/lib/i18n";
 import type { TKey } from "@/app/lib/translations";
 
@@ -16,7 +21,6 @@ export default function ProfilePage() {
     "Data Analyst", "AI Engineer", "Data Scientist", "Analytics Engineer",
   ]);
   const [saved, setSaved] = useState(false);
-  const [cvClicked, setCvClicked] = useState(false);
   const { t } = useI18n();
 
   function toggleRole(role: string) {
@@ -158,38 +162,8 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* ── Master CV Builder teaser ───────────────── */}
-        <section>
-          <SectionHeader title={t("profile.cvBuilder.title")} />
-          <div className="dash-panel p-4 flex flex-col sm:flex-row items-start gap-4">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: "rgba(99,102,241,0.10)", border: "1px solid rgba(99,102,241,0.18)" }}>
-              📋
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5">
-                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{t("profile.cvBuilder.title")}</p>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(250,204,21,0.08)", color: "#eab308", border: "1px solid rgba(250,204,21,0.18)" }}>
-                  {t("profile.cvBuilder.badge")}
-                </span>
-              </div>
-              <p className="text-[12px] leading-relaxed mb-3" style={{ color: "var(--text-muted)" }}>{t("profile.cvBuilder.desc")}</p>
-              <div className="flex items-center gap-3 flex-wrap">
-                <button
-                  id="cv-builder-cta"
-                  className="dash-btn dash-btn--outline text-[12px]"
-                  onClick={() => setCvClicked(true)}
-                >
-                  {t("profile.cvBuilder.cta")}
-                </button>
-                {cvClicked && (
-                  <span className="text-[12px] font-medium" style={{ color: "#60a5fa" }}>
-                    {t("profile.cvBuilder.clicked")}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* ── Master CV Preview ─────────────────────── */}
+        <MasterCvPreview />
 
         {/* ── Target Roles ───────────────── */}
         <section>
