@@ -321,6 +321,13 @@ const en = {
   "profile.savedToast": "✓ Profile saved successfully",
   "profile.demoNote": "Your profile is used locally for demo purposes only. No data is saved or shared.",
 
+  // ── Master CV Builder teaser ──
+  "profile.cvBuilder.title": "Master CV Builder",
+  "profile.cvBuilder.desc": "Build one strong base CV from your ApplyMate profile. ApplyMate will use it to prepare better application packages.",
+  "profile.cvBuilder.badge": "Coming next",
+  "profile.cvBuilder.cta": "Prepare my CV profile",
+  "profile.cvBuilder.clicked": "CV Builder will be connected in the next step.",
+
   // ── Review queue ──
   "queue.intro": "Approve, skip, or decline prepared applications before anything is submitted.",
   "queue.progress": "{i} of {n} applications",
@@ -730,6 +737,13 @@ const tr: Record<TKey, string> = {
   "profile.savedToast": "✓ Profil başarıyla kaydedildi",
   "profile.demoNote": "Profilin yalnızca demo amaçlı, yerel olarak kullanılır. Hiçbir veri kaydedilmez veya paylaşılmaz.",
 
+  // ── Master CV Builder teaser (EN fallback — TR polish later) ──
+  "profile.cvBuilder.title": "Master CV Builder",
+  "profile.cvBuilder.desc": "Build one strong base CV from your ApplyMate profile. ApplyMate will use it to prepare better application packages.",
+  "profile.cvBuilder.badge": "Coming next",
+  "profile.cvBuilder.cta": "Prepare my CV profile",
+  "profile.cvBuilder.clicked": "CV Builder will be connected in the next step.",
+
   "queue.intro": "Hazırlanan başvuruları, hiçbir şey gönderilmeden önce onayla, atla veya reddet.",
   "queue.progress": "{n} başvurudan {i}.",
   "queue.declined": "Reddedildi · Sıradaki eşleşme yükleniyor",
@@ -1131,6 +1145,13 @@ const de: Record<TKey, string> = {
   "profile.goToDashboard": "Zum Kontrollzentrum",
   "profile.savedToast": "✓ Profil erfolgreich gespeichert",
   "profile.demoNote": "Dein Profil wird nur lokal für Demo-Zwecke genutzt. Es werden keine Daten gespeichert oder geteilt.",
+
+  // ── Master CV Builder teaser (EN fallback — DE polish later) ──
+  "profile.cvBuilder.title": "Master CV Builder",
+  "profile.cvBuilder.desc": "Build one strong base CV from your ApplyMate profile. ApplyMate will use it to prepare better application packages.",
+  "profile.cvBuilder.badge": "Coming next",
+  "profile.cvBuilder.cta": "Prepare my CV profile",
+  "profile.cvBuilder.clicked": "CV Builder will be connected in the next step.",
 
   "queue.intro": "Gib vorbereitete Bewerbungen frei, überspringe oder lehne ab — bevor irgendetwas verschickt wird.",
   "queue.progress": "{i} von {n} Bewerbungen",
