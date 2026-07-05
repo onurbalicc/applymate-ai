@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/app/lib/i18n";
 
 /* ─────────────────────────────────────────────────────────
    Pro waitlist button (landing page).
@@ -9,6 +10,7 @@ import { useState } from "react";
 
 export default function WaitlistButton() {
   const [joined, setJoined] = useState(false);
+  const { t } = useI18n();
 
   return (
     <>
@@ -32,10 +34,10 @@ export default function WaitlistButton() {
               }
         }
       >
-        {joined ? "✓ Interest noted — thanks!" : "Join the Pro waitlist"}
+        {joined ? t("landing.price.interestNoted") : t("landing.price.joinWaitlist")}
       </button>
       <p className="mt-2 text-center text-[11px]" style={{ color: "var(--text-muted)" }}>
-        {joined ? "Waitlist is demo-only during the private beta." : "No commitment — just a heads-up when Pro is ready."}
+        {joined ? t("landing.price.waitlistDemo") : t("landing.price.noCommitment")}
       </p>
     </>
   );

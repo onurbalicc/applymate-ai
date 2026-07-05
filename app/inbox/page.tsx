@@ -7,9 +7,10 @@ import {
   inboxMessages,
   inboxTypeMeta,
   suggestedReply,
-  followUpRules,
   type InboxType,
 } from "@/app/lib/mock-data";
+import { useI18n } from "@/app/lib/i18n";
+import type { TKey } from "@/app/lib/translations";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Inbox
@@ -19,10 +20,21 @@ import {
 
 type Filter = "all" | InboxType;
 
+const followUpRuleKeys: TKey[] = ["inbox.rule1", "inbox.rule2", "inbox.rule3", "inbox.rule4"];
+
+const hintKeys: Record<InboxType, TKey> = {
+  interview: "inbox.hintInterview",
+  "follow-up": "inbox.hintFollowUp",
+  rejection: "inbox.hintRejection",
+  new: "inbox.hintNew",
+  reply: "inbox.hintDefault",
+};
+
 export default function InboxPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [selectedId, setSelectedId] = useState<number>(suggestedReply.forMessageId);
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
 
   const visible = inboxMessages.filter((m) => filter === "all" || m.type === filter);
   const selected = inboxMessages.find((m) => m.id === selectedId) ?? null;
@@ -32,23 +44,22 @@ export default function InboxPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const summary: { label: string; value: number; filterValue: Filter; color: string }[] = [
-    { label: "Replies pending", value: count("reply"), filterValue: "reply", color: "#fde047" },
-    { label: "Follow-ups due", value: count("follow-up"), filterValue: "follow-up", color: "#fb923c" },
-    { label: "Interviews scheduled", value: count("interview"), filterValue: "interview", color: "#4ade80" },
-    { label: "Archived rejections", value: count("rejection"), filterValue: "rejection", color: "var(--text-muted)" },
+  const summary: { labelKey: TKey; value: number; filterValue: Filter; color: string }[] = [
+    { labelKey: "inbox.repliesPending", value: count("reply"), filterValue: "reply", color: "#fde047" },
+    { labelKey: "inbox.followUpsDue", value: count("follow-up"), filterValue: "follow-up", color: "#fb923c" },
+    { labelKey: "inbox.interviews", value: count("interview"), filterValue: "interview", color: "#4ade80" },
+    { labelKey: "inbox.archived", value: count("rejection"), filterValue: "rejection", color: "var(--text-muted)" },
   ];
 
   return (
     <DashboardLayout
       activeNavId="inbox"
-      pageTitle="Inbox"
       topBarRight={
         <span
           className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full"
           style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" }}
         >
-          {inboxMessages.filter((m) => m.unread).length} unread
+          {inboxMessages.filter((m) => m.unread).length} {t("inbox.unread")}
         </span>
       }
     >
@@ -56,7 +67,7 @@ export default function InboxPage() {
 
         {/* ── Page intro ─────────────────── */}
         <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          Replies, interview invitations, and follow-ups for your tracked applications — triaged automatically.
+          {t("inbox.intro")}
         </p>
 
         {/* ── Trust note ─────────────────── */}
@@ -64,8 +75,8 @@ export default function InboxPage() {
           className="rounded-lg px-4 py-2.5 text-center text-[12px]"
           style={{ background: "rgba(59,130,246,0.04)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}
         >
-          🔒 <span className="font-semibold" style={{ color: "var(--text-primary)" }}>ApplyMate never sends emails without your approval.</span>{" "}
-          Drafts are prepared — you decide what goes out.
+          🔒 <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("inbox.neverSends")}</span>{" "}
+          {t("inbox.draftsPrepared")}
         </div>
 
         {/* ── Summary cards (clickable filters) ── */}
@@ -74,7 +85,7 @@ export default function InboxPage() {
             const active = filter === s.filterValue;
             return (
               <button
-                key={s.label}
+                key={s.labelKey}
                 className="dash-stat-card text-left cursor-pointer"
                 onClick={() => setFilter(active ? "all" : s.filterValue)}
                 style={{
@@ -83,7 +94,7 @@ export default function InboxPage() {
                 }}
               >
                 <p className="text-lg font-bold leading-tight" style={{ color: s.color }}>{s.value}</p>
-                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{s.label}</p>
+                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t(s.labelKey)}</p>
               </button>
             );
           })}
@@ -96,26 +107,26 @@ export default function InboxPage() {
           <section className="lg:col-span-3">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                Priority Inbox
+                {t("inbox.priority")}
                 {filter !== "all" && (
                   <button
                     className="ml-2 text-[11px] font-medium"
                     style={{ color: "#93c5fd" }}
                     onClick={() => setFilter("all")}
                   >
-                    · Clear filter ✕
+                    {t("inbox.clearFilter")}
                   </button>
                 )}
               </h2>
               <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                Sorted by urgency
+                {t("inbox.sorted")}
               </span>
             </div>
 
             <div className="dash-panel">
               {visible.length === 0 && (
                 <p className="px-4 py-8 text-center text-[13px]" style={{ color: "var(--text-muted)" }}>
-                  No messages in this category yet.
+                  {t("inbox.empty")}
                 </p>
               )}
               {visible.map((msg, i) => {
@@ -160,13 +171,13 @@ export default function InboxPage() {
                           className="text-[10px] font-medium px-2 py-0.5 rounded-full"
                           style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}
                         >
-                          {meta.label}
+                          {t(meta.labelKey)}
                         </span>
                         <span
                           className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
                           style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" }}
                         >
-                          → {msg.suggestedAction}
+                          → {t(msg.actionKey)}
                         </span>
                       </div>
                     </div>
@@ -181,7 +192,7 @@ export default function InboxPage() {
 
             {/* Suggested reply / action card */}
             <section>
-              <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>Suggested Action</h2>
+              <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>{t("inbox.suggestedAction")}</h2>
               <div className="dash-panel p-4">
                 {selected ? (
                   <>
@@ -206,7 +217,7 @@ export default function InboxPage() {
                           border: `1px solid ${inboxTypeMeta[selected.type].border}`,
                         }}
                       >
-                        {inboxTypeMeta[selected.type].label}
+                        {t(inboxTypeMeta[selected.type].labelKey)}
                       </span>
                     </div>
 
@@ -217,7 +228,7 @@ export default function InboxPage() {
                           style={{ background: "var(--bg-raised)", border: "1px solid var(--border-subtle)" }}
                         >
                           <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
-                            ✉️ Draft reply · prepared for your review
+                            {t("inbox.draftLabel")}
                           </p>
                           <p className="text-[12px] leading-[1.7] whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>
                             {suggestedReply.body}
@@ -225,37 +236,37 @@ export default function InboxPage() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <button className="dash-btn dash-btn--primary text-[12px]" onClick={handleCopy}>
-                            {copied ? "✓ Copied" : "📋 Copy draft"}
+                            {copied ? t("inbox.copied") : t("inbox.copyDraft")}
                           </button>
-                          <button className="dash-btn dash-btn--outline text-[12px]">✏️ Edit draft</button>
+                          <button className="dash-btn dash-btn--outline text-[12px]">{t("inbox.editDraft")}</button>
                         </div>
                         <p className="text-[10px] mt-3" style={{ color: "var(--text-muted)" }}>
-                          🔒 Sending from ApplyMate is coming later — for now, copy the draft into your email client.
+                          {t("inbox.sendingLater")}
                         </p>
                       </>
                     ) : (
                       <>
                         <p className="text-[12px] leading-relaxed mb-3" style={{ color: "var(--text-secondary)" }}>
-                          {actionHint(selected.type)}
+                          {t(hintKeys[selected.type])}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {selected.type === "interview" ? (
                             <Link href="/review?job=2" className="dash-btn dash-btn--primary text-[12px]">
-                              🎤 Open interview prep
+                              {t("inbox.openPrep")}
                             </Link>
                           ) : (
                             <button className="dash-btn dash-btn--outline text-[12px]">
-                              → {selected.suggestedAction}
+                              → {t(selected.actionKey)}
                             </button>
                           )}
-                          <button className="dash-btn dash-btn--ghost text-[12px]">🗂 Archive</button>
+                          <button className="dash-btn dash-btn--ghost text-[12px]">{t("inbox.archiveBtn")}</button>
                         </div>
                       </>
                     )}
                   </>
                 ) : (
                   <p className="text-[12px] py-4 text-center" style={{ color: "var(--text-muted)" }}>
-                    Select a message to see the suggested action.
+                    {t("inbox.selectMessage")}
                   </p>
                 )}
               </div>
@@ -263,22 +274,22 @@ export default function InboxPage() {
 
             {/* Follow-up rules */}
             <section>
-              <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>Follow-up Rules</h2>
+              <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>{t("inbox.rulesTitle")}</h2>
               <div className="dash-panel p-4">
                 <ul className="flex flex-col gap-2.5 mb-3">
-                  {followUpRules.map((rule) => (
-                    <li key={rule} className="flex items-start gap-2.5 text-[12px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                  {followUpRuleKeys.map((key) => (
+                    <li key={key} className="flex items-start gap-2.5 text-[12px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                       <span
                         className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5"
                         style={{ background: "var(--blue-dim)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.2)" }}
                       >
                         ⚙
                       </span>
-                      {rule}
+                      {t(key)}
                     </li>
                   ))}
                 </ul>
-                <button className="dash-btn dash-btn--ghost text-[12px]">✏️ Edit rules</button>
+                <button className="dash-btn dash-btn--ghost text-[12px]">{t("inbox.editRules")}</button>
               </div>
             </section>
 
@@ -288,17 +299,17 @@ export default function InboxPage() {
               style={{ background: "rgba(59,130,246,0.04)", border: "1px dashed var(--border-mid)" }}
             >
               <p className="text-[12px] font-medium mb-0.5" style={{ color: "var(--text-secondary)" }}>
-                ⚡ Coming with Pro
+                {t("inbox.proTitle")}
               </p>
               <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                Automatic email reply detection and one-click approved follow-ups — always with your sign-off.
+                {t("inbox.proDesc")}
               </p>
             </div>
           </div>
         </div>
 
         <p className="text-[11px] text-center pb-4" style={{ color: "var(--text-muted)" }}>
-          This is a demo preview with mock messages. Real email integration is coming later.
+          {t("inbox.demoNote")}
         </p>
       </div>
     </DashboardLayout>
@@ -309,19 +320,4 @@ export default function InboxPage() {
 
 function count(type: InboxType) {
   return inboxMessages.filter((m) => m.type === type).length;
-}
-
-function actionHint(type: InboxType): string {
-  switch (type) {
-    case "interview":
-      return "You have an interview scheduled. ApplyMate prepared likely questions and talking points based on the job requirements.";
-    case "follow-up":
-      return "No reply after 7 days. A polite follow-up draft is ready — review it and send it from your email client when you're ready.";
-    case "rejection":
-      return "This application was rejected. It has been archived automatically and follow-ups were cancelled. No action needed.";
-    case "new":
-      return "A new email was detected for a tracked application. Classify it so ApplyMate files it under the right application.";
-    default:
-      return "Review the message and choose the suggested action when you're ready.";
-  }
 }

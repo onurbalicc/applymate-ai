@@ -3,10 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
+import { useI18n } from "@/app/lib/i18n";
+import type { TKey } from "@/app/lib/translations";
 
 /* ─────────────────────────────────────────────────────────
-   ApplyMate AI – Profile Setup (v2)
-   Uses shared layout. Save confirmation.
+   ApplyMate AI – Profile Setup
+   Uses shared layout. Save confirmation. Multilingual UI.
    ───────────────────────────────────────────────────────── */
 
 export default function ProfilePage() {
@@ -14,6 +16,7 @@ export default function ProfilePage() {
     "Data Analyst", "AI Engineer", "Data Scientist", "Analytics Engineer",
   ]);
   const [saved, setSaved] = useState(false);
+  const { t } = useI18n();
 
   function toggleRole(role: string) {
     setSelectedRoles((prev) =>
@@ -27,13 +30,13 @@ export default function ProfilePage() {
   }
 
   return (
-    <DashboardLayout activeNavId="profile" pageTitle="Profile Setup">
+    <DashboardLayout activeNavId="profile">
       <div className="max-w-4xl mx-auto flex flex-col gap-5">
 
         {/* ── Page intro ─────────────────── */}
         <div>
           <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            Create one profile so ApplyMate can find, rank, and prepare the right applications for you.
+            {t("profile.intro")}
           </p>
         </div>
 
@@ -51,27 +54,27 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold mb-2" style={{ color: "var(--text-primary)" }}>Profile readiness</p>
+              <p className="text-sm font-bold mb-2" style={{ color: "var(--text-primary)" }}>{t("profile.readiness")}</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                 {readinessItems.map((item) => (
-                  <span key={item.label} className="flex items-center gap-1.5 text-[12px]">
+                  <span key={item.labelKey} className="flex items-center gap-1.5 text-[12px]">
                     <span style={{ color: item.done ? "#4ade80" : "#fb923c" }}>{item.done ? "✓" : "○"}</span>
-                    <span style={{ color: item.done ? "var(--text-secondary)" : "#fb923c" }}>{item.label}</span>
+                    <span style={{ color: item.done ? "var(--text-secondary)" : "#fb923c" }}>{t(item.labelKey)}</span>
                   </span>
                 ))}
               </div>
             </div>
-            <p className="text-[11px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>Better profile data = better matches</p>
+            <p className="text-[11px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>{t("profile.betterData")}</p>
           </div>
         </div>
 
         {/* ── Profile Impact Preview ────── */}
         <section>
-          <SectionHeader title="Profile Impact Preview" />
+          <SectionHeader title={t("profile.impactTitle")} />
 
           <div className="rounded-lg px-4 py-2.5 mb-4 text-[12px]" style={{ background: "rgba(59,130,246,0.04)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}>
-            🤖 ApplyMate does not just store your profile.{" "}
-            <span className="font-semibold" style={{ color: "var(--text-primary)" }}>It uses your profile to decide which jobs are worth your time.</span>
+            {t("profile.aiNoteA")}{" "}
+            <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("profile.aiNoteB")}</span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-4">
@@ -87,17 +90,17 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold mb-0.5" style={{ color: "var(--text-primary)" }}>Match potential</p>
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" }}>Strong foundation</span>
-                <p className="text-[11px] mt-2 leading-relaxed" style={{ color: "var(--text-muted)" }}>Ready for Data Analyst and AI Engineer roles. A few details can improve match quality.</p>
+                <p className="text-sm font-bold mb-0.5" style={{ color: "var(--text-primary)" }}>{t("profile.matchPotential")}</p>
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" }}>{t("profile.strongFoundation")}</span>
+                <p className="text-[11px] mt-2 leading-relaxed" style={{ color: "var(--text-muted)" }}>{t("profile.readyForRoles")}</p>
               </div>
             </div>
 
             <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
               {impactMetrics.map((m) => (
-                <div key={m.label} className="dash-stat-card">
+                <div key={m.labelKey} className="dash-stat-card">
                   <p className="text-lg font-bold leading-tight" style={{ color: m.color }}>{m.value}</p>
-                  <p className="text-[10px] leading-snug mt-0.5" style={{ color: "var(--text-muted)" }}>{m.label}</p>
+                  <p className="text-[10px] leading-snug mt-0.5" style={{ color: "var(--text-muted)" }}>{t(m.labelKey)}</p>
                 </div>
               ))}
             </div>
@@ -117,7 +120,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="dash-panel overflow-hidden">
-            <div className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", background: "var(--bg-raised)", borderBottom: "1px solid var(--border-subtle)" }}>Role Readiness</div>
+            <div className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", background: "var(--bg-raised)", borderBottom: "1px solid var(--border-subtle)" }}>{t("profile.roleReadiness")}</div>
             {roleReadiness.map((r, i) => (
               <div key={r.role} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: i < roleReadiness.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
                 <span className="text-sm flex-1" style={{ color: "var(--text-primary)" }}>{r.role}</span>
@@ -127,7 +130,7 @@ export default function ProfilePage() {
                   </div>
                   <span className="text-xs font-bold tabular-nums w-8 text-right" style={{ color: r.pct >= 85 ? "#60a5fa" : r.pct >= 75 ? "#93c5fd" : "#fb923c" }}>{r.pct}%</span>
                 </div>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full w-[72px] text-center" style={r.badgeStyle}>{r.badge}</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full w-[72px] text-center" style={r.badgeStyle}>{t(r.badgeKey)}</span>
               </div>
             ))}
           </div>
@@ -135,7 +138,7 @@ export default function ProfilePage() {
 
         {/* ── Your Profile ───────────────── */}
         <section>
-          <SectionHeader title="Your Profile" />
+          <SectionHeader title={t("profile.yourProfile")} />
           <div className="dash-panel p-5">
             <div className="flex items-start gap-4 mb-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}>OB</div>
@@ -145,18 +148,18 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="mb-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Skills</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>{t("profile.skills")}</p>
               <div className="flex flex-wrap gap-1.5">
                 {profileSkills.map((s) => <span key={s} className="skill-chip skill-chip--match">{s}</span>)}
               </div>
             </div>
-            <button className="dash-btn dash-btn--outline text-[12px]">✏️ Update profile</button>
+            <button className="dash-btn dash-btn--outline text-[12px]">{t("profile.updateProfile")}</button>
           </div>
         </section>
 
         {/* ── Target Roles ───────────────── */}
         <section>
-          <SectionHeader title="Target Roles" />
+          <SectionHeader title={t("profile.targetRoles")} />
           <div className="dash-panel p-4">
             <div className="flex flex-wrap gap-2">
               {allRoles.map((role) => {
@@ -170,18 +173,18 @@ export default function ProfilePage() {
               })}
             </div>
             <p className="text-[11px] mt-3" style={{ color: "var(--text-muted)" }}>
-              {selectedRoles.length} role{selectedRoles.length !== 1 ? "s" : ""} selected · Jobs matching these roles will be prioritized.
+              {selectedRoles.length} {t("profile.roleWord")} {t("profile.rolesSelected")}
             </p>
           </div>
         </section>
 
         {/* ── Job Preferences ────────────── */}
         <section id="preferences">
-          <SectionHeader title="Job Preferences" />
+          <SectionHeader title={t("profile.jobPreferences")} />
           <div className="dash-panel p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {jobPreferences.map((pref) => (
-                <PreferenceField key={pref.label} pref={pref} />
+                <PreferenceField key={pref.labelKey} labelKey={pref.labelKey} value={pref.value} />
               ))}
             </div>
           </div>
@@ -189,29 +192,29 @@ export default function ProfilePage() {
 
         {/* ── Dealbreakers ───────────────── */}
         <section>
-          <SectionHeader title="Dealbreakers" />
+          <SectionHeader title={t("profile.dealbreakers")} />
           <div className="dash-panel p-4">
             <div className="flex flex-col gap-2">
-              {dealbreakers.map((d) => (
-                <div key={d} className="flex items-center gap-2.5">
+              {dealbreakerKeys.map((key) => (
+                <div key={key} className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] flex-shrink-0" style={{ background: "rgba(248,113,113,0.08)", color: "#f87171", border: "1px solid rgba(248,113,113,0.15)" }}>✕</span>
-                  <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{d}</span>
+                  <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{t(key)}</span>
                 </div>
               ))}
             </div>
-            <p className="text-[11px] mt-3" style={{ color: "var(--text-muted)" }}>Jobs matching any dealbreaker will be automatically hidden.</p>
+            <p className="text-[11px] mt-3" style={{ color: "var(--text-muted)" }}>{t("profile.dbNote")}</p>
           </div>
         </section>
 
         {/* ── Application Preferences ────── */}
         <section>
-          <SectionHeader title="Application Preferences" />
+          <SectionHeader title={t("profile.appPreferences")} />
           <div className="dash-panel p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {appPreferences.map((pref) => (
-                <div key={pref.label} className="flex items-center justify-between py-1.5">
-                  <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{pref.label}</span>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" }}>{pref.value}</span>
+                <div key={pref.labelKey} className="flex items-center justify-between py-1.5">
+                  <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{t(pref.labelKey)}</span>
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" }}>{t(pref.valueKey)}</span>
                 </div>
               ))}
             </div>
@@ -221,13 +224,13 @@ export default function ProfilePage() {
         {/* ── CTA ────────────────────────── */}
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
           <button className="dash-btn dash-btn--primary w-full sm:w-auto justify-center" onClick={handleSave}>
-            {saved ? "✓ Profile saved" : "💾 Save profile"}
+            {saved ? t("profile.profileSaved") : t("profile.saveProfile")}
           </button>
           <Link href="/dashboard" className="dash-btn dash-btn--outline w-full sm:w-auto justify-center text-center">
-            Preview matched jobs →
+            {t("profile.previewMatched")}
           </Link>
           <Link href="/dashboard" className="dash-btn dash-btn--ghost w-full sm:w-auto justify-center text-center">
-            Go to dashboard
+            {t("profile.goToDashboard")}
           </Link>
         </div>
 
@@ -237,12 +240,12 @@ export default function ProfilePage() {
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-sm font-semibold animate-fade-up"
             style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", backdropFilter: "blur(12px)" }}
           >
-            ✓ Profile saved successfully
+            {t("profile.savedToast")}
           </div>
         )}
 
         <p className="text-[11px] text-center pb-4" style={{ color: "var(--text-muted)" }}>
-          Your profile is used locally for demo purposes only. No data is saved or shared.
+          {t("profile.demoNote")}
         </p>
       </div>
     </DashboardLayout>
@@ -255,78 +258,81 @@ function SectionHeader({ title }: { title: string }) {
   return <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>{title}</h2>;
 }
 
-function PreferenceField({ pref }: { pref: { label: string; value: string | string[] } }) {
+function PreferenceField({ labelKey, value }: { labelKey: TKey; value: string | string[] }) {
+  const { t } = useI18n();
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>{pref.label}</p>
-      {Array.isArray(pref.value) ? (
+      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>{t(labelKey)}</p>
+      {Array.isArray(value) ? (
         <div className="flex flex-wrap gap-1">
-          {pref.value.map((v) => (
+          {value.map((v) => (
             <span key={v} className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" }}>{v}</span>
           ))}
         </div>
       ) : (
-        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{pref.value}</p>
+        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{value}</p>
       )}
     </div>
   );
 }
 
-/* ── DATA ───────────────────────────────────────────────── */
+/* ── DATA (roles, skills, and mock recommendation content
+      stay in English; labels are translated) ─────────────── */
 
-const readinessItems = [
-  { label: "CV added", done: true },
-  { label: "Preferences set", done: true },
-  { label: "Match rules active", done: true },
-  { label: "Work authorization details", done: false },
+const readinessItems: { labelKey: TKey; done: boolean }[] = [
+  { labelKey: "profile.cvAdded", done: true },
+  { labelKey: "profile.prefsSet", done: true },
+  { labelKey: "profile.rulesActive", done: true },
+  { labelKey: "profile.workAuth", done: false },
 ];
 
 const profileSkills = ["Python", "SQL", "dbt", "Machine Learning", "Data Analytics", "Git", "LLMs", "RAG"];
 
 const allRoles = ["Data Analyst", "AI Engineer", "Data Scientist", "Analytics Engineer", "Machine Learning Engineer", "Working Student AI/Data"];
 
-const jobPreferences: { label: string; value: string | string[] }[] = [
-  { label: "Location", value: "Germany / Remote" },
-  { label: "Work type", value: ["Working student", "Internship", "Junior", "Entry-level"] },
-  { label: "Language", value: "English + German preferred" },
-  { label: "Min match score", value: "75%" },
-  { label: "Remote preference", value: "Hybrid / Remote" },
-  { label: "Job sources", value: ["LinkedIn", "StepStone", "Indeed", "Company pages"] },
+const jobPreferences: { labelKey: TKey; value: string | string[] }[] = [
+  { labelKey: "dash.location", value: "Germany / Remote" },
+  { labelKey: "dash.workType", value: ["Working student", "Internship", "Junior", "Entry-level"] },
+  { labelKey: "profile.language", value: "English + German" },
+  { labelKey: "profile.minMatchScore", value: "75%" },
+  { labelKey: "profile.remotePref", value: "Hybrid / Remote" },
+  { labelKey: "profile.jobSources", value: ["LinkedIn", "StepStone", "Indeed", "Company pages"] },
 ];
 
-const dealbreakers = [
-  "Hide jobs below 75% match",
-  "Hide senior roles requiring 5+ years experience",
-  "Hide jobs requiring fluent German if profile is below B2",
-  "Hide unrelated marketing / sales roles",
-  "Prioritize visa / work authorization friendly roles",
+const dealbreakerKeys: TKey[] = [
+  "profile.db1",
+  "profile.db2",
+  "profile.db3",
+  "profile.db4",
+  "profile.db5",
 ];
 
-const appPreferences = [
-  { label: "Tone", value: "Professional but natural" },
-  { label: "Cover letter", value: "Short and tailored" },
-  { label: "Recruiter message", value: "Friendly and concise" },
-  { label: "Approval mode", value: "Always review before sending" },
-  { label: "Follow-up reminder", value: "After 7 days" },
+const appPreferences: { labelKey: TKey; valueKey: TKey }[] = [
+  { labelKey: "profile.tone", valueKey: "profile.vTone" },
+  { labelKey: "material.coverLetter", valueKey: "profile.vCover" },
+  { labelKey: "material.recruiterMessage", valueKey: "profile.vRecruiter" },
+  { labelKey: "profile.approvalMode", valueKey: "profile.vApproval" },
+  { labelKey: "profile.followUpReminder", valueKey: "profile.vFollowUp" },
 ];
 
-const impactMetrics = [
-  { value: "49", label: "High-match jobs available", color: "#60a5fa" },
-  { value: "12", label: "Blocked by missing work auth", color: "#fb923c" },
-  { value: "18", label: "Could improve with German B2", color: "#fde047" },
-  { value: "9", label: "AI roles need Docker / FastAPI", color: "#93c5fd" },
+const impactMetrics: { value: string; labelKey: TKey; color: string }[] = [
+  { value: "49", labelKey: "profile.m1", color: "#60a5fa" },
+  { value: "12", labelKey: "profile.m2", color: "#fb923c" },
+  { value: "18", labelKey: "profile.m3", color: "#fde047" },
+  { value: "9", labelKey: "profile.m4", color: "#93c5fd" },
 ];
 
+/* Mock AI recommendations — stay English like other generated content */
 const recommendations = [
   { icon: "📋", title: "Add work authorization", reason: "Improves filtering for Germany-based jobs.", impact: "Unlocks 12 hidden jobs" },
   { icon: "🐳", title: "Add Docker / FastAPI project", reason: "Strengthens AI Engineer and backend-related matches.", impact: "+9 stronger AI matches" },
   { icon: "🇩🇪", title: "Clarify German level", reason: "Helps hide jobs requiring fluent German and prioritize realistic roles.", impact: "Better Germany filtering" },
 ];
 
-const roleReadiness: { role: string; pct: number; badge: string; badgeStyle: React.CSSProperties }[] = [
-  { role: "Data Analyst", pct: 91, badge: "Strong", badgeStyle: { background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" } },
-  { role: "Analytics Engineer", pct: 84, badge: "Good", badgeStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } },
-  { role: "AI Engineer", pct: 82, badge: "Good", badgeStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } },
-  { role: "Data Scientist", pct: 78, badge: "Good", badgeStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } },
-  { role: "ML Engineer", pct: 69, badge: "Needs work", badgeStyle: { background: "rgba(251,146,60,0.06)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" } },
+const roleReadiness: { role: string; pct: number; badgeKey: TKey; badgeStyle: React.CSSProperties }[] = [
+  { role: "Data Analyst", pct: 91, badgeKey: "profile.badgeStrong", badgeStyle: { background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" } },
+  { role: "Analytics Engineer", pct: 84, badgeKey: "profile.badgeGood", badgeStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } },
+  { role: "AI Engineer", pct: 82, badgeKey: "profile.badgeGood", badgeStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } },
+  { role: "Data Scientist", pct: 78, badgeKey: "profile.badgeGood", badgeStyle: { background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" } },
+  { role: "ML Engineer", pct: 69, badgeKey: "profile.badgeNeedsWork", badgeStyle: { background: "rgba(251,146,60,0.06)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" } },
 ];

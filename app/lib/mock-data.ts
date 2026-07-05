@@ -5,6 +5,8 @@
    Tracker:      /tracker, dashboard applications panel
    ───────────────────────────────────────────────────────── */
 
+import type { TKey } from "./translations";
+
 export interface ReviewJob {
   role: string;
   company: string;
@@ -14,7 +16,7 @@ export interface ReviewJob {
   whyFits: string;
   matches: string[];
   gaps: string[];
-  materials: { icon: string; label: string }[];
+  materials: { icon: string; labelKey: TKey }[];
   // Review detail fields
   source: string;
   found: string;
@@ -22,7 +24,7 @@ export interface ReviewJob {
   salary: string;
   qualityScore: number;
   qualityLabel: string;
-  qualityBreakdown: { label: string; pct: number }[];
+  qualityBreakdown: { labelKey: TKey; pct: number }[];
   riskLevel: string;
   whyFitsBullets: string[];
   risks: { label: string; severity: "High" | "Medium" | "Low" }[];
@@ -45,9 +47,9 @@ export const reviewJobs: ReviewJob[] = [
     matches: ["Python", "SQL", "Machine Learning", "Data Analytics"],
     gaps: ["FastAPI", "Docker"],
     materials: [
-      { icon: "✉️", label: "Cover letter" },
-      { icon: "💬", label: "Recruiter message" },
-      { icon: "🎤", label: "Interview prep" },
+      { icon: "✉️", labelKey: "material.coverLetter" },
+      { icon: "💬", labelKey: "material.recruiterMessage" },
+      { icon: "🎤", labelKey: "material.interviewPrep" },
     ],
     source: "StepStone",
     found: "12 minutes ago",
@@ -56,9 +58,9 @@ export const reviewJobs: ReviewJob[] = [
     qualityScore: 82,
     qualityLabel: "Ready with minor improvements",
     qualityBreakdown: [
-      { label: "Job fit", pct: 86 },
-      { label: "CV alignment", pct: 82 },
-      { label: "Cover letter quality", pct: 84 },
+      { labelKey: "quality.jobFit", pct: 86 },
+      { labelKey: "quality.cvAlignment", pct: 82 },
+      { labelKey: "quality.coverLetter", pct: 84 },
     ],
     riskLevel: "Medium",
     whyFitsBullets: [
@@ -113,8 +115,8 @@ I'm based in Germany and available as a working student. Would you be open to a 
     matches: ["SQL", "Python", "Data Analytics", "Tableau"],
     gaps: ["Looker"],
     materials: [
-      { icon: "✉️", label: "Cover letter" },
-      { icon: "💬", label: "Recruiter message" },
+      { icon: "✉️", labelKey: "material.coverLetter" },
+      { icon: "💬", labelKey: "material.recruiterMessage" },
     ],
     source: "LinkedIn",
     found: "34 minutes ago",
@@ -123,9 +125,9 @@ I'm based in Germany and available as a working student. Would you be open to a 
     qualityScore: 90,
     qualityLabel: "Strong application",
     qualityBreakdown: [
-      { label: "Job fit", pct: 91 },
-      { label: "CV alignment", pct: 89 },
-      { label: "Cover letter quality", pct: 88 },
+      { labelKey: "quality.jobFit", pct: 91 },
+      { labelKey: "quality.cvAlignment", pct: 89 },
+      { labelKey: "quality.coverLetter", pct: 88 },
     ],
     riskLevel: "Low",
     whyFitsBullets: [
@@ -177,8 +179,8 @@ I'm based in Berlin and ready to start. Would you be open to a brief call?`,
     matches: ["Python", "Machine Learning", "Statistics"],
     gaps: ["R", "Bioinformatics", "TensorFlow"],
     materials: [
-      { icon: "✉️", label: "Cover letter" },
-      { icon: "🎤", label: "Interview prep" },
+      { icon: "✉️", labelKey: "material.coverLetter" },
+      { icon: "🎤", labelKey: "material.interviewPrep" },
     ],
     source: "Indeed",
     found: "2 hours ago",
@@ -187,9 +189,9 @@ I'm based in Berlin and ready to start. Would you be open to a brief call?`,
     qualityScore: 72,
     qualityLabel: "Needs strengthening",
     qualityBreakdown: [
-      { label: "Job fit", pct: 79 },
-      { label: "CV alignment", pct: 68 },
-      { label: "Cover letter quality", pct: 76 },
+      { labelKey: "quality.jobFit", pct: 79 },
+      { labelKey: "quality.cvAlignment", pct: 68 },
+      { labelKey: "quality.coverLetter", pct: 76 },
     ],
     riskLevel: "Medium-High",
     whyFitsBullets: [
@@ -242,9 +244,9 @@ Would you be open to a quick chat about the role and the team's work?`,
     matches: ["SQL", "dbt", "Python", "Git"],
     gaps: ["Airflow", "Snowflake"],
     materials: [
-      { icon: "✉️", label: "Cover letter" },
-      { icon: "💬", label: "Recruiter message" },
-      { icon: "🎤", label: "Interview prep" },
+      { icon: "✉️", labelKey: "material.coverLetter" },
+      { icon: "💬", labelKey: "material.recruiterMessage" },
+      { icon: "🎤", labelKey: "material.interviewPrep" },
     ],
     source: "Company career page",
     found: "1 hour ago",
@@ -253,9 +255,9 @@ Would you be open to a quick chat about the role and the team's work?`,
     qualityScore: 85,
     qualityLabel: "Ready to submit",
     qualityBreakdown: [
-      { label: "Job fit", pct: 84 },
-      { label: "CV alignment", pct: 86 },
-      { label: "Cover letter quality", pct: 85 },
+      { labelKey: "quality.jobFit", pct: 84 },
+      { labelKey: "quality.cvAlignment", pct: 86 },
+      { labelKey: "quality.coverLetter", pct: 85 },
     ],
     riskLevel: "Low",
     whyFitsBullets: [
@@ -313,16 +315,16 @@ export interface InboxMessage {
   preview: string;
   time: string;
   unread: boolean;
-  suggestedAction: string;
+  actionKey: TKey;
 }
 
 /** Visual metadata per inbox message type (shared by /inbox and dashboard panel) */
-export const inboxTypeMeta: Record<InboxType, { label: string; color: string; bg: string; border: string }> = {
-  interview:   { label: "Interview",     color: "#4ade80",           bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.15)" },
-  reply:       { label: "Reply pending", color: "#fde047",           bg: "rgba(250,204,21,0.06)",  border: "rgba(250,204,21,0.15)" },
-  "follow-up": { label: "Follow-up",     color: "#fb923c",           bg: "rgba(251,146,60,0.06)",  border: "rgba(251,146,60,0.15)" },
-  rejection:   { label: "Archived",      color: "var(--text-muted)", bg: "var(--bg-overlay)",      border: "var(--border-subtle)" },
-  new:         { label: "New",           color: "#93c5fd",           bg: "var(--blue-dim)",        border: "rgba(59,130,246,0.18)" },
+export const inboxTypeMeta: Record<InboxType, { labelKey: TKey; color: string; bg: string; border: string }> = {
+  interview:   { labelKey: "type.interview", color: "#4ade80",           bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.15)" },
+  reply:       { labelKey: "type.reply", color: "#fde047",           bg: "rgba(250,204,21,0.06)",  border: "rgba(250,204,21,0.15)" },
+  "follow-up": { labelKey: "type.followUp", color: "#fb923c",           bg: "rgba(251,146,60,0.06)",  border: "rgba(251,146,60,0.15)" },
+  rejection:   { labelKey: "type.rejection", color: "var(--text-muted)", bg: "var(--bg-overlay)",      border: "var(--border-subtle)" },
+  new:         { labelKey: "type.new", color: "#93c5fd",           bg: "var(--blue-dim)",        border: "rgba(59,130,246,0.18)" },
 };
 
 export const inboxMessages: InboxMessage[] = [
@@ -336,7 +338,7 @@ export const inboxMessages: InboxMessage[] = [
     preview: "Hi Onur, thank you for your application. We'd like to invite you to a 45-minute video interview tomorrow at 14:00…",
     time: "2h ago",
     unread: true,
-    suggestedAction: "Prepare interview",
+    actionKey: "action.prepareInterview",
   },
   {
     id: 2,
@@ -348,7 +350,7 @@ export const inboxMessages: InboxMessage[] = [
     preview: "Thanks for reaching out! Your dbt background looks interesting. Would you have time for a short call this week?",
     time: "6h ago",
     unread: true,
-    suggestedAction: "Draft reply",
+    actionKey: "action.draftReply",
   },
   {
     id: 3,
@@ -360,7 +362,7 @@ export const inboxMessages: InboxMessage[] = [
     preview: "Dear applicant, this is a confirmation that your application for Junior Data Analyst has entered our review process…",
     time: "1d ago",
     unread: true,
-    suggestedAction: "Classify",
+    actionKey: "action.classify",
   },
   {
     id: 4,
@@ -372,7 +374,7 @@ export const inboxMessages: InboxMessage[] = [
     preview: "A polite follow-up draft is ready for your review. It references your original application from last week…",
     time: "Due in 2d",
     unread: false,
-    suggestedAction: "Send follow-up",
+    actionKey: "action.sendFollowUp",
   },
   {
     id: 5,
@@ -384,7 +386,7 @@ export const inboxMessages: InboxMessage[] = [
     preview: "Thank you for your interest. We have decided to move forward with other candidates for this position…",
     time: "3d ago",
     unread: false,
-    suggestedAction: "Archive",
+    actionKey: "action.archive",
   },
 ];
 
@@ -403,13 +405,6 @@ Best regards,
 Onur Balic`,
 };
 
-export const followUpRules = [
-  "No reply after 7 days → prepare a polite follow-up draft",
-  "Stop after 2 follow-up attempts per application",
-  "Never follow up after a rejection — archive automatically",
-  "Interview invitations → suggest prep material immediately",
-];
-
 /* ─────────────────────────────────────────────────────────
    Tracker — application pipeline
    ───────────────────────────────────────────────────────── */
@@ -426,12 +421,12 @@ export interface TrackerApp {
 }
 
 /** Visual + label metadata per pipeline stage (shared by /tracker and dashboard panel) */
-export const trackerStageMeta: Record<TrackerStage, { label: string; color: string; bg: string; border: string; dot: string }> = {
-  applied:     { label: "Applied",       color: "#93c5fd",           bg: "var(--blue-dim)",        border: "rgba(59,130,246,0.18)", dot: "#60a5fa" },
-  reply:       { label: "Reply pending", color: "#fde047",           bg: "rgba(250,204,21,0.06)",  border: "rgba(250,204,21,0.15)", dot: "#fde047" },
-  "follow-up": { label: "Follow-up due", color: "#fb923c",           bg: "rgba(251,146,60,0.06)",  border: "rgba(251,146,60,0.15)", dot: "#fb923c" },
-  interview:   { label: "Interview",     color: "#4ade80",           bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.15)",  dot: "#4ade80" },
-  archived:    { label: "Archived",      color: "var(--text-muted)", bg: "var(--bg-overlay)",      border: "var(--border-subtle)",  dot: "var(--text-muted)" },
+export const trackerStageMeta: Record<TrackerStage, { labelKey: TKey; color: string; bg: string; border: string; dot: string }> = {
+  applied:     { labelKey: "stage.applied", color: "#93c5fd",           bg: "var(--blue-dim)",        border: "rgba(59,130,246,0.18)", dot: "#60a5fa" },
+  reply:       { labelKey: "type.reply", color: "#fde047",           bg: "rgba(250,204,21,0.06)",  border: "rgba(250,204,21,0.15)", dot: "#fde047" },
+  "follow-up": { labelKey: "stage.followUp", color: "#fb923c",           bg: "rgba(251,146,60,0.06)",  border: "rgba(251,146,60,0.15)", dot: "#fb923c" },
+  interview:   { labelKey: "stage.interview", color: "#4ade80",           bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.15)",  dot: "#4ade80" },
+  archived:    { labelKey: "stage.archived", color: "var(--text-muted)", bg: "var(--bg-overlay)",      border: "var(--border-subtle)",  dot: "var(--text-muted)" },
 };
 
 export const trackerStageOrder: TrackerStage[] = ["applied", "reply", "follow-up", "interview", "archived"];

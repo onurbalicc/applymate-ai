@@ -7,13 +7,15 @@ export const metadata: Metadata = {
     "One profile. ApplyMate scans trusted job sources, hides low-fit roles, prepares tailored applications, and waits for your approval — then tracks every reply.",
 };
 
-/* Inline script that runs before React hydrates to prevent flash of wrong theme.
-   Reads from localStorage and sets data-theme on <html>. */
+/* Inline script that runs before React hydrates to prevent flash of wrong theme,
+   and to set the html lang attribute from the stored language preference. */
 const themeInitScript = `
 (function(){
   try {
     var t = localStorage.getItem('applymate-theme');
     if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    var l = localStorage.getItem('applymate-lang');
+    if (l === 'tr' || l === 'de') document.documentElement.lang = l;
   } catch(e) {}
 })();
 `;

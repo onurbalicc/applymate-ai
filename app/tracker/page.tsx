@@ -8,6 +8,7 @@ import {
   trackerStageOrder,
   type TrackerStage,
 } from "@/app/lib/mock-data";
+import { useI18n } from "@/app/lib/i18n";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Application Tracker
@@ -17,17 +18,17 @@ import {
 
 export default function TrackerPage() {
   const activeCount = trackerApps.filter((a) => a.stage !== "archived").length;
+  const { t } = useI18n();
 
   return (
     <DashboardLayout
       activeNavId="tracker"
-      pageTitle="Application Tracker"
       topBarRight={
         <span
           className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full"
           style={{ background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" }}
         >
-          {activeCount} active applications
+          {activeCount} {t("tracker.activeApps")}
         </span>
       }
     >
@@ -35,7 +36,7 @@ export default function TrackerPage() {
 
         {/* ── Page intro ─────────────────── */}
         <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          Every application you approve lands here. Track its stage, see the latest event, and act on the next step.
+          {t("tracker.intro")}
         </p>
 
         {/* ── Stage summary ──────────────── */}
@@ -48,7 +49,7 @@ export default function TrackerPage() {
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: meta.dot }} />
                 <div>
                   <p className="text-lg font-bold leading-tight" style={{ color: "var(--text-primary)" }}>{n}</p>
-                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{meta.label}</p>
+                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t(meta.labelKey)}</p>
                 </div>
               </div>
             );
@@ -68,7 +69,7 @@ export default function TrackerPage() {
                   style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
                 >
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: meta.dot }} />
-                  <span className="text-[12px] font-bold flex-1" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
+                  <span className="text-[12px] font-bold flex-1" style={{ color: "var(--text-primary)" }}>{t(meta.labelKey)}</span>
                   <span
                     className="text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums"
                     style={{ background: "var(--bg-raised)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}
@@ -126,7 +127,7 @@ export default function TrackerPage() {
                     className="rounded-xl px-3 py-6 text-center text-[11px]"
                     style={{ border: "1px dashed var(--border-mid)", color: "var(--text-muted)" }}
                   >
-                    Nothing here yet
+                    {t("tracker.empty")}
                   </div>
                 )}
               </section>
@@ -139,19 +140,19 @@ export default function TrackerPage() {
           className="dash-panel p-4 flex flex-col sm:flex-row items-center gap-3"
         >
           <p className="text-[12px] flex-1 text-center sm:text-left" style={{ color: "var(--text-secondary)" }}>
-            <span className="font-semibold" style={{ color: "var(--text-primary)" }}>4 applications are waiting for your approval</span>{" "}
-            in the review queue — approved ones appear here.
+            <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("tracker.waitingA")}</span>{" "}
+            {t("tracker.waitingB")}
           </p>
           <Link href="/review-queue" className="dash-btn dash-btn--primary flex-shrink-0">
-            Open Review Queue →
+            {t("common.openReviewQueue")}
           </Link>
           <Link href="/inbox" className="dash-btn dash-btn--outline flex-shrink-0">
-            📬 Open Inbox
+            📬 {t("common.openInbox")}
           </Link>
         </div>
 
         <p className="text-[11px] text-center pb-4" style={{ color: "var(--text-muted)" }}>
-          This is a demo preview with mock applications. Statuses will update automatically once real tracking is live.
+          {t("tracker.demoNote")}
         </p>
       </div>
     </DashboardLayout>

@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { navItems, type NavId } from "@/app/lib/nav-items";
+import { useI18n, useTheme } from "@/app/lib/i18n";
+import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 
 /* ─────────────────────────────────────────────────────────
    Shared Dashboard Layout
-   Used by /dashboard, /profile, and /analyze.
+   Used by all app pages. Theme + language preferences come
+   from the shared localStorage-backed stores in lib/i18n.
    ───────────────────────────────────────────────────────── */
 
 interface DashboardLayoutProps {
@@ -24,29 +27,11 @@ export default function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const { theme, toggleTheme } = useTheme();
+  const { t } = useI18n();
 
-  /* Read persisted theme on mount */
-  useEffect(() => {
-    const saved = localStorage.getItem("applymate-theme");
-    if (saved === "light") {
-      setTimeout(() => setTheme("light"), 0);
-    }
-  }, []);
-
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    if (next === "light") {
-      document.documentElement.setAttribute("data-theme", "light");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-    }
-    localStorage.setItem("applymate-theme", next);
-  }
-
-  const resolvedTitle =
-    pageTitle ?? navItems.find((n) => n.id === activeNavId)?.label ?? "Dashboard";
+  const activeItem = navItems.find((n) => n.id === activeNavId);
+  const resolvedTitle = pageTitle ?? (activeItem ? t(activeItem.labelKey) : "Dashboard");
 
   const workflowItems = navItems.filter((n) => n.group === "workflow");
   const manageItems = navItems.filter((n) => n.group === "manage");
@@ -83,21 +68,23 @@ export default function DashboardLayout({
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-2 flex flex-col gap-0.5 overflow-y-auto">
-          <NavGroup label="Workflow">
+          <NavGroup label={t("nav.groupWorkflow")}>
             {workflowItems.map((item) => (
               <SidebarLink
                 key={item.id}
                 item={item}
+                label={t(item.labelKey)}
                 active={activeNavId === item.id}
                 onNavigate={() => setSidebarOpen(false)}
               />
             ))}
           </NavGroup>
-          <NavGroup label="Manage">
+          <NavGroup label={t("nav.groupManage")}>
             {manageItems.map((item) => (
               <SidebarLink
                 key={item.id}
                 item={item}
+                label={t(item.labelKey)}
                 active={activeNavId === item.id}
                 onNavigate={() => setSidebarOpen(false)}
               />
@@ -105,12 +92,13 @@ export default function DashboardLayout({
           </NavGroup>
         </nav>
 
-        {/* Theme toggle */}
-        <div className="px-3 mb-2 flex justify-center">
+        {/* Preferences: theme + language */}
+        <div className="px-3 mb-2 flex items-center justify-center gap-2 flex-wrap">
           <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
             <span>{theme === "dark" ? "🌙" : "☀️"}</span>
-            <span>{theme === "dark" ? "Dark" : "Light"}</span>
+            <span>{theme === "dark" ? t("theme.dark") : t("theme.light")}</span>
           </button>
+          <LanguageSwitcher />
         </div>
 
         {/* Pricing hint */}
@@ -122,7 +110,7 @@ export default function DashboardLayout({
           }}
         >
           <p className="text-[11px] font-medium" style={{ color: "#93c5fd" }}>
-            Free beta · Pro plans later
+            {t("nav.freeBetaPro")}
           </p>
         </div>
 
@@ -151,7 +139,7 @@ export default function DashboardLayout({
               className="text-[11px] truncate"
               style={{ color: "var(--text-muted)" }}
             >
-              Beta user
+              {t("nav.betaUser")}
             </p>
           </div>
         </div>
@@ -215,19 +203,21 @@ function NavGroup({
 /* ── Helper: Sidebar link ────────────────────────────────── */
 function SidebarLink({
   item,
+  label,
   active,
   onNavigate,
 }: {
   item: (typeof navItems)[number];
+  label: string;
   active: boolean;
   onNavigate: () => void;
 }) {
   const className = `dash-nav-link ${active ? "dash-nav-link--active" : ""}`;
 
-  const inner = (
-    <>
+  return (
+    <Link href={item.href} className={className} onClick={onNavigate}>
       <span className="text-sm w-5 text-center">{item.icon}</span>
-      <span className="flex-1 text-left">{item.label}</span>
+      <span className="flex-1 text-left">{label}</span>
       {item.badge && (
         <span
           className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
@@ -239,16 +229,6 @@ function SidebarLink({
           {item.badge}
         </span>
       )}
-    </>
+    </Link>
   );
-
-  if (item.href) {
-    return (
-      <Link href={item.href} className={className} onClick={onNavigate}>
-        {inner}
-      </Link>
-    );
-  }
-
-  return <button className={className}>{inner}</button>;
 }

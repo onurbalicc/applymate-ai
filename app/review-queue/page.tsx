@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
 import { reviewJobs, type ReviewJob } from "@/app/lib/mock-data";
+import { useI18n } from "@/app/lib/i18n";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Review Queue
@@ -18,6 +19,7 @@ export default function ReviewQueuePage() {
   const [swipeAnim, setSwipeAnim] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<{ text: string; color: string } | null>(null);
   const [cardKey, setCardKey] = useState(0);
+  const { t } = useI18n();
 
   const currentReview = reviewIdx < reviewQueue.length ? reviewQueue[reviewIdx] : null;
   const total = reviewQueue.length;
@@ -32,9 +34,9 @@ export default function ReviewQueuePage() {
       "animate-swipe-down";
 
     const msgs = {
-      declined: { text: "Declined · Next match loading", color: "#f87171" },
-      skipped:  { text: "Skipped · Saved for later", color: "#fde047" },
-      approved: { text: "Approved · Added to tracker", color: "#4ade80" },
+      declined: { text: t("queue.declined"), color: "#f87171" },
+      skipped:  { text: t("queue.skipped"), color: "#fde047" },
+      approved: { text: t("queue.approved"), color: "#4ade80" },
     };
 
     setSwipeAnim(animClass);
@@ -49,7 +51,7 @@ export default function ReviewQueuePage() {
 
     // Clear status message after a bit
     setTimeout(() => setStatusMsg(null), 2200);
-  }, [isAnimating]);
+  }, [isAnimating, t]);
 
   function resetQueue() {
     setReviewIdx(0);
@@ -75,13 +77,13 @@ export default function ReviewQueuePage() {
   }, [isAnimating, currentReview, advanceToNext]);
 
   return (
-    <DashboardLayout activeNavId="review" pageTitle="Review Queue">
+    <DashboardLayout activeNavId="review">
       <div className="max-w-3xl mx-auto">
 
         {/* ── Page intro ─────────────────── */}
         <div className="mb-6">
           <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            Approve, skip, or decline prepared applications before anything is submitted.
+            {t("queue.intro")}
           </p>
         </div>
 
@@ -89,7 +91,7 @@ export default function ReviewQueuePage() {
         {currentReview && (
           <div className="flex items-center gap-3 mb-4">
             <span className="text-[12px] font-medium tabular-nums" style={{ color: "var(--text-secondary)" }}>
-              {reviewIdx + 1} of {total} applications
+              {t("queue.progress", { i: reviewIdx + 1, n: total })}
             </span>
             <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "var(--border-subtle)" }}>
               <div
@@ -121,11 +123,11 @@ export default function ReviewQueuePage() {
             className="hidden sm:flex items-center justify-center gap-4 mb-4 py-1.5 rounded-lg text-[11px]"
             style={{ background: "rgba(59,130,246,0.03)", border: "1px solid var(--border-subtle)", color: "var(--text-muted)" }}
           >
-            <span>← <span className="font-medium" style={{ color: "#f87171" }}>Decline</span></span>
+            <span>← <span className="font-medium" style={{ color: "#f87171" }}>{t("common.decline")}</span></span>
             <span className="opacity-30">|</span>
-            <span>↓ / S  <span className="font-medium" style={{ color: "#fde047" }}>Skip</span></span>
+            <span>↓ / S  <span className="font-medium" style={{ color: "#fde047" }}>{t("common.skip")}</span></span>
             <span className="opacity-30">|</span>
-            <span>→ <span className="font-medium" style={{ color: "#4ade80" }}>Approve</span></span>
+            <span>→ <span className="font-medium" style={{ color: "#4ade80" }}>{t("common.approve")}</span></span>
           </div>
         )}
 
@@ -163,19 +165,19 @@ export default function ReviewQueuePage() {
             style={{ borderStyle: "dashed" }}
           >
             <p className="text-3xl mb-3">✅</p>
-            <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Review queue complete</p>
+            <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>{t("queue.complete")}</p>
             <p className="text-[13px] mb-6 max-w-md mx-auto leading-relaxed" style={{ color: "var(--text-muted)" }}>
-              ApplyMate will keep scanning for new high-match roles. You&apos;ll be notified when new applications are ready.
+              {t("queue.completeDesc")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/tracker" className="dash-btn dash-btn--primary">
-                📊 Open Application Tracker →
+                {t("queue.openTracker")}
               </Link>
               <Link href="/dashboard" className="dash-btn dash-btn--outline">
-                ← Back to Auto Apply
+                {t("queue.backToAutoApply")}
               </Link>
               <button className="dash-btn dash-btn--ghost" onClick={resetQueue}>
-                ↺ Review again
+                {t("queue.reviewAgain")}
               </button>
             </div>
           </div>
@@ -201,15 +203,16 @@ function ReviewCard({
   onDecline: () => void;
   onSkip: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="dash-review-card">
       {/* Swipe direction hints */}
       <div className="flex items-center justify-between mb-3 px-1">
         <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
-          ← Decline
+          ← {t("common.decline")}
         </span>
         <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
-          Approve →
+          {t("common.approve")} →
         </span>
       </div>
 
@@ -217,7 +220,7 @@ function ReviewCard({
       <div className="rounded-lg px-3 py-2 mb-4 flex items-center gap-2" style={{ background: "rgba(59,130,246,0.04)", border: "1px solid var(--border-subtle)" }}>
         <span className="text-sm">🤖</span>
         <p className="text-[12px]" style={{ color: "var(--text-secondary)" }}>
-          AI prepared this application because it <span className="font-semibold" style={{ color: "#60a5fa" }}>passed your {job.threshold}% match threshold</span>.
+          {t("queue.aiPrepared", { n: job.threshold })}
         </p>
       </div>
 
@@ -235,19 +238,19 @@ function ReviewCard({
           </div>
 
           <div className="rounded-lg p-3.5 mb-4" style={{ background: "rgba(59,130,246,0.04)", border: "1px solid var(--border-subtle)" }}>
-            <p className="text-[11px] font-semibold mb-1" style={{ color: "#60a5fa" }}>Why this fits</p>
+            <p className="text-[11px] font-semibold mb-1" style={{ color: "#60a5fa" }}>{t("queue.whyFits")}</p>
             <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>{job.whyFits}</p>
           </div>
 
           <div className="flex flex-wrap gap-5 mb-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Matches</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>{t("queue.matches")}</p>
               <div className="flex flex-wrap gap-1.5">
                 {job.matches.map((s) => <span key={s} className="skill-chip skill-chip--match">{s}</span>)}
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Gaps</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>{t("queue.gaps")}</p>
               <div className="flex flex-wrap gap-1.5">
                 {job.gaps.map((s) => <span key={s} className="skill-chip skill-chip--missing">{s}</span>)}
               </div>
@@ -256,8 +259,8 @@ function ReviewCard({
 
           <div className="flex flex-wrap gap-1.5">
             {job.materials.map((m) => (
-              <span key={m.label} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md" style={{ background: "rgba(34,197,94,0.06)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.12)" }}>
-                {m.icon} {m.label}
+              <span key={m.labelKey} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md" style={{ background: "rgba(34,197,94,0.06)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.12)" }}>
+                {m.icon} {t(m.labelKey)}
               </span>
             ))}
           </div>
@@ -282,26 +285,25 @@ function ReviewCard({
             </div>
           </div>
           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" }}>
-            {job.score >= 85 ? "Strong match" : "Good match"}
+            {job.score >= 85 ? t("common.strongMatch") : t("common.goodMatch")}
           </span>
         </div>
       </div>
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-2 pt-4 mt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-        <button className="dash-btn dash-btn--ghost" onClick={onDecline} disabled={disabled}>✕ Decline</button>
-        <button className="dash-btn dash-btn--ghost" onClick={onSkip} disabled={disabled}>⏭ Skip</button>
+        <button className="dash-btn dash-btn--ghost" onClick={onDecline} disabled={disabled}>{t("queue.declineBtn")}</button>
+        <button className="dash-btn dash-btn--ghost" onClick={onSkip} disabled={disabled}>{t("queue.skipBtn")}</button>
         <div className="flex-1" />
-        <Link href={`/review?job=${jobIdx}`} className="dash-btn dash-btn--outline" style={{ pointerEvents: disabled ? "none" : "auto", opacity: disabled ? 0.5 : 1 }}>Review application →</Link>
-        <button className="dash-btn dash-btn--primary" onClick={onApprove} disabled={disabled}>✓ Approve &amp; apply</button>
+        <Link href={`/review?job=${jobIdx}`} className="dash-btn dash-btn--outline" style={{ pointerEvents: disabled ? "none" : "auto", opacity: disabled ? 0.5 : 1 }}>{t("queue.reviewApplication")}</Link>
+        <button className="dash-btn dash-btn--primary" onClick={onApprove} disabled={disabled}>{t("common.approveApply")}</button>
       </div>
 
       <p className="text-[10px] text-center mt-3 flex items-center justify-center gap-3" style={{ color: "var(--text-muted)" }}>
-        <span>🔒 Nothing is submitted without your approval</span>
+        <span>🔒 {t("common.nothingSubmitted")}</span>
         <span>·</span>
-        <span>Review before approving</span>
+        <span>{t("queue.reviewBefore")}</span>
       </p>
     </div>
   );
 }
-

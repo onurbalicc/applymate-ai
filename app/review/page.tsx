@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/app/components/DashboardLayout";
 import { reviewJobs, type ReviewJob } from "@/app/lib/mock-data";
+import { useI18n } from "@/app/lib/i18n";
+import type { TKey } from "@/app/lib/translations";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Application Review Detail
@@ -14,10 +16,19 @@ import { reviewJobs, type ReviewJob } from "@/app/lib/mock-data";
 
 export default function ReviewPage() {
   return (
-    <DashboardLayout activeNavId="review" pageTitle="Review Application">
+    <ReviewShell>
       <Suspense fallback={null}>
         <ReviewContent />
       </Suspense>
+    </ReviewShell>
+  );
+}
+
+function ReviewShell({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
+  return (
+    <DashboardLayout activeNavId="review" pageTitle={t("review.pageTitle")}>
+      {children}
     </DashboardLayout>
   );
 }
@@ -29,17 +40,27 @@ function ReviewContent() {
   const job = reviewJobs[jobIdx];
 
   const [savedDraft, setSavedDraft] = useState(false);
+  const { t } = useI18n();
 
   function handleSaveDraft() {
     setSavedDraft(true);
     setTimeout(() => setSavedDraft(false), 2200);
   }
 
-  const summaryFields = [
-    { label: "Source", value: job.source },
-    { label: "Found", value: job.found },
-    { label: "Work type", value: job.workType },
-    { label: "Salary", value: job.salary },
+  const summaryFields: { labelKey: TKey; value: string }[] = [
+    { labelKey: "review.source", value: job.source },
+    { labelKey: "review.found", value: job.found },
+    { labelKey: "dash.workType", value: job.workType },
+    { labelKey: "review.salary", value: job.salary },
+  ];
+
+  const workflowSteps: { labelKey: TKey; done: boolean; active: boolean }[] = [
+    { labelKey: "landing.wf.scan", done: true, active: false },
+    { labelKey: "landing.wf.match", done: true, active: false },
+    { labelKey: "landing.wf.prepare", done: true, active: false },
+    { labelKey: "review.stepReview", done: false, active: true },
+    { labelKey: "landing.wf.approve", done: false, active: false },
+    { labelKey: "landing.wf.track", done: false, active: false },
   ];
 
   return (
@@ -47,7 +68,7 @@ function ReviewContent() {
 
       {/* ── Subtitle ───────────────────── */}
       <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-        Check the job fit, prepared materials, and risks before approving the application.
+        {t("review.subtitle")}
       </p>
 
       {/* ── Top summary card ────────────── */}
@@ -67,15 +88,15 @@ function ReviewContent() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
               {summaryFields.map((f) => (
-                <div key={f.label}>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-muted)" }}>{f.label}</p>
+                <div key={f.labelKey}>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-muted)" }}>{t(f.labelKey)}</p>
                   <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>{f.value}</p>
                 </div>
               ))}
             </div>
 
             <p className="text-[11px] flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
-              🔒 Nothing is submitted without your approval.
+              🔒 {t("common.nothingSubmitted")}.
             </p>
           </div>
 
@@ -83,7 +104,7 @@ function ReviewContent() {
           <div className="flex flex-col items-center justify-center gap-2 flex-shrink-0">
             <ScoreRing value={job.score} gradientId="revScoreGrad" />
             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" }}>
-              {job.score >= 85 ? "Strong match" : "Good match"}
+              {job.score >= 85 ? t("common.strongMatch") : t("common.goodMatch")}
             </span>
           </div>
         </div>
@@ -93,7 +114,7 @@ function ReviewContent() {
       <div className="dash-panel p-4">
         <div className="flex items-center justify-center gap-1 flex-wrap">
           {workflowSteps.map((step, i) => (
-            <div key={step.label} className="flex items-center gap-1">
+            <div key={step.labelKey} className="flex items-center gap-1">
               <span
                 className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
                 style={{
@@ -102,7 +123,7 @@ function ReviewContent() {
                   border: step.active ? "none" : `1px solid ${step.done ? "rgba(34,197,94,0.15)" : "var(--border-subtle)"}`,
                 }}
               >
-                {step.done && !step.active ? "✓ " : ""}{step.label}
+                {step.done && !step.active ? "✓ " : ""}{t(step.labelKey)}
               </span>
               {i < workflowSteps.length - 1 && (
                 <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>→</span>
@@ -128,14 +149,14 @@ function ReviewContent() {
               </div>
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Application Quality</p>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{t("review.quality")}</p>
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" }}>{job.qualityLabel}</span>
             </div>
           </div>
           <div className="flex flex-col gap-2.5">
             {job.qualityBreakdown.map((q) => (
-              <div key={q.label} className="flex items-center gap-2">
-                <span className="text-[12px] flex-1" style={{ color: "var(--text-secondary)" }}>{q.label}</span>
+              <div key={q.labelKey} className="flex items-center gap-2">
+                <span className="text-[12px] flex-1" style={{ color: "var(--text-secondary)" }}>{t(q.labelKey)}</span>
                 <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border-subtle)" }}>
                   <div className="h-full rounded-full" style={{ width: `${q.pct}%`, background: q.pct >= 85 ? "linear-gradient(90deg, #2563eb, #22d3ee)" : q.pct >= 75 ? "#93c5fd" : "#fb923c" }} />
                 </div>
@@ -143,7 +164,7 @@ function ReviewContent() {
               </div>
             ))}
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-[12px]" style={{ color: "var(--text-secondary)" }}>Risk level</span>
+              <span className="text-[12px]" style={{ color: "var(--text-secondary)" }}>{t("review.riskLevel")}</span>
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full ml-auto" style={riskLevelStyle(job.riskLevel)}>{job.riskLevel}</span>
             </div>
           </div>
@@ -151,7 +172,7 @@ function ReviewContent() {
 
         {/* Why this fits */}
         <div className="lg:col-span-3 dash-panel p-5">
-          <h3 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>Why This Fits</h3>
+          <h3 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>{t("review.whyThisFits")}</h3>
           <ul className="flex flex-col gap-2.5">
             {job.whyFitsBullets.map((point, i) => (
               <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
@@ -165,7 +186,7 @@ function ReviewContent() {
 
       {/* ── Risk & Gap Analysis ─────────── */}
       <section>
-        <h3 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>Risk &amp; Gap Analysis</h3>
+        <h3 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>{t("review.riskGap")}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           {job.risks.map((risk) => {
             const style = severityStyle(risk.severity);
@@ -176,35 +197,35 @@ function ReviewContent() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium mb-0.5" style={{ color: "var(--text-primary)" }}>{risk.label}</p>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={style}>{risk.severity}</span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={style}>{t(severityKey[risk.severity])}</span>
                 </div>
               </div>
             );
           })}
         </div>
         <div className="rounded-lg px-4 py-2.5 text-[12px]" style={{ background: "rgba(59,130,246,0.04)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}>
-          💡 <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Recommendation:</span> {job.recommendation}
+          💡 <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("review.recommendation")}</span> {job.recommendation}
         </div>
       </section>
 
       {/* ── Prepared Materials ──────────── */}
       <section>
-        <h3 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>Prepared Materials</h3>
+        <h3 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>{t("review.preparedMaterials")}</h3>
 
         {/* Cover Letter */}
-        <MaterialCard title="Cover Letter Draft" icon="✉️">
+        <MaterialCard title={t("review.coverLetterDraft")} icon="✉️">
           <p className="text-[13px] leading-[1.75] whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{job.coverLetter}</p>
-          <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>📋 Copy to clipboard</button>
+          <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>{t("common.copyToClipboard")}</button>
         </MaterialCard>
 
         {/* Recruiter Message */}
-        <MaterialCard title="Recruiter Message" icon="💬">
+        <MaterialCard title={t("material.recruiterMessage")} icon="💬">
           <p className="text-[13px] leading-[1.75] whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{job.recruiterMessage}</p>
-          <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>📋 Copy to clipboard</button>
+          <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>{t("common.copyToClipboard")}</button>
         </MaterialCard>
 
         {/* CV Improvements */}
-        <MaterialCard title="CV Improvements" icon="📄">
+        <MaterialCard title={t("review.cvImprovements")} icon="📄">
           <ul className="flex flex-col gap-2.5">
             {job.cvImprovements.map((item, i) => (
               <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
@@ -216,7 +237,7 @@ function ReviewContent() {
         </MaterialCard>
 
         {/* Interview Prep */}
-        <MaterialCard title="Interview Prep" icon="🎤">
+        <MaterialCard title={t("material.interviewPrep")} icon="🎤">
           <ul className="flex flex-col gap-2.5">
             {job.interviewQuestions.map((q, i) => (
               <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
@@ -234,17 +255,17 @@ function ReviewContent() {
         style={{ borderTop: "1px solid var(--border-subtle)" }}
       >
         <Link href="/review-queue" className="dash-btn dash-btn--ghost w-full sm:w-auto justify-center text-center">
-          ← Back to Review Queue
+          {t("review.backToQueue")}
         </Link>
         <button className="dash-btn dash-btn--outline w-full sm:w-auto justify-center" onClick={handleSaveDraft}>
-          {savedDraft ? "✓ Draft saved" : "💾 Save draft"}
+          {savedDraft ? t("review.draftSaved") : t("review.saveDraft")}
         </button>
         <button className="dash-btn dash-btn--outline w-full sm:w-auto justify-center">
-          🔄 Regenerate materials
+          {t("review.regenerate")}
         </button>
         <div className="flex-1 hidden sm:block" />
         <button className="dash-btn dash-btn--primary w-full sm:w-auto justify-center">
-          ✓ Approve &amp; Apply
+          {t("review.approveApply")}
         </button>
       </div>
 
@@ -254,12 +275,12 @@ function ReviewContent() {
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-sm font-semibold animate-fade-up"
           style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", backdropFilter: "blur(12px)" }}
         >
-          ✓ Draft saved successfully
+          {t("review.savedToast")}
         </div>
       )}
 
       <p className="text-[11px] text-center pb-4" style={{ color: "var(--text-muted)" }}>
-        This is a demo preview. Real AI-generated materials are coming soon.
+        {t("common.demoMaterials")}
       </p>
     </div>
   );
@@ -301,6 +322,12 @@ function MaterialCard({ title, icon, children }: { title: string; icon: string; 
 }
 
 /* ── Helper: severity/risk styles ────────────────────────── */
+const severityKey: Record<ReviewJob["risks"][number]["severity"], TKey> = {
+  High: "severity.High",
+  Medium: "severity.Medium",
+  Low: "severity.Low",
+};
+
 function severityStyle(severity: ReviewJob["risks"][number]["severity"]): React.CSSProperties {
   if (severity === "High")
     return { background: "rgba(248,113,113,0.08)", color: "#f87171", border: "1px solid rgba(248,113,113,0.15)" };
@@ -316,13 +343,3 @@ function riskLevelStyle(level: string): React.CSSProperties {
     return { background: "rgba(251,146,60,0.08)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.15)" };
   return { background: "rgba(250,204,21,0.06)", color: "#fde047", border: "1px solid rgba(250,204,21,0.15)" };
 }
-
-/* ── Static workflow position ───────────────────────────── */
-const workflowSteps = [
-  { label: "Scan", done: true, active: false },
-  { label: "Match", done: true, active: false },
-  { label: "Prepare", done: true, active: false },
-  { label: "Review", done: false, active: true },
-  { label: "Approve", done: false, active: false },
-  { label: "Track", done: false, active: false },
-];

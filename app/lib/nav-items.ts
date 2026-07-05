@@ -1,6 +1,9 @@
+import type { TKey } from "./translations";
+
 /* ─────────────────────────────────────────────────────────
    Canonical sidebar navigation items.
    Single source of truth used by DashboardLayout.
+   Labels are translation keys resolved at render time.
    ───────────────────────────────────────────────────────── */
 
 export type NavId =
@@ -16,7 +19,7 @@ export type NavId =
 export interface NavItem {
   id: NavId;
   icon: string;
-  label: string;
+  labelKey: TKey;
   badge?: string;
   href: string;
   group: "workflow" | "manage";
@@ -24,13 +27,13 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   // ── Workflow ──
-  { id: "auto-apply",  icon: "🚀", label: "Auto Apply",          badge: "8", group: "workflow", href: "/dashboard" },
-  { id: "review",      icon: "📋", label: "Review Queue",        badge: "4", group: "workflow", href: "/review-queue" },
-  { id: "matches",     icon: "🎯", label: "Job Matches",                     group: "workflow", href: "/dashboard#matches" },
-  { id: "inbox",       icon: "📬", label: "Inbox",               badge: "3", group: "workflow", href: "/inbox" },
+  { id: "auto-apply",  icon: "🚀", labelKey: "nav.autoApply",      badge: "8", group: "workflow", href: "/dashboard" },
+  { id: "review",      icon: "📋", labelKey: "nav.reviewQueue",    badge: "4", group: "workflow", href: "/review-queue" },
+  { id: "matches",     icon: "🎯", labelKey: "nav.jobMatches",                 group: "workflow", href: "/dashboard#matches" },
+  { id: "inbox",       icon: "📬", labelKey: "nav.inbox",          badge: "3", group: "workflow", href: "/inbox" },
   // ── Manage ──
-  { id: "profile",     icon: "👤", label: "Profile Setup",                   group: "manage",   href: "/profile" },
-  { id: "preferences", icon: "⚙️", label: "Job Preferences",                group: "manage",   href: "/profile#preferences" },
-  { id: "tracker",     icon: "📊", label: "Application Tracker",             group: "manage",   href: "/tracker" },
-  { id: "analyzer",    icon: "🔬", label: "Manual Analyzer",                 group: "manage",   href: "/analyze" },
+  { id: "profile",     icon: "👤", labelKey: "nav.profileSetup",               group: "manage",   href: "/profile" },
+  { id: "preferences", icon: "⚙️", labelKey: "nav.jobPreferences",            group: "manage",   href: "/profile#preferences" },
+  { id: "tracker",     icon: "📊", labelKey: "nav.tracker",                    group: "manage",   href: "/tracker" },
+  { id: "analyzer",    icon: "🔬", labelKey: "nav.analyzer",                   group: "manage",   href: "/analyze" },
 ];

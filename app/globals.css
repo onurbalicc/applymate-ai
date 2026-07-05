@@ -171,6 +171,34 @@ body {
 .animate-swipe-down  { animation: swipe-down 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 .animate-card-enter  { animation: card-enter 0.5s cubic-bezier(0, 0, 0.2, 1) forwards; }
 
+/* ── Language switcher ─────────────────────────────────── */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9999px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+}
+.lang-switch__btn {
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.lang-switch__btn:hover {
+  color: var(--text-primary);
+}
+.lang-switch__btn--active {
+  background: var(--blue-dim);
+  color: var(--blue);
+}
+
 /* ── Theme toggle ──────────────────────────────────────── */
 .theme-toggle {
   display: inline-flex;

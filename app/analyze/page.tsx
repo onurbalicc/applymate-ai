@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import DashboardLayout from "@/app/components/DashboardLayout";
+import { useI18n } from "@/app/lib/i18n";
 
 /* ─────────────────────────────────────────────────────────
-   ApplyMate AI – Manual Analyzer (v2)
-   Migrated to shared sidebar layout.
+   ApplyMate AI – Manual Analyzer
+   Shared sidebar layout. Multilingual UI labels; mock result
+   content stays English (represents AI-generated output).
    ───────────────────────────────────────────────────────── */
 
 export default function AnalyzePage() {
@@ -14,15 +16,16 @@ export default function AnalyzePage() {
   const [showResults, setShowResults] = useState(false);
   const [validationMsg, setValidationMsg] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { t } = useI18n();
 
   function handleAnalyze() {
     if (!cv.trim() && !jobDesc.trim()) {
-      setValidationMsg("Please paste both your CV and a job description to get started.");
+      setValidationMsg(t("analyze.needBoth"));
       setShowResults(false);
       return;
     }
-    if (!cv.trim()) { setValidationMsg("Please paste your CV / resume text above."); setShowResults(false); return; }
-    if (!jobDesc.trim()) { setValidationMsg("Please paste the job description above."); setShowResults(false); return; }
+    if (!cv.trim()) { setValidationMsg(t("analyze.needCv")); setShowResults(false); return; }
+    if (!jobDesc.trim()) { setValidationMsg(t("analyze.needJd")); setShowResults(false); return; }
 
     setValidationMsg("");
     setIsAnalyzing(true);
@@ -30,16 +33,16 @@ export default function AnalyzePage() {
   }
 
   return (
-    <DashboardLayout activeNavId="analyzer" pageTitle="Manual Analyzer">
+    <DashboardLayout activeNavId="analyzer">
       <div className="max-w-4xl mx-auto">
 
         {/* ── Page title ─────────────────── */}
         <div className="text-center mb-10">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight leading-tight mb-3" style={{ color: "var(--text-primary)" }}>
-            Analyze your next <span className="gradient-text">job application</span>
+            {t("analyze.titlePre")} <span className="gradient-text">{t("analyze.titleHi")}</span>
           </h2>
           <p className="text-sm md:text-base leading-relaxed max-w-2xl mx-auto" style={{ color: "var(--text-secondary)" }}>
-            Paste your CV and a job description to preview your match score, skill gaps, and application kit.
+            {t("analyze.sub")}
           </p>
         </div>
 
@@ -48,7 +51,7 @@ export default function AnalyzePage() {
           <div className="flex flex-col gap-2">
             <label htmlFor="cv-input" className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
               <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs" style={{ background: "var(--blue-dim)", border: "1px solid rgba(59,130,246,0.25)" }}>📄</span>
-              CV / Resume
+              {t("analyze.cvLabel")}
             </label>
             <textarea
               id="cv-input"
@@ -63,7 +66,7 @@ export default function AnalyzePage() {
           <div className="flex flex-col gap-2">
             <label htmlFor="jd-input" className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
               <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs" style={{ background: "var(--cyan-dim)", border: "1px solid rgba(34,211,238,0.25)" }}>💼</span>
-              Job Description
+              {t("analyze.jdLabel")}
             </label>
             <textarea
               id="jd-input"
@@ -92,7 +95,7 @@ export default function AnalyzePage() {
             className="btn-primary"
             style={{ padding: "0.875rem 2.5rem", fontSize: "1rem", opacity: isAnalyzing ? 0.7 : 1, cursor: isAnalyzing ? "wait" : "pointer" }}
           >
-            {isAnalyzing ? (<><span className="analyze-spinner" /> Analyzing…</>) : "Analyze job →"}
+            {isAnalyzing ? (<><span className="analyze-spinner" /> {t("analyze.analyzing")}</>) : t("analyze.analyzeBtn")}
           </button>
         </div>
 
@@ -101,13 +104,13 @@ export default function AnalyzePage() {
           <div className="mt-14 animate-fade-up">
             <div className="flex items-center gap-3 mb-8">
               <div className="h-px flex-1" style={{ background: "var(--border-subtle)" }} />
-              <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#60a5fa" }}>Analysis Results</span>
+              <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#60a5fa" }}>{t("analyze.results")}</span>
               <div className="h-px flex-1" style={{ background: "var(--border-subtle)" }} />
             </div>
 
             {/* Row 1: Match + Skills */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-              <ResultCard title="Match Score" icon="🎯">
+              <ResultCard title={t("analyze.matchScore")} icon="🎯">
                 <div className="flex flex-col items-center py-3">
                   <div className="relative w-28 h-28 mb-3">
                     <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
@@ -119,28 +122,28 @@ export default function AnalyzePage() {
                       <span className="text-3xl font-bold gradient-text">84%</span>
                     </div>
                   </div>
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)" }}>Strong match</span>
+                  <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)" }}>{t("common.strongMatch")}</span>
                 </div>
               </ResultCard>
 
-              <ResultCard title="Matching Skills" icon="✅">
+              <ResultCard title={t("analyze.matchingSkills")} icon="✅">
                 <div className="flex flex-wrap gap-2 mt-1">
                   {matchingSkills.map((skill) => <span key={skill} className="skill-chip skill-chip--match">{skill}</span>)}
                 </div>
-                <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>4 of 7 required skills found in your CV.</p>
+                <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>{t("analyze.skillsFound")}</p>
               </ResultCard>
 
-              <ResultCard title="Missing Skills" icon="⚠️">
+              <ResultCard title={t("analyze.missingSkills")} icon="⚠️">
                 <div className="flex flex-wrap gap-2 mt-1">
                   {missingSkills.map((skill) => <span key={skill} className="skill-chip skill-chip--missing">{skill}</span>)}
                 </div>
-                <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>Consider adding these to your profile to boost your score.</p>
+                <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>{t("analyze.considerAdding")}</p>
               </ResultCard>
             </div>
 
             {/* Row 2: Improvements + Cover letter */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-              <ResultCard title="Suggested Improvements" icon="💡">
+              <ResultCard title={t("analyze.improvements")} icon="💡">
                 <ul className="flex flex-col gap-3 mt-1">
                   {improvements.map((item, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: "var(--text-secondary)" }}>
@@ -151,20 +154,20 @@ export default function AnalyzePage() {
                 </ul>
               </ResultCard>
 
-              <ResultCard title="Cover Letter Draft" icon="✉️">
+              <ResultCard title={t("review.coverLetterDraft")} icon="✉️">
                 <p className="text-sm leading-relaxed mt-1" style={{ color: "var(--text-secondary)" }}>{coverLetterDraft}</p>
-                <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>📋 Copy to clipboard</button>
+                <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>{t("common.copyToClipboard")}</button>
               </ResultCard>
             </div>
 
             {/* Row 3: Recruiter msg + Interview */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-              <ResultCard title="Recruiter Message" icon="💬">
+              <ResultCard title={t("material.recruiterMessage")} icon="💬">
                 <p className="text-sm leading-relaxed mt-1" style={{ color: "var(--text-secondary)" }}>{recruiterMessage}</p>
-                <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>📋 Copy to clipboard</button>
+                <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>{t("common.copyToClipboard")}</button>
               </ResultCard>
 
-              <ResultCard title="Interview Questions" icon="🎤">
+              <ResultCard title={t("analyze.interviewQuestions")} icon="🎤">
                 <ul className="flex flex-col gap-3 mt-1">
                   {interviewQuestions.map((q, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: "var(--text-secondary)" }}>
@@ -180,14 +183,14 @@ export default function AnalyzePage() {
             <div className="rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-5" style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.1) 0%, rgba(14,165,233,0.06) 100%)", border: "1px solid rgba(59,130,246,0.25)" }}>
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: "var(--blue-dim)", border: "1px solid rgba(59,130,246,0.25)" }}>🚀</div>
               <div className="flex-1 text-center sm:text-left">
-                <p className="text-lg font-bold mb-0.5" style={{ color: "var(--text-primary)" }}>Application Readiness: <span className="gradient-text">Ready to review</span></p>
-                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Your application kit is ready. Review the materials above, fine-tune if needed, and apply with confidence.</p>
+                <p className="text-lg font-bold mb-0.5" style={{ color: "var(--text-primary)" }}>{t("analyze.readiness")} <span className="gradient-text">{t("analyze.readyToReview")}</span></p>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("analyze.readinessDesc")}</p>
               </div>
-              <span className="text-xs font-semibold px-3 py-1.5 rounded-full flex-shrink-0" style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)" }}>✓ Ready</span>
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full flex-shrink-0" style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)" }}>{t("analyze.readyBadge")}</span>
             </div>
 
             <p className="text-center text-xs mt-8" style={{ color: "var(--text-muted)" }}>
-              This is a demo preview. Real AI-powered analysis is coming soon.
+              {t("analyze.demoNote")}
             </p>
           </div>
         )}
@@ -209,7 +212,7 @@ function ResultCard({ title, icon, children }: { title: string; icon: string; ch
   );
 }
 
-/* ── MOCK DATA ──────────────────────────────────────────── */
+/* ── MOCK DATA (represents AI output — stays English) ───── */
 
 const matchingSkills = ["Python", "SQL", "Data Analytics", "Machine Learning"];
 const missingSkills = ["FastAPI", "Docker", "German B1"];
