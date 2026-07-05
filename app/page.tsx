@@ -1,10 +1,13 @@
+"use client";
+
 import WaitlistButton from "@/app/components/WaitlistButton";
+import LanguageSwitcher from "@/app/components/LanguageSwitcher";
+import { useI18n } from "@/app/lib/i18n";
+import type { TKey } from "@/app/lib/translations";
 
 /* ─────────────────────────────────────────────────────────
-   ApplyMate AI – Landing Page (v6)
-   Premium platform framing · "Job application operating system"
-   v6: scanning motion, approval + inbox control-room section,
-   Pro waitlist signal.
+   ApplyMate AI – Landing Page (v6, approved layout)
+   v6.1: multilingual (EN/TR/DE) — structure unchanged.
 ───────────────────────────────────────────────────────── */
 export default function Home() {
   return (
@@ -28,9 +31,17 @@ export default function Home() {
 
 /* ── HEADER ────────────────────────────────────────────── */
 function Header() {
+  const { t } = useI18n();
+  const links: { labelKey: TKey; href: string }[] = [
+    { labelKey: "landing.nav.how", href: "#how-it-works" },
+    { labelKey: "landing.nav.product", href: "#product" },
+    { labelKey: "landing.nav.why", href: "#why" },
+    { labelKey: "landing.nav.pricing", href: "#pricing" },
+  ];
+
   return (
     <header className="landing-header fixed top-0 left-0 right-0 z-50 h-16 flex items-center">
-      <div className="max-w-6xl mx-auto w-full px-6 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto w-full px-6 flex items-center justify-between gap-3">
         <a href="#" className="flex items-center gap-2.5" aria-label="ApplyMate AI home">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white animate-glow-pulse"
@@ -38,30 +49,28 @@ function Header() {
           >
             A
           </div>
-          <span className="font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>
+          <span className="font-semibold tracking-tight hidden sm:inline" style={{ color: "var(--text-primary)" }}>
             ApplyMate <span className="gradient-text">AI</span>
           </span>
         </a>
 
         <nav className="hidden md:flex items-center gap-7" aria-label="Main navigation">
-          {[
-            { label: "How it works", href: "#how-it-works" },
-            { label: "Product",      href: "#product" },
-            { label: "Why ApplyMate", href: "#why" },
-            { label: "Pricing",      href: "#pricing" },
-          ].map(({ label, href }) => (
-            <a key={label} href={href} className="nav-link text-sm">{label}</a>
+          {links.map(({ labelKey, href }) => (
+            <a key={labelKey} href={href} className="nav-link text-sm">{t(labelKey)}</a>
           ))}
         </nav>
 
-        <a
-          href="/profile"
-          id="header-start-free-btn"
-          className="btn-primary"
-          style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-        >
-          Get started →
-        </a>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <a
+            href="/profile"
+            id="header-start-free-btn"
+            className="btn-primary"
+            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
+          >
+            {t("common.getStarted")}
+          </a>
+        </div>
       </div>
     </header>
   );
@@ -69,6 +78,7 @@ function Header() {
 
 /* ── HERO ──────────────────────────────────────────────── */
 function HeroSection() {
+  const { t } = useI18n();
   return (
     <section
       className="relative pt-36 pb-16 px-6 overflow-hidden grid-bg"
@@ -97,35 +107,39 @@ function HeroSection() {
             className="w-1.5 h-1.5 rounded-full animate-pulse"
             style={{ background: "var(--blue)" }}
           />
-          Free beta · No credit card required
+          {t("common.freeBetaBadge")}
         </div>
 
         <h1
           id="hero-headline"
           className="text-5xl md:text-6xl lg:text-[4rem] font-bold tracking-tight leading-[1.08] mb-5 animate-fade-up-d1"
         >
-          Let AI handle <br className="hidden sm:block" />
-          the <span className="gradient-text">applications.</span>
+          {t("landing.hero.h1a")}{" "}
+          <br className="hidden sm:block" />
+          <span className="gradient-text">{t("landing.hero.h1b")}</span>
         </h1>
 
+        {/* Core ApplyMate motto (line 2) + supporting explainer */}
         <p
           className="text-lg md:text-xl leading-relaxed max-w-2xl mx-auto mb-10 animate-fade-up-d2"
           style={{ color: "var(--text-secondary)" }}
         >
-          You focus on improving your profile, skills, and interviews. ApplyMate scans jobs,
-          prepares tailored applications, and waits for your approval.
+          <span className="font-medium" style={{ color: "var(--text-primary)" }}>
+            {t("landing.hero.sub")}
+          </span>{" "}
+          {t("landing.hero.support")}
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-up-d3">
           <a href="/profile" id="hero-primary-cta" className="btn-primary w-full sm:w-auto justify-center">
-            Set up your profile →
+            {t("landing.hero.ctaPrimary")}
           </a>
           <a
             href="/dashboard"
             id="hero-secondary-cta"
             className="btn-ghost w-full sm:w-auto justify-center"
           >
-            See the dashboard →
+            {t("landing.hero.ctaSecondary")}
           </a>
         </div>
       </div>
@@ -138,6 +152,15 @@ function HeroSection() {
 
 /* ── HERO PREVIEW (stats + job list + floating signals) ── */
 function HeroPreview() {
+  const { t } = useI18n();
+
+  const heroStats: { value: string; labelKey: TKey; color: string }[] = [
+    { value: "1,240", labelKey: "common.jobsScanned", color: "var(--text-primary)" },
+    { value: "49", labelKey: "landing.stats.highMatch", color: "#60a5fa" },
+    { value: "45", labelKey: "common.lowFitHidden", color: "var(--text-muted)" },
+    { value: "4", labelKey: "landing.stats.awaiting", color: "#4ade80" },
+  ];
+
   return (
     <div className="relative max-w-2xl mx-auto mt-16 animate-fade-up-d3">
       {/* Glow under frame */}
@@ -154,20 +177,20 @@ function HeroPreview() {
       <div className="float-card animate-float hidden lg:flex" style={{ top: "-18px", left: "-190px" }}>
         <span aria-hidden="true">🎯</span>
         <span>
-          <span className="font-bold" style={{ color: "#60a5fa" }}>91% match</span> — Junior Data Analyst
+          <span className="font-bold" style={{ color: "#60a5fa" }}>{t("landing.float.match")}</span> — Junior Data Analyst
         </span>
       </div>
       <div className="float-card animate-float-d1 hidden lg:flex" style={{ top: "70px", right: "-185px" }}>
         <span aria-hidden="true">🔒</span>
-        <span>Waiting for <span className="font-semibold" style={{ color: "var(--text-primary)" }}>your approval</span></span>
+        <span>{t("landing.float.waitingA")} <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("landing.float.waitingB")}</span></span>
       </div>
       <div className="float-card animate-float-d2 hidden lg:flex" style={{ bottom: "36px", left: "-165px" }}>
         <span aria-hidden="true">📬</span>
-        <span>Reply received — <span className="font-semibold" style={{ color: "#4ade80" }}>interview invite</span></span>
+        <span>{t("landing.float.replyA")} <span className="font-semibold" style={{ color: "#4ade80" }}>{t("landing.float.replyB")}</span></span>
       </div>
       <div className="float-card animate-float hidden lg:flex" style={{ bottom: "-14px", right: "-150px" }}>
         <span aria-hidden="true">🚫</span>
-        <span>45 low-fit jobs hidden</span>
+        <span>{t("landing.float.lowFit")}</span>
       </div>
 
       {/* Browser frame */}
@@ -188,9 +211,9 @@ function HeroPreview() {
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
           {heroStats.map((s) => (
-            <div key={s.label} className="text-center">
+            <div key={s.labelKey} className="text-center">
               <p className="text-sm font-bold leading-tight" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{s.label}</p>
+              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{t(s.labelKey)}</p>
             </div>
           ))}
         </div>
@@ -202,7 +225,7 @@ function HeroPreview() {
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold inline-flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#22d3ee" }} />
-              Scanning sources · high-match jobs
+              {t("landing.scanning")}
             </span>
             <span
               className="text-xs px-2.5 py-0.5 rounded-full"
@@ -212,7 +235,7 @@ function HeroPreview() {
                 border: "1px solid rgba(59,130,246,0.2)",
               }}
             >
-              75%+ match only
+              {t("landing.match75")}
             </span>
           </div>
 
@@ -223,7 +246,7 @@ function HeroPreview() {
           </div>
 
           <p className="text-[11px] text-center pt-3" style={{ color: "var(--text-muted)" }}>
-            🔒 Nothing is submitted without your approval
+            🔒 {t("common.nothingSubmitted")}
           </p>
         </div>
       </div>
@@ -267,6 +290,7 @@ function BrowserChrome({ url }: { url: string }) {
 
 /* ── Shared: job row ───────────────────────────────────── */
 function JobRow({ job, compact }: { job: (typeof jobs)[number]; compact?: boolean }) {
+  const { t } = useI18n();
   return (
     <div className="job-row" style={{ opacity: job.match < 70 ? 0.35 : 1 }}>
       <div
@@ -324,7 +348,7 @@ function JobRow({ job, compact }: { job: (typeof jobs)[number]; compact?: boolea
         className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
         style={job.statusStyle}
       >
-        {job.status}
+        {t(job.statusKey)}
       </span>
     </div>
   );
@@ -332,16 +356,17 @@ function JobRow({ job, compact }: { job: (typeof jobs)[number]; compact?: boolea
 
 /* ── TRUST STRIP ───────────────────────────────────────── */
 function TrustStrip() {
+  const { t } = useI18n();
   return (
     <div
       className="py-5 px-6"
       style={{ borderBottom: "1px solid var(--border-subtle)" }}
     >
       <div className="max-w-5xl mx-auto flex items-center justify-center flex-wrap gap-2.5">
-        {trustPills.map(({ icon, label }) => (
-          <div key={label} className="trust-pill">
+        {trustPills.map(({ icon, labelKey }) => (
+          <div key={labelKey} className="trust-pill">
             <span aria-hidden="true">{icon}</span>
-            {label}
+            {t(labelKey)}
           </div>
         ))}
       </div>
@@ -383,6 +408,7 @@ function SectionHeading({
 
 /* ── WORKFLOW ──────────────────────────────────────────── */
 function WorkflowSection() {
+  const { t } = useI18n();
   return (
     <section
       id="how-it-works"
@@ -392,15 +418,15 @@ function WorkflowSection() {
     >
       <div className="max-w-6xl mx-auto">
         <SectionHeading
-          eyebrow="How it works"
-          title="One profile. One repeatable workflow."
-          subtitle="The same five steps run for every job — you only step in where your judgment matters."
+          eyebrow={t("landing.wf.eyebrow")}
+          title={t("landing.wf.title")}
+          subtitle={t("landing.wf.sub")}
           headingId="workflow-heading"
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {workflowSteps.map((step, i) => (
-            <div key={step.title} className="workflow-step flex flex-col gap-4">
+            <div key={step.titleKey} className="workflow-step flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center text-xl"
@@ -424,13 +450,13 @@ function WorkflowSection() {
                   className="text-base font-semibold mb-1.5"
                   style={{ color: "var(--text-primary)" }}
                 >
-                  {step.title}
+                  {t(step.titleKey)}
                 </h3>
                 <p
                   className="text-sm leading-relaxed"
                   style={{ color: "var(--text-secondary)" }}
                 >
-                  {step.description}
+                  {t(step.descKey)}
                 </p>
               </div>
             </div>
@@ -443,6 +469,7 @@ function WorkflowSection() {
 
 /* ── DASHBOARD MOCKUP ──────────────────────────────────── */
 function DashboardSection() {
+  const { t } = useI18n();
   return (
     <section
       id="product"
@@ -452,9 +479,9 @@ function DashboardSection() {
     >
       <div className="max-w-5xl mx-auto">
         <SectionHeading
-          eyebrow="Platform preview"
-          title="Your whole job search, one dashboard"
-          subtitle="Scanning, matching, prepared applications, and reply tracking — without switching tools."
+          eyebrow={t("landing.dash.eyebrow")}
+          title={t("landing.dash.title")}
+          subtitle={t("landing.dash.sub")}
           headingId="dashboard-heading"
         />
 
@@ -507,16 +534,16 @@ function DashboardSection() {
                   className="text-sm font-semibold"
                   style={{ color: "var(--text-primary)" }}
                 >
-                  Job Matches
+                  {t("landing.dash.jobMatches")}
                   <span
                     className="ml-2 font-normal text-xs"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    49 found today
+                    {t("landing.dash.foundToday")}
                   </span>
                 </p>
                 <div className="flex gap-2">
-                  {["75%+ match", "Germany / Remote"].map((f) => (
+                  {[t("landing.dash.filterMatch"), t("landing.dash.filterGeo")].map((f) => (
                     <span
                       key={f}
                       className="text-xs px-2 py-0.5 rounded-full"
@@ -540,8 +567,8 @@ function DashboardSection() {
                 className="text-xs text-center pt-1"
                 style={{ color: "var(--text-muted)" }}
               >
-                45 low-fit jobs hidden automatically ·{" "}
-                <span style={{ color: "var(--blue)" }}>Show all</span>
+                {t("landing.dash.hiddenAuto")}{" "}
+                <span style={{ color: "var(--blue)" }}>{t("common.showAll")}</span>
               </p>
             </div>
 
@@ -554,12 +581,12 @@ function DashboardSection() {
                 className="text-sm font-semibold"
                 style={{ color: "var(--text-primary)" }}
               >
-                Applications
+                {t("landing.dash.applications")}
                 <span
                   className="ml-2 font-normal text-xs"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  4 active
+                  {t("landing.dash.active")}
                 </span>
               </p>
 
@@ -589,7 +616,7 @@ function DashboardSection() {
                     className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
                     style={entry.statusStyle}
                   >
-                    {entry.status}
+                    {t(entry.statusKey)}
                   </span>
                 </div>
               ))}
@@ -606,10 +633,10 @@ function DashboardSection() {
                   className="text-xs font-medium mb-0.5"
                   style={{ color: "var(--text-secondary)" }}
                 >
-                  ✋ Approval required
+                  {t("landing.dash.approvalRequired")}
                 </p>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  Every application waits in your review queue until you approve it.
+                  {t("landing.dash.approvalRequiredDesc")}
                 </p>
               </div>
             </div>
@@ -622,6 +649,7 @@ function DashboardSection() {
 
 /* ── CONTROL ROOM (approval + inbox previews) ──────────── */
 function ControlRoomSection() {
+  const { t } = useI18n();
   return (
     <section
       className="py-20 px-6"
@@ -630,9 +658,9 @@ function ControlRoomSection() {
     >
       <div className="max-w-5xl mx-auto">
         <SectionHeading
-          eyebrow="You stay in control"
-          title="AI prepares. You approve. It tracks."
-          subtitle="The two moments that make ApplyMate different: nothing goes out without your sign-off, and every reply comes back to one inbox."
+          eyebrow={t("landing.ctrl.eyebrow")}
+          title={t("landing.ctrl.title")}
+          subtitle={t("landing.ctrl.sub")}
           headingId="control-heading"
         />
 
@@ -643,7 +671,7 @@ function ControlRoomSection() {
             style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
           >
             <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--blue)" }}>
-              📋 Review queue
+              {t("landing.ctrl.reviewQueue")}
             </p>
             <div
               className="rounded-xl p-4 flex-1"
@@ -665,13 +693,13 @@ function ControlRoomSection() {
                 <span className="text-sm font-bold flex-shrink-0" style={{ color: "#60a5fa" }}>86%</span>
               </div>
               <div className="flex flex-wrap gap-1.5 mb-4">
-                {["✉️ Cover letter", "💬 Recruiter message", "🎤 Interview prep"].map((m) => (
+                {materialKeys.map((m) => (
                   <span
-                    key={m}
+                    key={m.labelKey}
                     className="text-[11px] font-medium px-2 py-0.5 rounded-md"
                     style={{ background: "rgba(34,197,94,0.06)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.12)" }}
                   >
-                    {m}
+                    {m.icon} {t(m.labelKey)}
                   </span>
                 ))}
               </div>
@@ -680,19 +708,19 @@ function ControlRoomSection() {
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg"
                   style={{ color: "var(--text-muted)", border: "1px solid var(--border-mid)" }}
                 >
-                  ✕ Decline
+                  {t("landing.ctrl.decline")}
                 </span>
                 <span className="flex-1" />
                 <span
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
                   style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
                 >
-                  ✓ Approve &amp; apply
+                  {t("common.approveApply")}
                 </span>
               </div>
             </div>
             <p className="text-xs mt-4" style={{ color: "var(--text-secondary)" }}>
-              Full application package — cover letter, risks, quality score — reviewed before anything is sent.
+              {t("landing.ctrl.packageNote")}
             </p>
           </div>
 
@@ -702,7 +730,7 @@ function ControlRoomSection() {
             style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
           >
             <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--blue)" }}>
-              📬 Inbox
+              {t("landing.ctrl.inbox")}
             </p>
             <div
               className="rounded-xl p-4 flex-1"
@@ -711,9 +739,9 @@ function ControlRoomSection() {
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-2 h-2 rounded-full" style={{ background: "#4ade80" }} />
                 <p className="text-sm font-bold flex-1 truncate" style={{ color: "var(--text-primary)" }}>
-                  Interview invitation — BioML Labs
+                  {t("landing.ctrl.interviewSubject")}
                 </p>
-                <span className="text-[10px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>2h ago</span>
+                <span className="text-[10px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>2h</span>
               </div>
               <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--text-secondary)" }}>
                 &ldquo;We&rsquo;d like to invite you to a 45-minute video interview tomorrow at 14:00…&rdquo;
@@ -723,24 +751,24 @@ function ControlRoomSection() {
                   className="text-[11px] font-medium px-2 py-0.5 rounded-full"
                   style={{ background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.15)" }}
                 >
-                  Interview
+                  {t("type.interview")}
                 </span>
                 <span
                   className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
                   style={{ background: "var(--blue-dim)", color: "var(--blue)", border: "1px solid rgba(59,130,246,0.18)" }}
                 >
-                  → Prepare interview
+                  {t("landing.ctrl.prepChip")}
                 </span>
               </div>
               <div
                 className="rounded-lg px-3 py-2 text-[11px]"
                 style={{ background: "rgba(59,130,246,0.05)", border: "1px dashed var(--border-mid)", color: "var(--text-secondary)" }}
               >
-                🤖 Prep questions and talking points generated from the job requirements.
+                {t("landing.ctrl.aiPrep")}
               </div>
             </div>
             <p className="text-xs mt-4" style={{ color: "var(--text-secondary)" }}>
-              Replies triaged automatically — with suggested next steps, never auto-sent emails.
+              {t("landing.ctrl.triaged")}
             </p>
           </div>
         </div>
@@ -753,8 +781,8 @@ function ControlRoomSection() {
           >
             <span className="text-xl" aria-hidden="true">🚫</span>
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Low-fit roles hidden automatically</span>{" "}
-              — you never see jobs below your match threshold.
+              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("landing.ctrl.lowFitTitle")}</span>{" "}
+              {t("landing.ctrl.lowFitDesc")}
             </p>
           </div>
           <div
@@ -763,8 +791,8 @@ function ControlRoomSection() {
           >
             <span className="text-xl" aria-hidden="true">⏰</span>
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Follow-ups on autopilot</span>{" "}
-              — polite reminder drafts after 7 days of silence, waiting for your approval.
+              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("landing.ctrl.followTitle")}</span>{" "}
+              {t("landing.ctrl.followDesc")}
             </p>
           </div>
         </div>
@@ -775,6 +803,7 @@ function ControlRoomSection() {
 
 /* ── BEFORE / AFTER ────────────────────────────────────── */
 function CompareSection() {
+  const { t } = useI18n();
   return (
     <section
       className="py-20 px-6"
@@ -783,8 +812,8 @@ function CompareSection() {
     >
       <div className="max-w-4xl mx-auto">
         <SectionHeading
-          eyebrow="The difference"
-          title="Job searching is a workflow. Treat it like one."
+          eyebrow={t("landing.cmp.eyebrow")}
+          title={t("landing.cmp.title")}
           headingId="compare-heading"
         />
 
@@ -801,11 +830,11 @@ function CompareSection() {
               className="text-xs font-semibold tracking-widest uppercase mb-5"
               style={{ color: "var(--text-muted)" }}
             >
-              Without ApplyMate
+              {t("landing.cmp.without")}
             </p>
             <div className="flex flex-col gap-3.5">
-              {beforeItems.map((item) => (
-                <div key={item} className="compare-row">
+              {beforeKeys.map((key) => (
+                <div key={key} className="compare-row">
                   <span
                     className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5"
                     style={{
@@ -816,7 +845,7 @@ function CompareSection() {
                   >
                     ✕
                   </span>
-                  {item}
+                  {t(key)}
                 </div>
               ))}
             </div>
@@ -835,11 +864,11 @@ function CompareSection() {
               className="text-xs font-semibold tracking-widest uppercase mb-5"
               style={{ color: "var(--blue)" }}
             >
-              With ApplyMate
+              {t("landing.cmp.with")}
             </p>
             <div className="flex flex-col gap-3.5">
-              {afterItems.map((item) => (
-                <div key={item} className="compare-row" style={{ color: "var(--text-primary)" }}>
+              {afterKeys.map((key) => (
+                <div key={key} className="compare-row" style={{ color: "var(--text-primary)" }}>
                   <span
                     className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5"
                     style={{
@@ -850,7 +879,7 @@ function CompareSection() {
                   >
                     ✓
                   </span>
-                  {item}
+                  {t(key)}
                 </div>
               ))}
             </div>
@@ -863,6 +892,7 @@ function CompareSection() {
 
 /* ── DIFFERENTIATION ───────────────────────────────────── */
 function DifferentiationSection() {
+  const { t } = useI18n();
   return (
     <section
       id="why"
@@ -872,15 +902,15 @@ function DifferentiationSection() {
     >
       <div className="max-w-6xl mx-auto">
         <SectionHeading
-          eyebrow="Why ApplyMate"
-          title="Built for quality, not application volume"
-          subtitle="Mass auto-apply tools spray hundreds of weak applications. ApplyMate sends fewer, better ones — and only with your sign-off."
+          eyebrow={t("landing.why.eyebrow")}
+          title={t("landing.why.title")}
+          subtitle={t("landing.why.sub")}
           headingId="why-heading"
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {differentiators.map((d) => (
-            <div key={d.title} className="feature-card">
+            <div key={d.titleKey} className="feature-card">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3"
                 style={{
@@ -891,10 +921,10 @@ function DifferentiationSection() {
                 {d.icon}
               </div>
               <h3 className="text-base font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>
-                {d.title}
+                {t(d.titleKey)}
               </h3>
               <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                {d.description}
+                {t(d.descKey)}
               </p>
             </div>
           ))}
@@ -906,6 +936,7 @@ function DifferentiationSection() {
 
 /* ── PRICING ───────────────────────────────────────────── */
 function PricingSection() {
+  const { t } = useI18n();
   return (
     <section
       id="pricing"
@@ -915,9 +946,9 @@ function PricingSection() {
     >
       <div className="max-w-4xl mx-auto">
         <SectionHeading
-          eyebrow="Pricing"
-          title="Free while we build."
-          subtitle="Full product access during beta. Transparent pricing before anything changes."
+          eyebrow={t("landing.price.eyebrow")}
+          title={t("landing.price.title")}
+          subtitle={t("landing.price.sub")}
           headingId="pricing-heading"
         />
 
@@ -935,32 +966,32 @@ function PricingSection() {
               className="absolute top-4 right-4 text-xs font-semibold px-2.5 py-1 rounded-full text-white"
               style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
             >
-              Active now
+              {t("landing.price.activeNow")}
             </div>
             <h3
               className="text-xl font-bold mb-1"
               style={{ color: "var(--text-primary)" }}
             >
-              Free Beta
+              {t("landing.price.freeBeta")}
             </h3>
             <div className="flex items-baseline gap-1 mb-3">
               <span className="text-4xl font-bold gradient-text">$0</span>
               <span className="text-sm" style={{ color: "var(--text-muted)" }}>
-                /month
+                {t("landing.price.perMonth")}
               </span>
             </div>
             <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
-              No credit card. Full access. No catch.
+              {t("landing.price.noCatch")}
             </p>
             <ul className="space-y-2.5 mb-8">
-              {freePlanFeatures.map((item) => (
+              {freeFeatureKeys.map((key) => (
                 <li
-                  key={item}
+                  key={key}
                   className="flex items-center gap-3 text-sm"
                   style={{ color: "var(--text-primary)" }}
                 >
                   <span style={{ color: "#60a5fa" }}>✓</span>
-                  {item}
+                  {t(key)}
                 </li>
               ))}
             </ul>
@@ -969,7 +1000,7 @@ function PricingSection() {
               id="pricing-free-btn"
               className="btn-primary w-full justify-center"
             >
-              Get started free
+              {t("landing.price.getStartedFree")}
             </a>
           </div>
 
@@ -988,7 +1019,7 @@ function PricingSection() {
                 border: "1px solid var(--border-mid)",
               }}
             >
-              Coming soon
+              {t("landing.price.comingSoon")}
             </div>
             <h3
               className="text-xl font-bold mb-1"
@@ -1005,17 +1036,17 @@ function PricingSection() {
               </span>
             </div>
             <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
-              Beta users get early access at a discounted rate when Pro launches.
+              {t("landing.price.proSub")}
             </p>
             <ul className="space-y-2.5 mb-8">
-              {proPlanFeatures.map((item) => (
+              {proFeatureKeys.map((key) => (
                 <li
-                  key={item}
+                  key={key}
                   className="flex items-center gap-3 text-sm"
                   style={{ color: "var(--text-secondary)" }}
                 >
                   <span style={{ color: "var(--text-muted)" }}>✓</span>
-                  {item}
+                  {t(key)}
                 </li>
               ))}
             </ul>
@@ -1029,6 +1060,7 @@ function PricingSection() {
 
 /* ── CTA BANNER ────────────────────────────────────────── */
 function CtaBanner() {
+  const { t } = useI18n();
   return (
     <section
       className="py-20 px-6"
@@ -1051,23 +1083,22 @@ function CtaBanner() {
             }}
           />
           <h2 className="relative text-3xl md:text-4xl font-bold tracking-tight mb-4">
-            Build your profile once.
+            {t("landing.cta.title")}
           </h2>
           <p
             className="relative text-base mb-8 max-w-xl mx-auto"
             style={{ color: "var(--text-secondary)" }}
           >
-            Let ApplyMate handle the repetitive workflow — scanning, filtering, and drafting —
-            while you make the decisions that matter.
+            {t("common.motto")}
           </p>
           <a href="/profile" id="cta-banner-btn" className="btn-primary inline-flex">
-            Set up your profile →
+            {t("landing.hero.ctaPrimary")}
           </a>
           <p
             className="relative mt-5 text-xs"
             style={{ color: "var(--text-muted)" }}
           >
-            Free beta · No credit card · You approve every application
+            {t("landing.cta.foot")}
           </p>
         </div>
       </div>
@@ -1077,6 +1108,7 @@ function CtaBanner() {
 
 /* ── FOOTER ────────────────────────────────────────────── */
 function Footer() {
+  const { t } = useI18n();
   return (
     <footer
       className="py-10 px-6"
@@ -1099,30 +1131,37 @@ function Footer() {
         </div>
 
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Built by{" "}
+          {t("landing.footer.builtBy")}{" "}
           <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
             Onur Balic
           </span>
         </p>
 
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          © {new Date().getFullYear()} ApplyMate AI · All rights reserved.
+          © {new Date().getFullYear()} ApplyMate AI · {t("landing.footer.rights")}
         </p>
       </div>
     </footer>
   );
 }
 
-/* ── DATA ──────────────────────────────────────────────── */
+/* ── DATA (companies, roles, and layout constants stay in
+      English — surrounding UI text is translated) ───────── */
 
-/** Shared job data — used in hero preview and dashboard mockup */
-const jobs = [
+const jobs: {
+  role: string;
+  company: string;
+  match: number;
+  barClass: string;
+  statusKey: TKey;
+  statusStyle: React.CSSProperties;
+}[] = [
   {
     role: "Junior Data Analyst",
     company: "DataCorp",
     match: 91,
     barClass: "animate-bar-91",
-    status: "Ready",
+    statusKey: "status.ready",
     statusStyle: {
       background: "rgba(34,197,94,0.12)",
       color: "#4ade80",
@@ -1134,7 +1173,7 @@ const jobs = [
     company: "ExampleTech",
     match: 86,
     barClass: "animate-bar-86",
-    status: "Draft ready",
+    statusKey: "status.draftReady",
     statusStyle: {
       background: "var(--blue-dim)",
       color: "var(--blue)",
@@ -1146,7 +1185,7 @@ const jobs = [
     company: "SocialMetrics",
     match: 52,
     barClass: "animate-bar-52",
-    status: "Low fit · Hidden",
+    statusKey: "status.lowFitHiddenChip",
     statusStyle: {
       background: "var(--bg-overlay)",
       color: "var(--text-muted)",
@@ -1155,52 +1194,20 @@ const jobs = [
   },
 ];
 
-const heroStats = [
-  { value: "1,240", label: "Jobs scanned", color: "var(--text-primary)" },
-  { value: "49", label: "High-match", color: "#60a5fa" },
-  { value: "45", label: "Low-fit hidden", color: "var(--text-muted)" },
-  { value: "4", label: "Awaiting approval", color: "#4ade80" },
+const trustPills: { icon: string; labelKey: TKey }[] = [
+  { icon: "🎯", labelKey: "landing.trust.highMatch" },
+  { icon: "✋", labelKey: "landing.trust.approve" },
+  { icon: "🚫", labelKey: "landing.trust.noMass" },
+  { icon: "🇪🇺", labelKey: "landing.trust.eu" },
+  { icon: "📬", labelKey: "landing.trust.replies" },
 ];
 
-const trustPills = [
-  { icon: "🎯", label: "High-match jobs only" },
-  { icon: "✋", label: "You approve every application" },
-  { icon: "🚫", label: "No mass auto-apply" },
-  { icon: "🇪🇺", label: "Germany & Europe aware" },
-  { icon: "📬", label: "Reply & follow-up tracking" },
-];
-
-const workflowSteps = [
-  {
-    icon: "🔭",
-    title: "Scan",
-    description:
-      "ApplyMate watches trusted sources — LinkedIn, StepStone, Indeed, and company career pages.",
-  },
-  {
-    icon: "🎯",
-    title: "Match",
-    description:
-      "Every job is scored against your profile. Roles under your 75% threshold are hidden automatically.",
-  },
-  {
-    icon: "✍️",
-    title: "Prepare",
-    description:
-      "A tailored cover letter, recruiter message, CV notes, and interview prep — drafted per role.",
-  },
-  {
-    icon: "✋",
-    title: "Approve",
-    description:
-      "Nothing is submitted without you. Review the full package, then approve, skip, or decline.",
-  },
-  {
-    icon: "📊",
-    title: "Track",
-    description:
-      "Every application, reply, and follow-up reminder lives in one tracker — no spreadsheet needed.",
-  },
+const workflowSteps: { icon: string; titleKey: TKey; descKey: TKey }[] = [
+  { icon: "🔭", titleKey: "landing.wf.scan", descKey: "landing.wf.scanDesc" },
+  { icon: "🎯", titleKey: "landing.wf.match", descKey: "landing.wf.matchDesc" },
+  { icon: "✍️", titleKey: "landing.wf.prepare", descKey: "landing.wf.prepareDesc" },
+  { icon: "✋", titleKey: "landing.wf.approve", descKey: "landing.wf.approveDesc" },
+  { icon: "📊", titleKey: "landing.wf.track", descKey: "landing.wf.trackDesc" },
 ];
 
 const sidebarIcons = [
@@ -1210,12 +1217,18 @@ const sidebarIcons = [
   { icon: "⚙️", active: false },
 ];
 
-const trackerEntries = [
+const trackerEntries: {
+  role: string;
+  company: string;
+  time: string;
+  statusKey: TKey;
+  statusStyle: React.CSSProperties;
+}[] = [
   {
     role: "Junior Data Analyst",
     company: "DataCorp",
-    time: "Applied · 2d ago",
-    status: "Applied",
+    time: "2d",
+    statusKey: "stage.applied",
     statusStyle: {
       background: "var(--blue-dim)",
       color: "var(--blue)",
@@ -1225,8 +1238,8 @@ const trackerEntries = [
   {
     role: "Analytics Engineer",
     company: "FinStack",
-    time: "Sent · 5d ago",
-    status: "Reply pending",
+    time: "5d",
+    statusKey: "stage.reply",
     statusStyle: {
       background: "rgba(250,204,21,0.1)",
       color: "#eab308",
@@ -1236,8 +1249,8 @@ const trackerEntries = [
   {
     role: "AI Engineer",
     company: "ExampleTech",
-    time: "Follow-up in 2d",
-    status: "Follow-up due",
+    time: "2d →",
+    statusKey: "stage.followUp",
     statusStyle: {
       background: "rgba(251,146,60,0.1)",
       color: "#f97316",
@@ -1247,8 +1260,8 @@ const trackerEntries = [
   {
     role: "Data Scientist Intern",
     company: "BioML Labs",
-    time: "Interview · Tomorrow",
-    status: "Interview",
+    time: "14:00",
+    statusKey: "stage.interview",
     statusStyle: {
       background: "rgba(34,197,94,0.12)",
       color: "#4ade80",
@@ -1257,74 +1270,50 @@ const trackerEntries = [
   },
 ];
 
-const beforeItems = [
-  "Manually searching five job boards every day",
-  "Saving random links in tabs, notes, and bookmarks",
-  "Rewriting the same cover letter for every role",
-  "Applying to jobs that were never a realistic fit",
-  "Forgetting who replied and when to follow up",
+const materialKeys: { icon: string; labelKey: TKey }[] = [
+  { icon: "✉️", labelKey: "material.coverLetter" },
+  { icon: "💬", labelKey: "material.recruiterMessage" },
+  { icon: "🎤", labelKey: "material.interviewPrep" },
 ];
 
-const afterItems = [
-  "ApplyMate scans trusted sources continuously",
-  "Low-fit roles are hidden before they waste your time",
-  "Tailored drafts prepared for every high-match job",
-  "You review and approve before anything is sent",
-  "Replies and follow-up reminders tracked in one inbox",
+const beforeKeys: TKey[] = [
+  "landing.cmp.b1",
+  "landing.cmp.b2",
+  "landing.cmp.b3",
+  "landing.cmp.b4",
+  "landing.cmp.b5",
 ];
 
-const differentiators = [
-  {
-    icon: "🎯",
-    title: "High-match only",
-    description:
-      "A 75%+ match threshold keeps weak applications out of your queue. Quality over spray-and-pray.",
-  },
-  {
-    icon: "✋",
-    title: "You approve everything",
-    description:
-      "Every application waits for your explicit sign-off. ApplyMate prepares — you decide.",
-  },
-  {
-    icon: "🇪🇺",
-    title: "Germany & Europe aware",
-    description:
-      "Visa and work-authorization awareness, German language filtering, and regional boards like StepStone.",
-  },
-  {
-    icon: "🛡️",
-    title: "Quality & risk analysis",
-    description:
-      "Each application gets a quality score and risk flags — skill gaps, language level, authorization — before you approve.",
-  },
-  {
-    icon: "📬",
-    title: "Reply tracking",
-    description:
-      "Interview invites, pending replies, and follow-up reminders organized automatically.",
-  },
-  {
-    icon: "🧠",
-    title: "Profile that compounds",
-    description:
-      "Improve your profile once and every future match, draft, and score gets better with it.",
-  },
+const afterKeys: TKey[] = [
+  "landing.cmp.a1",
+  "landing.cmp.a2",
+  "landing.cmp.a3",
+  "landing.cmp.a4",
+  "landing.cmp.a5",
 ];
 
-const freePlanFeatures = [
-  "Job matching & fit scores",
-  "Low-fit filtering & skill gap analysis",
-  "Tailored cover letters & recruiter messages",
-  "Application review & approval queue",
-  "Application tracker",
-  "Unlimited use during beta",
+const differentiators: { icon: string; titleKey: TKey; descKey: TKey }[] = [
+  { icon: "🎯", titleKey: "landing.why.d1", descKey: "landing.why.d1Desc" },
+  { icon: "✋", titleKey: "landing.why.d2", descKey: "landing.why.d2Desc" },
+  { icon: "🇪🇺", titleKey: "landing.why.d3", descKey: "landing.why.d3Desc" },
+  { icon: "🛡️", titleKey: "landing.why.d4", descKey: "landing.why.d4Desc" },
+  { icon: "📬", titleKey: "landing.why.d5", descKey: "landing.why.d5Desc" },
+  { icon: "🧠", titleKey: "landing.why.d6", descKey: "landing.why.d6Desc" },
 ];
 
-const proPlanFeatures = [
-  "Everything in Free",
-  "Priority AI processing",
-  "Multiple CV profiles",
-  "Email reply tracking",
-  "Team workspace",
+const freeFeatureKeys: TKey[] = [
+  "landing.price.f1",
+  "landing.price.f2",
+  "landing.price.f3",
+  "landing.price.f4",
+  "landing.price.f5",
+  "landing.price.f6",
+];
+
+const proFeatureKeys: TKey[] = [
+  "landing.price.p1",
+  "landing.price.p2",
+  "landing.price.p3",
+  "landing.price.p4",
+  "landing.price.p5",
 ];
