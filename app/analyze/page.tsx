@@ -33,7 +33,8 @@ export default function AnalyzePage() {
   }
 
   return (
-    <DashboardLayout activeNavId="analyzer">
+    // "analyzer" has no sidebar entry — internal tool, reachable by URL only
+    <DashboardLayout activeNavId="analyzer" pageTitle={t("nav.analyzer")}>
       <div className="max-w-4xl mx-auto">
 
         {/* ── Page title ─────────────────── */}

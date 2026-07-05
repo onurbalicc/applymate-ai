@@ -6,10 +6,11 @@ import type { TKey } from "./translations";
    Labels are translation keys resolved at render time.
    ───────────────────────────────────────────────────────── */
 
+/* "analyzer" has no sidebar entry — /analyze stays reachable by URL
+   as an internal tool and still uses the shared layout. */
 export type NavId =
   | "auto-apply"
   | "review"
-  | "matches"
   | "inbox"
   | "profile"
   | "preferences"
@@ -27,13 +28,11 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   // ── Workflow ──
-  { id: "auto-apply",  icon: "🚀", labelKey: "nav.autoApply",      badge: "8", group: "workflow", href: "/dashboard" },
+  { id: "auto-apply",  icon: "🛰️", labelKey: "nav.controlCenter",  badge: "8", group: "workflow", href: "/dashboard" },
   { id: "review",      icon: "📋", labelKey: "nav.reviewQueue",    badge: "4", group: "workflow", href: "/review-queue" },
-  { id: "matches",     icon: "🎯", labelKey: "nav.jobMatches",                 group: "workflow", href: "/dashboard#matches" },
   { id: "inbox",       icon: "📬", labelKey: "nav.inbox",          badge: "3", group: "workflow", href: "/inbox" },
   // ── Manage ──
   { id: "profile",     icon: "👤", labelKey: "nav.profileSetup",               group: "manage",   href: "/profile" },
   { id: "preferences", icon: "⚙️", labelKey: "nav.jobPreferences",            group: "manage",   href: "/profile#preferences" },
   { id: "tracker",     icon: "📊", labelKey: "nav.tracker",                    group: "manage",   href: "/tracker" },
-  { id: "analyzer",    icon: "🔬", labelKey: "nav.analyzer",                   group: "manage",   href: "/analyze" },
 ];

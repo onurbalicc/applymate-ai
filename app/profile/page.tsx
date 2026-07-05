@@ -226,8 +226,8 @@ export default function ProfilePage() {
           <button className="dash-btn dash-btn--primary w-full sm:w-auto justify-center" onClick={handleSave}>
             {saved ? t("profile.profileSaved") : t("profile.saveProfile")}
           </button>
-          <Link href="/dashboard" className="dash-btn dash-btn--outline w-full sm:w-auto justify-center text-center">
-            {t("profile.previewMatched")}
+          <Link href="/review-queue" className="dash-btn dash-btn--outline w-full sm:w-auto justify-center text-center">
+            {t("common.openReviewQueue")}
           </Link>
           <Link href="/dashboard" className="dash-btn dash-btn--ghost w-full sm:w-auto justify-center text-center">
             {t("profile.goToDashboard")}

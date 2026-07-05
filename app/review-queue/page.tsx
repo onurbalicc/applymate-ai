@@ -174,7 +174,7 @@ export default function ReviewQueuePage() {
                 {t("queue.openTracker")}
               </Link>
               <Link href="/dashboard" className="dash-btn dash-btn--outline">
-                {t("queue.backToAutoApply")}
+                {t("queue.backToControlCenter")}
               </Link>
               <button className="dash-btn dash-btn--ghost" onClick={resetQueue}>
                 {t("queue.reviewAgain")}

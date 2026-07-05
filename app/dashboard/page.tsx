@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
-import { inboxMessages, inboxTypeMeta, trackerApps, trackerStageMeta } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
 import type { TKey } from "@/app/lib/translations";
 
 /* ─────────────────────────────────────────────────────────
-   ApplyMate AI – Dashboard (Operations Overview)
-   No full review cards — those live on /review-queue.
+   ApplyMate AI – Control Center
+   Answers: "What is ApplyMate doing for me, and what needs
+   my approval now?" Engine status + next actions only —
+   the full pipeline lives on /tracker, messages on /inbox.
    ───────────────────────────────────────────────────────── */
 
 export default function DashboardPage() {
@@ -163,7 +164,7 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <section className="lg:col-span-3" id="matches">
+          <section className="lg:col-span-3">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <SectionHeader title={t("dash.jobMatches")} inline />
@@ -179,52 +180,34 @@ export default function DashboardPage() {
           </section>
         </div>
 
-        {/* ── Tracker + Inbox ─────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <section id="tracker">
-            <div className="flex items-center justify-between mb-3">
-              <SectionHeader title={t("dash.activeApplications")} inline />
-              <Link href="/tracker" className="text-[11px] font-medium" style={{ color: "#93c5fd" }}>{t("dash.openTracker")}</Link>
-            </div>
-            <div className="dash-panel">
-              {activeApps.map((a, i) => {
-                const meta = trackerStageMeta[a.stage];
-                return (
-                  <div key={a.role} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: i < activeApps.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)", opacity: 0.8 }}>{a.company[0]}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{a.role} <span className="font-normal" style={{ color: "var(--text-muted)" }}>· {a.company}</span></p>
-                    </div>
-                    <span className="text-[10px] hidden sm:block flex-shrink-0 truncate" style={{ color: "var(--text-muted)", maxWidth: "140px" }}>{a.lastEvent}</span>
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>{t(meta.labelKey)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section id="inbox">
-            <div className="flex items-center justify-between mb-3">
-              <SectionHeader title={t("dash.inbox")} inline />
-              <Link href="/inbox" className="text-[11px] font-medium" style={{ color: "#93c5fd" }}>{t("dash.openInbox")}</Link>
-            </div>
-            <div className="dash-panel">
-              {inboxMessages.map((item, i) => {
-                const meta = inboxTypeMeta[item.type];
-                return (
-                  <div key={item.id} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: i < inboxMessages.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.unread ? "#60a5fa" : "var(--border-mid)" }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{item.subject}</p>
-                      <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{item.from} · {item.time}</p>
-                    </div>
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>{t(meta.labelKey)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        </div>
+        {/* ── Next actions strip ──────────── */}
+        <section>
+          <SectionHeader title={t("dash.nextActions")} />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {nextActions.map((a) => (
+              <Link
+                key={a.href}
+                href={a.href}
+                className="dash-panel p-4 flex items-center gap-3 transition-colors hover:border-[rgba(59,130,246,0.4)]"
+              >
+                <span
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+                  style={{ background: "var(--bg-raised)", border: "1px solid var(--border-mid)" }}
+                  aria-hidden="true"
+                >
+                  {a.icon}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t(a.labelKey)}</p>
+                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                    <span className="font-bold" style={{ color: a.color }}>{a.count}</span> {t(a.contextKey)}
+                  </p>
+                </div>
+                <span className="text-sm" style={{ color: "var(--text-muted)" }}>→</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </DashboardLayout>
   );
@@ -308,5 +291,9 @@ const jobMatches: { role: string; company: string; location: string; match: numb
   { role: "Marketing Analyst", company: "SocialMetrics", location: "Hamburg", match: 52, statusKey: "status.lowFitHiddenChip", statusStyle: { background: "var(--bg-overlay)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" } },
 ];
 
-/* Active (non-archived) applications from the shared tracker data */
-const activeApps = trackerApps.filter((a) => a.stage !== "archived");
+/* Next-action links — full views live on their own pages */
+const nextActions: { href: string; icon: string; labelKey: TKey; count: string; contextKey: TKey; color: string }[] = [
+  { href: "/review-queue", icon: "📋", labelKey: "nav.reviewQueue", count: "4", contextKey: "dash.readyForReviewLine", color: "#4ade80" },
+  { href: "/tracker",      icon: "📊", labelKey: "nav.tracker",     count: "4", contextKey: "tracker.activeApps",      color: "#60a5fa" },
+  { href: "/inbox",        icon: "📬", labelKey: "nav.inbox",       count: "3", contextKey: "inbox.unread",            color: "#fde047" },
+];

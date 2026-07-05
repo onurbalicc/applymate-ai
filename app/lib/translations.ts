@@ -65,9 +65,8 @@ const en = {
   // ── Navigation / sidebar ──
   "nav.groupWorkflow": "Workflow",
   "nav.groupManage": "Manage",
-  "nav.autoApply": "Auto Apply",
+  "nav.controlCenter": "Control Center",
   "nav.reviewQueue": "Review Queue",
-  "nav.jobMatches": "Job Matches",
   "nav.inbox": "Inbox",
   "nav.profileSetup": "Profile Setup",
   "nav.jobPreferences": "Job Preferences",
@@ -255,9 +254,8 @@ const en = {
   "dash.score": "Score",
   "dash.status": "Status",
   "dash.hiddenAuto": "🚫 45 low-match jobs hidden automatically ·",
-  "dash.activeApplications": "Active Applications",
+  "dash.nextActions": "Next Actions",
   "dash.openTracker": "Open Tracker →",
-  "dash.inbox": "Inbox",
   "dash.openInbox": "Open Inbox →",
 
   // ── Profile ──
@@ -311,8 +309,7 @@ const en = {
   "profile.vFollowUp": "After 7 days",
   "profile.saveProfile": "💾 Save profile",
   "profile.profileSaved": "✓ Profile saved",
-  "profile.previewMatched": "Preview matched jobs →",
-  "profile.goToDashboard": "Go to dashboard",
+  "profile.goToDashboard": "Go to Control Center",
   "profile.savedToast": "✓ Profile saved successfully",
   "profile.demoNote": "Your profile is used locally for demo purposes only. No data is saved or shared.",
 
@@ -333,7 +330,7 @@ const en = {
   "queue.complete": "Review queue complete",
   "queue.completeDesc": "ApplyMate will keep scanning for new high-match roles. You'll be notified when new applications are ready.",
   "queue.openTracker": "📊 Open Application Tracker →",
-  "queue.backToAutoApply": "← Back to Auto Apply",
+  "queue.backToControlCenter": "← Back to Control Center",
   "queue.reviewAgain": "↺ Review again",
 
   // ── Review detail ──
@@ -483,9 +480,8 @@ const tr: Record<TKey, string> = {
 
   "nav.groupWorkflow": "İş Akışı",
   "nav.groupManage": "Yönetim",
-  "nav.autoApply": "Auto Apply",
+  "nav.controlCenter": "Kontrol Merkezi",
   "nav.reviewQueue": "İnceleme Kuyruğu",
-  "nav.jobMatches": "İş Eşleşmeleri",
   "nav.inbox": "Gelen Kutusu",
   "nav.profileSetup": "Profil Kurulumu",
   "nav.jobPreferences": "İş Tercihleri",
@@ -661,9 +657,8 @@ const tr: Record<TKey, string> = {
   "dash.score": "Puan",
   "dash.status": "Durum",
   "dash.hiddenAuto": "🚫 45 düşük eşleşmeli ilan otomatik gizlendi ·",
-  "dash.activeApplications": "Aktif Başvurular",
+  "dash.nextActions": "Sıradaki Aksiyonlar",
   "dash.openTracker": "Takibi Aç →",
-  "dash.inbox": "Gelen Kutusu",
   "dash.openInbox": "Gelen Kutusunu Aç →",
 
   "profile.intro": "Tek bir profil oluştur; ApplyMate senin için doğru başvuruları bulsun, sıralasın ve hazırlasın.",
@@ -716,8 +711,7 @@ const tr: Record<TKey, string> = {
   "profile.vFollowUp": "7 gün sonra",
   "profile.saveProfile": "💾 Profili kaydet",
   "profile.profileSaved": "✓ Profil kaydedildi",
-  "profile.previewMatched": "Eşleşen ilanları gör →",
-  "profile.goToDashboard": "Panoya git",
+  "profile.goToDashboard": "Kontrol Merkezi'ne git",
   "profile.savedToast": "✓ Profil başarıyla kaydedildi",
   "profile.demoNote": "Profilin yalnızca demo amaçlı, yerel olarak kullanılır. Hiçbir veri kaydedilmez veya paylaşılmaz.",
 
@@ -737,7 +731,7 @@ const tr: Record<TKey, string> = {
   "queue.complete": "İnceleme kuyruğu tamamlandı",
   "queue.completeDesc": "ApplyMate yüksek eşleşmeli yeni roller için taramaya devam edecek. Yeni başvurular hazır olduğunda haber vereceğiz.",
   "queue.openTracker": "📊 Başvuru Takibini Aç →",
-  "queue.backToAutoApply": "← Auto Apply'a Dön",
+  "queue.backToControlCenter": "← Kontrol Merkezi'ne Dön",
   "queue.reviewAgain": "↺ Yeniden incele",
 
   "review.pageTitle": "Başvuruyu İncele",
@@ -881,9 +875,8 @@ const de: Record<TKey, string> = {
 
   "nav.groupWorkflow": "Workflow",
   "nav.groupManage": "Verwaltung",
-  "nav.autoApply": "Auto Apply",
+  "nav.controlCenter": "Kontrollzentrum",
   "nav.reviewQueue": "Review-Queue",
-  "nav.jobMatches": "Job-Matches",
   "nav.inbox": "Posteingang",
   "nav.profileSetup": "Profil einrichten",
   "nav.jobPreferences": "Job-Präferenzen",
@@ -1059,9 +1052,8 @@ const de: Record<TKey, string> = {
   "dash.score": "Score",
   "dash.status": "Status",
   "dash.hiddenAuto": "🚫 45 unpassende Jobs automatisch ausgeblendet ·",
-  "dash.activeApplications": "Aktive Bewerbungen",
+  "dash.nextActions": "Nächste Schritte",
   "dash.openTracker": "Tracker öffnen →",
-  "dash.inbox": "Posteingang",
   "dash.openInbox": "Posteingang öffnen →",
 
   "profile.intro": "Erstelle ein Profil, damit ApplyMate die richtigen Bewerbungen für dich findet, bewertet und vorbereitet.",
@@ -1114,8 +1106,7 @@ const de: Record<TKey, string> = {
   "profile.vFollowUp": "Nach 7 Tagen",
   "profile.saveProfile": "💾 Profil speichern",
   "profile.profileSaved": "✓ Profil gespeichert",
-  "profile.previewMatched": "Passende Jobs ansehen →",
-  "profile.goToDashboard": "Zum Dashboard",
+  "profile.goToDashboard": "Zum Kontrollzentrum",
   "profile.savedToast": "✓ Profil erfolgreich gespeichert",
   "profile.demoNote": "Dein Profil wird nur lokal für Demo-Zwecke genutzt. Es werden keine Daten gespeichert oder geteilt.",
 
@@ -1135,7 +1126,7 @@ const de: Record<TKey, string> = {
   "queue.complete": "Review-Queue abgeschlossen",
   "queue.completeDesc": "ApplyMate scannt weiter nach passenden Stellen. Du wirst benachrichtigt, sobald neue Bewerbungen bereit sind.",
   "queue.openTracker": "📊 Bewerbungs-Tracker öffnen →",
-  "queue.backToAutoApply": "← Zurück zu Auto Apply",
+  "queue.backToControlCenter": "← Zurück zum Kontrollzentrum",
   "queue.reviewAgain": "↺ Erneut prüfen",
 
   "review.pageTitle": "Bewerbung prüfen",
