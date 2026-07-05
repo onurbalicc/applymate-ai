@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
+import { reviewJobs } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
+import { useApplicationState } from "@/app/lib/application-state";
 import type { TKey } from "@/app/lib/translations";
 
 /* ─────────────────────────────────────────────────────────
@@ -15,7 +17,30 @@ import type { TKey } from "@/app/lib/translations";
 
 export default function DashboardPage() {
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [resetToast, setResetToast] = useState(false);
   const { t } = useI18n();
+  const { state, reset, pendingCount, approvedCount } = useApplicationState();
+
+  const topMatch = state.queue.length > 0 ? reviewJobs[state.queue[0]] : null;
+
+  function handleReset() {
+    reset();
+    setResetToast(true);
+    setTimeout(() => setResetToast(false), 2200);
+  }
+
+  /* Live counts derived from the demo state */
+  const stats = automationStats.map((s) =>
+    s.labelKey === "dash.readyForReview" ? { ...s, value: String(pendingCount) } : s
+  );
+  const queueCounts = appQueue.map((q) =>
+    q.labelKey === "dash.readyForApproval" ? { ...q, value: String(pendingCount) } : q
+  );
+  const actionCounts: Record<string, string> = {
+    "/review-queue": String(pendingCount),
+    "/tracker": String(4 + approvedCount),
+    "/inbox": "3",
+  };
 
   return (
     <DashboardLayout
@@ -66,7 +91,7 @@ export default function DashboardPage() {
         <section>
           <SectionHeader title={t("dash.todaysAutomation")} />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {automationStats.map((s) => (
+            {stats.map((s) => (
               <div key={s.labelKey} className="dash-stat-card">
                 <p className="text-lg font-bold leading-tight" style={{ color: "var(--text-primary)" }}>{s.value}</p>
                 <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t(s.labelKey)}</p>
@@ -127,15 +152,23 @@ export default function DashboardPage() {
           <div className="dash-panel p-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>4</span>
-                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("dash.readyForReviewLine")}</span>
-                </div>
-                <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--text-muted)" }}>
-                  <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}>E</span>
-                  <span>{t("dash.topMatch")} <span className="font-semibold" style={{ color: "var(--text-primary)" }}>AI Engineer Working Student</span></span>
-                  <span className="font-bold" style={{ color: "#60a5fa" }}>86%</span>
-                </div>
+                {topMatch ? (
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{pendingCount}</span>
+                      <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("dash.readyForReviewLine")}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--text-muted)" }}>
+                      <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}>{topMatch.company[0]}</span>
+                      <span>{t("dash.topMatch")} <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{topMatch.role}</span></span>
+                      <span className="font-bold" style={{ color: "#60a5fa" }}>{topMatch.score}%</span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm py-2" style={{ color: "var(--text-secondary)" }}>
+                    ✅ {t("dash.allCaughtUp")}
+                  </p>
+                )}
               </div>
               <Link
                 href="/review-queue"
@@ -152,7 +185,7 @@ export default function DashboardPage() {
           <section className="lg:col-span-2">
             <SectionHeader title={t("dash.applicationQueue")} />
             <div className="dash-panel p-4 flex flex-col gap-3">
-              {appQueue.map((q) => (
+              {queueCounts.map((q) => (
                 <div key={q.labelKey} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: q.dotColor }} />
@@ -182,7 +215,16 @@ export default function DashboardPage() {
 
         {/* ── Next actions strip ──────────── */}
         <section>
-          <SectionHeader title={t("dash.nextActions")} />
+          <div className="flex items-center justify-between mb-3">
+            <SectionHeader title={t("dash.nextActions")} inline />
+            <button
+              onClick={handleReset}
+              className="text-[11px] font-medium"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {t("demo.reset")}
+            </button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {nextActions.map((a) => (
               <Link
@@ -200,7 +242,7 @@ export default function DashboardPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t(a.labelKey)}</p>
                   <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    <span className="font-bold" style={{ color: a.color }}>{a.count}</span> {t(a.contextKey)}
+                    <span className="font-bold" style={{ color: a.color }}>{actionCounts[a.href]}</span> {t(a.contextKey)}
                   </p>
                 </div>
                 <span className="text-sm" style={{ color: "var(--text-muted)" }}>→</span>
@@ -208,6 +250,16 @@ export default function DashboardPage() {
             ))}
           </div>
         </section>
+
+        {/* ── Reset confirmation toast ────── */}
+        {resetToast && (
+          <div
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-sm font-semibold animate-fade-up"
+            style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", backdropFilter: "blur(12px)" }}
+          >
+            ✓ {t("demo.resetDone")}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
@@ -291,9 +343,9 @@ const jobMatches: { role: string; company: string; location: string; match: numb
   { role: "Marketing Analyst", company: "SocialMetrics", location: "Hamburg", match: 52, statusKey: "status.lowFitHiddenChip", statusStyle: { background: "var(--bg-overlay)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" } },
 ];
 
-/* Next-action links — full views live on their own pages */
-const nextActions: { href: string; icon: string; labelKey: TKey; count: string; contextKey: TKey; color: string }[] = [
-  { href: "/review-queue", icon: "📋", labelKey: "nav.reviewQueue", count: "4", contextKey: "dash.readyForReviewLine", color: "#4ade80" },
-  { href: "/tracker",      icon: "📊", labelKey: "nav.tracker",     count: "4", contextKey: "tracker.activeApps",      color: "#60a5fa" },
-  { href: "/inbox",        icon: "📬", labelKey: "nav.inbox",       count: "3", contextKey: "inbox.unread",            color: "#fde047" },
+/* Next-action links — counts are injected from the demo state at render */
+const nextActions: { href: string; icon: string; labelKey: TKey; contextKey: TKey; color: string }[] = [
+  { href: "/review-queue", icon: "📋", labelKey: "nav.reviewQueue", contextKey: "dash.readyForReviewLine", color: "#4ade80" },
+  { href: "/tracker",      icon: "📊", labelKey: "nav.tracker",     contextKey: "tracker.activeApps",      color: "#60a5fa" },
+  { href: "/inbox",        icon: "📬", labelKey: "nav.inbox",       contextKey: "inbox.unread",            color: "#fde047" },
 ];

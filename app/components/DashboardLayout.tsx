@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { navItems, type NavId } from "@/app/lib/nav-items";
 import { useI18n, useTheme } from "@/app/lib/i18n";
+import { useApplicationState } from "@/app/lib/application-state";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 
 /* ─────────────────────────────────────────────────────────
@@ -29,6 +30,11 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { t } = useI18n();
+  const { pendingCount } = useApplicationState();
+
+  /* Review Queue badge follows the demo state; other badges stay static */
+  const badgeFor = (item: (typeof navItems)[number]) =>
+    item.id === "review" ? (pendingCount > 0 ? String(pendingCount) : undefined) : item.badge;
 
   const activeItem = navItems.find((n) => n.id === activeNavId);
   const resolvedTitle = pageTitle ?? (activeItem ? t(activeItem.labelKey) : "Dashboard");
@@ -74,6 +80,7 @@ export default function DashboardLayout({
                 key={item.id}
                 item={item}
                 label={t(item.labelKey)}
+                badge={badgeFor(item)}
                 active={activeNavId === item.id}
                 onNavigate={() => setSidebarOpen(false)}
               />
@@ -85,6 +92,7 @@ export default function DashboardLayout({
                 key={item.id}
                 item={item}
                 label={t(item.labelKey)}
+                badge={badgeFor(item)}
                 active={activeNavId === item.id}
                 onNavigate={() => setSidebarOpen(false)}
               />
@@ -204,11 +212,13 @@ function NavGroup({
 function SidebarLink({
   item,
   label,
+  badge,
   active,
   onNavigate,
 }: {
   item: (typeof navItems)[number];
   label: string;
+  badge?: string;
   active: boolean;
   onNavigate: () => void;
 }) {
@@ -218,7 +228,7 @@ function SidebarLink({
     <Link href={item.href} className={className} onClick={onNavigate}>
       <span className="text-sm w-5 text-center">{item.icon}</span>
       <span className="flex-1 text-left">{label}</span>
-      {item.badge && (
+      {badge && (
         <span
           className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
           style={{
@@ -226,7 +236,7 @@ function SidebarLink({
             color: "#fff",
           }}
         >
-          {item.badge}
+          {badge}
         </span>
       )}
     </Link>

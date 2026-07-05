@@ -5,28 +5,29 @@ import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
 import { reviewJobs, type ReviewJob } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
+import { useApplicationState } from "@/app/lib/application-state";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Review Queue
-   Dedicated page for reviewing prepared applications.
-   Job data comes from the shared mock-data module.
+   Queue order and decisions live in the shared demo state
+   (localStorage): approve/decline remove the job from the
+   queue, skip moves it to the back. The card shown is
+   always queue[0].
    ───────────────────────────────────────────────────────── */
 
-const reviewQueue = reviewJobs;
-
 export default function ReviewQueuePage() {
-  const [reviewIdx, setReviewIdx] = useState(0);
   const [swipeAnim, setSwipeAnim] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<{ text: string; color: string } | null>(null);
   const [cardKey, setCardKey] = useState(0);
   const { t } = useI18n();
+  const { state, approve, decline, skip, reset, handledCount, totalCount } = useApplicationState();
 
-  const currentReview = reviewIdx < reviewQueue.length ? reviewQueue[reviewIdx] : null;
-  const total = reviewQueue.length;
+  const currentJobId = state.queue.length > 0 ? state.queue[0] : null;
+  const currentReview = currentJobId !== null ? reviewJobs[currentJobId] : null;
   const isAnimating = !!swipeAnim;
 
   const advanceToNext = useCallback((action: "declined" | "skipped" | "approved") => {
-    if (isAnimating) return;
+    if (isAnimating || currentJobId === null) return;
 
     const animClass =
       action === "declined" ? "animate-swipe-left" :
@@ -42,19 +43,22 @@ export default function ReviewQueuePage() {
     setSwipeAnim(animClass);
     setStatusMsg(msgs[action]);
 
-    // Wait for exit animation, then show next card
+    // Wait for exit animation, then apply the decision — the
+    // store update swaps in the next card (queue[0] changes).
     setTimeout(() => {
+      if (action === "approved") approve(currentJobId);
+      else if (action === "declined") decline(currentJobId);
+      else skip(currentJobId);
       setSwipeAnim(null);
-      setReviewIdx((i) => i + 1);
       setCardKey((k) => k + 1);
     }, 500);
 
     // Clear status message after a bit
     setTimeout(() => setStatusMsg(null), 2200);
-  }, [isAnimating, t]);
+  }, [isAnimating, currentJobId, approve, decline, skip, t]);
 
   function resetQueue() {
-    setReviewIdx(0);
+    reset();
     setCardKey((k) => k + 1);
     setStatusMsg(null);
     setSwipeAnim(null);
@@ -91,28 +95,37 @@ export default function ReviewQueuePage() {
         {currentReview && (
           <div className="flex items-center gap-3 mb-4">
             <span className="text-[12px] font-medium tabular-nums" style={{ color: "var(--text-secondary)" }}>
-              {t("queue.progress", { i: reviewIdx + 1, n: total })}
+              {t("queue.progress", { i: Math.min(handledCount + 1, totalCount), n: totalCount })}
             </span>
             <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "var(--border-subtle)" }}>
               <div
                 className="h-full rounded-full transition-all duration-500 ease-out"
                 style={{
-                  width: `${((reviewIdx + 1) / total) * 100}%`,
+                  width: `${(Math.min(handledCount + 1, totalCount) / totalCount) * 100}%`,
                   background: "linear-gradient(90deg, #2563eb, #22d3ee)",
                 }}
               />
             </div>
             <div className="flex gap-1">
-              {reviewQueue.map((_, i) => (
-                <span
-                  key={i}
-                  className="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                  style={{
-                    background: i < reviewIdx ? "#4ade80" : i === reviewIdx ? "#60a5fa" : "var(--border-mid)",
-                    transform: i === reviewIdx ? "scale(1.4)" : "scale(1)",
-                  }}
-                />
-              ))}
+              {reviewJobs.map((_, i) => {
+                const dotColor = state.approved.includes(i)
+                  ? "#4ade80"
+                  : state.declined.includes(i)
+                  ? "#f87171"
+                  : i === currentJobId
+                  ? "#60a5fa"
+                  : "var(--border-mid)";
+                return (
+                  <span
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full transition-all duration-300"
+                    style={{
+                      background: dotColor,
+                      transform: i === currentJobId ? "scale(1.4)" : "scale(1)",
+                    }}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
@@ -148,11 +161,12 @@ export default function ReviewQueuePage() {
         )}
 
         {/* ── Card ───────────────────────── */}
-        {currentReview ? (
+        {currentReview && currentJobId !== null ? (
           <div key={cardKey} className={swipeAnim ?? "animate-card-enter"}>
             <ReviewCard
               job={currentReview}
-              jobIdx={reviewIdx}
+              jobIdx={currentJobId}
+              wasSkipped={state.skipped.includes(currentJobId)}
               disabled={isAnimating}
               onApprove={() => advanceToNext("approved")}
               onDecline={() => advanceToNext("declined")}
@@ -177,7 +191,7 @@ export default function ReviewQueuePage() {
                 {t("queue.backToControlCenter")}
               </Link>
               <button className="dash-btn dash-btn--ghost" onClick={resetQueue}>
-                {t("queue.reviewAgain")}
+                {t("demo.reset")}
               </button>
             </div>
           </div>
@@ -191,6 +205,7 @@ export default function ReviewQueuePage() {
 function ReviewCard({
   job,
   jobIdx,
+  wasSkipped,
   disabled,
   onApprove,
   onDecline,
@@ -198,6 +213,7 @@ function ReviewCard({
 }: {
   job: ReviewJob;
   jobIdx: number;
+  wasSkipped: boolean;
   disabled: boolean;
   onApprove: () => void;
   onDecline: () => void;
@@ -211,6 +227,14 @@ function ReviewCard({
         <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
           ← {t("common.decline")}
         </span>
+        {wasSkipped && (
+          <span
+            className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+            style={{ background: "rgba(250,204,21,0.06)", color: "#fde047", border: "1px solid rgba(250,204,21,0.15)" }}
+          >
+            {t("queue.skipped")}
+          </span>
+        )}
         <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
           {t("common.approve")} →
         </span>

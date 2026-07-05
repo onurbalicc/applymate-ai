@@ -62,6 +62,13 @@ const en = {
   "action.sendFollowUp": "Send follow-up",
   "action.archive": "Archive",
 
+  // ── Demo state ──
+  "demo.reset": "↺ Reset demo data",
+  "demo.resetDone": "Demo data reset",
+  "demo.approvedEvent": "Approved in this session",
+  "demo.approvedNext": "Queued for submission (demo)",
+  "demo.newChip": "New",
+
   // ── Navigation / sidebar ──
   "nav.groupWorkflow": "Workflow",
   "nav.groupManage": "Manage",
@@ -242,6 +249,7 @@ const en = {
   "dash.workType": "Work type",
   "dash.reviewQueue": "Review Queue",
   "dash.readyForReviewLine": "applications ready for review",
+  "dash.allCaughtUp": "All caught up — no applications waiting for review.",
   "dash.topMatch": "Top match:",
   "dash.applicationQueue": "Application Queue",
   "dash.readyForApproval": "Ready for approval",
@@ -396,7 +404,7 @@ const en = {
   "tracker.intro": "Every application you approve lands here. Track its stage, see the latest event, and act on the next step.",
   "tracker.activeApps": "active applications",
   "tracker.empty": "Nothing here yet",
-  "tracker.waitingA": "4 applications are waiting for your approval",
+  "tracker.waitingA": "{n} applications are waiting for your approval",
   "tracker.waitingB": "in the review queue — approved ones appear here.",
   "tracker.demoNote": "This is a demo preview with mock applications. Statuses will update automatically once real tracking is live.",
 
@@ -477,6 +485,12 @@ const tr: Record<TKey, string> = {
   "action.classify": "Sınıflandır",
   "action.sendFollowUp": "Takip mesajı gönder",
   "action.archive": "Arşivle",
+
+  "demo.reset": "↺ Demo verilerini sıfırla",
+  "demo.resetDone": "Demo verileri sıfırlandı",
+  "demo.approvedEvent": "Bu oturumda onaylandı",
+  "demo.approvedNext": "Gönderim için sırada (demo)",
+  "demo.newChip": "Yeni",
 
   "nav.groupWorkflow": "İş Akışı",
   "nav.groupManage": "Yönetim",
@@ -645,6 +659,7 @@ const tr: Record<TKey, string> = {
   "dash.workType": "Çalışma türü",
   "dash.reviewQueue": "İnceleme Kuyruğu",
   "dash.readyForReviewLine": "başvuru incelemeye hazır",
+  "dash.allCaughtUp": "Hepsi tamam — incelenmeyi bekleyen başvuru yok.",
   "dash.topMatch": "En iyi eşleşme:",
   "dash.applicationQueue": "Başvuru Kuyruğu",
   "dash.readyForApproval": "Onaya hazır",
@@ -794,7 +809,7 @@ const tr: Record<TKey, string> = {
   "tracker.intro": "Onayladığın her başvuru buraya düşer. Aşamasını izle, son gelişmeyi gör ve sıradaki adımı at.",
   "tracker.activeApps": "aktif başvuru",
   "tracker.empty": "Henüz bir şey yok",
-  "tracker.waitingA": "4 başvuru onayını bekliyor",
+  "tracker.waitingA": "{n} başvuru onayını bekliyor",
   "tracker.waitingB": "— inceleme kuyruğunda; onaylananlar burada görünür.",
   "tracker.demoNote": "Bu, örnek başvurular içeren bir demo önizlemesidir. Gerçek takip devreye girince durumlar otomatik güncellenecek.",
 
@@ -872,6 +887,12 @@ const de: Record<TKey, string> = {
   "action.classify": "Zuordnen",
   "action.sendFollowUp": "Follow-up senden",
   "action.archive": "Archivieren",
+
+  "demo.reset": "↺ Demo-Daten zurücksetzen",
+  "demo.resetDone": "Demo-Daten zurückgesetzt",
+  "demo.approvedEvent": "In dieser Sitzung freigegeben",
+  "demo.approvedNext": "Zur Übermittlung vorgemerkt (Demo)",
+  "demo.newChip": "Neu",
 
   "nav.groupWorkflow": "Workflow",
   "nav.groupManage": "Verwaltung",
@@ -1040,6 +1061,7 @@ const de: Record<TKey, string> = {
   "dash.workType": "Arbeitsform",
   "dash.reviewQueue": "Review-Queue",
   "dash.readyForReviewLine": "Bewerbungen bereit zur Prüfung",
+  "dash.allCaughtUp": "Alles erledigt — keine Bewerbungen warten auf Prüfung.",
   "dash.topMatch": "Bester Match:",
   "dash.applicationQueue": "Bewerbungs-Queue",
   "dash.readyForApproval": "Bereit zur Freigabe",
@@ -1189,7 +1211,7 @@ const de: Record<TKey, string> = {
   "tracker.intro": "Jede Bewerbung, die du freigibst, landet hier. Verfolge die Phase, sieh das letzte Ereignis und geh den nächsten Schritt.",
   "tracker.activeApps": "aktive Bewerbungen",
   "tracker.empty": "Noch nichts hier",
-  "tracker.waitingA": "4 Bewerbungen warten auf deine Freigabe",
+  "tracker.waitingA": "{n} Bewerbungen warten auf deine Freigabe",
   "tracker.waitingB": "in der Review-Queue — freigegebene erscheinen hier.",
   "tracker.demoNote": "Dies ist eine Demo-Vorschau mit Beispiel-Bewerbungen. Status werden automatisch aktualisiert, sobald echtes Tracking live ist.",
 
