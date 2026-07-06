@@ -62,6 +62,16 @@ const en = {
   "action.sendFollowUp": "Send follow-up",
   "action.archive": "Archive",
 
+  // ── Onboarding checklist (English-first; TR/DE reuse EN for now) ──
+  "onboard.title": "Getting started",
+  "onboard.next": "Next",
+  "onboard.step1": "Complete your profile",
+  "onboard.step2": "Generate your Master CV preview",
+  "onboard.step3": "Review your first application",
+  "onboard.step4": "Approve an application package",
+  "onboard.step5": "See it in the Application Tracker",
+  "onboard.done": "Setup complete — your ApplyMate workflow is ready.",
+
   // ── Demo state ──
   "demo.reset": "↺ Reset demo data",
   "demo.resetDone": "Demo data reset",
@@ -524,6 +534,16 @@ const tr: Record<TKey, string> = {
   "action.sendFollowUp": "Takip mesajı gönder",
   "action.archive": "Arşivle",
 
+  // ── Onboarding checklist (English-first; TR/DE reuse EN for now) ──
+  "onboard.title": "Getting started",
+  "onboard.next": "Next",
+  "onboard.step1": "Complete your profile",
+  "onboard.step2": "Generate your Master CV preview",
+  "onboard.step3": "Review your first application",
+  "onboard.step4": "Approve an application package",
+  "onboard.step5": "See it in the Application Tracker",
+  "onboard.done": "Setup complete — your ApplyMate workflow is ready.",
+
   "demo.reset": "↺ Demo verilerini sıfırla",
   "demo.resetDone": "Demo verileri sıfırlandı",
   "demo.approvedEvent": "Bu oturumda onaylandı",
@@ -965,6 +985,16 @@ const de: Record<TKey, string> = {
   "action.classify": "Zuordnen",
   "action.sendFollowUp": "Follow-up senden",
   "action.archive": "Archivieren",
+
+  // ── Onboarding checklist (English-first; TR/DE reuse EN for now) ──
+  "onboard.title": "Getting started",
+  "onboard.next": "Next",
+  "onboard.step1": "Complete your profile",
+  "onboard.step2": "Generate your Master CV preview",
+  "onboard.step3": "Review your first application",
+  "onboard.step4": "Approve an application package",
+  "onboard.step5": "See it in the Application Tracker",
+  "onboard.done": "Setup complete — your ApplyMate workflow is ready.",
 
   "demo.reset": "↺ Demo-Daten zurücksetzen",
   "demo.resetDone": "Demo-Daten zurückgesetzt",

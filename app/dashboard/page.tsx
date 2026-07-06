@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
+import OnboardingChecklist from "@/app/components/OnboardingChecklist";
 import { reviewJobs } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
 import { useApplicationState } from "@/app/lib/application-state";
@@ -86,6 +87,9 @@ export default function DashboardPage() {
         >
           🤖 <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("common.motto")}</span>
         </div>
+
+        {/* ── Onboarding checklist ────────── */}
+        <OnboardingChecklist />
 
         {/* ── Today's Automation ──────────── */}
         <section>

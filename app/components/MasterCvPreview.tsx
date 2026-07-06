@@ -1,72 +1,17 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useI18n } from "@/app/lib/i18n";
+import { useCvPreviewGenerated, setCvPreviewGenerated } from "@/app/lib/cv-preview-state";
 
 /* ─────────────────────────────────────────────────────────
    Master CV Preview — frontend-only mock.
-   State persisted in localStorage under "applymate-cv-preview".
-
-   Uses the same useSyncExternalStore pattern as lib/i18n and
-   lib/application-state: the server snapshot returns false,
-   so prerendered HTML hydrates cleanly (un-generated state),
-   then re-renders to the stored client value right after
-   hydration — no hydration mismatch, no setState-in-effect.
+   State lives in lib/cv-preview-state (localStorage under
+   "applymate-cv-preview") so the Control Center onboarding
+   checklist can read it too.
 
    Real AI generation will be connected in a future step.
    ───────────────────────────────────────────────────────── */
-
-const LS_KEY = "applymate-cv-preview";
-
-interface CvPreviewState {
-  generated: boolean;
-  generatedAt: string;
-}
-
-/* ── Module-level store (same shape as i18n / application-state) ── */
-
-let cachedGenerated: boolean | null = null;
-const cvListeners = new Set<() => void>();
-
-function readGenerated(): boolean {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw) as Partial<CvPreviewState>;
-    return parsed.generated === true;
-  } catch {
-    return false;
-  }
-}
-
-function writeGenerated(value: boolean) {
-  cachedGenerated = value;
-  try {
-    if (value) {
-      const state: CvPreviewState = { generated: true, generatedAt: new Date().toISOString() };
-      localStorage.setItem(LS_KEY, JSON.stringify(state));
-    } else {
-      localStorage.removeItem(LS_KEY);
-    }
-  } catch {
-    /* localStorage unavailable — keep in-memory value */
-  }
-  cvListeners.forEach((cb) => cb());
-}
-
-const cvStore = {
-  subscribe(cb: () => void) {
-    cvListeners.add(cb);
-    return () => cvListeners.delete(cb);
-  },
-  getSnapshot(): boolean {
-    if (cachedGenerated === null) cachedGenerated = readGenerated();
-    return cachedGenerated;
-  },
-  /** Server snapshot — always false so SSR/prerender matches un-generated state */
-  getServerSnapshot: (): boolean => false,
-};
 
 /* ── Mock CV content (English — stays English like all mock AI output) ── */
 
@@ -141,16 +86,14 @@ function PreviewLabel({ label }: { label: string }) {
 
 export default function MasterCvPreview() {
   const { t } = useI18n();
-  // useSyncExternalStore: server snapshot = false (pre-generated), client snapshot = localStorage value.
-  // React prerender matches the false/un-generated state, then reconciles to stored state after hydration.
-  const generated = useSyncExternalStore(cvStore.subscribe, cvStore.getSnapshot, cvStore.getServerSnapshot);
+  const generated = useCvPreviewGenerated();
 
   function handleGenerate() {
-    writeGenerated(true);
+    setCvPreviewGenerated(true);
   }
 
   function handleReset() {
-    writeGenerated(false);
+    setCvPreviewGenerated(false);
   }
 
   return (
