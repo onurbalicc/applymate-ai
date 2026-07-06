@@ -254,6 +254,45 @@ export default function InboxPage() {
                       </div>
                     )}
 
+                    {/* Contextual Action Block */}
+                    {selected.type !== "new" && (
+                      <div
+                        className="rounded-lg p-3.5 mb-3 flex flex-col gap-2"
+                        style={{
+                          background: selected.type === "interview"
+                            ? "rgba(34,197,94,0.04)"
+                            : selected.type === "rejection"
+                            ? "var(--bg-overlay)"
+                            : "rgba(250,204,21,0.03)",
+                          border: `1px solid ${
+                            selected.type === "interview"
+                              ? "rgba(34,197,94,0.15)"
+                              : selected.type === "rejection"
+                              ? "var(--border-subtle)"
+                              : "rgba(250,204,21,0.15)"
+                          }`,
+                        }}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                            ⚡ Suggested Action
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-[12px] font-bold" style={{ color: "var(--text-primary)" }}>
+                            {selected.type === "interview" && t("inbox.actionPrepInterview")}
+                            {(selected.type === "reply" || selected.type === "follow-up") && t("inbox.actionDraftReply")}
+                            {selected.type === "rejection" && t("inbox.actionReviewFeedback")}
+                          </p>
+                          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                            {selected.type === "interview" && t("inbox.actionPrepInterviewSub")}
+                            {(selected.type === "reply" || selected.type === "follow-up") && t("inbox.actionDraftReplySub")}
+                            {selected.type === "rejection" && t("inbox.actionReviewFeedbackSub")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {selected.id === suggestedReply.forMessageId ? (
                       <>
                         <div
@@ -283,9 +322,13 @@ export default function InboxPage() {
                           {t(hintKeys[selected.type])}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {selected.type === "interview" ? (
-                            <Link href="/review?job=2" className="dash-btn dash-btn--primary text-[12px]">
+                          {selected.type === "interview" && selected.jobIndex !== undefined ? (
+                            <Link href={`/review?job=${selected.jobIndex}`} className="dash-btn dash-btn--primary text-[12px]">
                               {t("inbox.openPrep")}
+                            </Link>
+                          ) : selected.type === "rejection" && selected.jobIndex !== undefined ? (
+                            <Link href={`/review?job=${selected.jobIndex}`} className="dash-btn dash-btn--outline text-[12px]">
+                              🔍 {t("inbox.actionReviewFeedback")}
                             </Link>
                           ) : (
                             <button className="dash-btn dash-btn--outline text-[12px]">
