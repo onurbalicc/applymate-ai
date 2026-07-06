@@ -88,6 +88,9 @@ export default function DashboardPage() {
           🤖 <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("common.motto")}</span>
         </div>
 
+        {/* ── Trust Metrics block ──────────── */}
+        <TrustMetricsBlock approvedCount={approvedCount} pendingCount={pendingCount} t={t} />
+
         {/* ── Onboarding checklist ────────── */}
         <OnboardingChecklist />
 
@@ -274,6 +277,81 @@ export default function DashboardPage() {
 function SectionHeader({ title, inline }: { title: string; inline?: boolean }) {
   if (inline) return <h2 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{title}</h2>;
   return <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>{title}</h2>;
+}
+
+/* ── Trust Metrics block ─────────────────────────────────────
+   Three compact tiles that make ApplyMate's core guarantee
+   visible: "0 sent without review" directly counter-positions
+   against volume-first auto-submit competitors.
+   Values are pulled from existing useApplicationState — no
+   new state or localStorage keys required.
+   ─────────────────────────────────────────────────────────── */
+function TrustMetricsBlock({
+  approvedCount,
+  pendingCount,
+  t,
+}: {
+  approvedCount: number;
+  pendingCount: number;
+  t: (key: TKey, vars?: Record<string, string | number>) => string;
+}) {
+  const metrics = [
+    {
+      id: "approved",
+      value: approvedCount,
+      labelKey: "dash.trustApprovedBy" as TKey,
+      subKey: approvedCount === 0 ? ("dash.trustApprovedZero" as TKey) : ("dash.trustApprovedSub" as TKey),
+      valueColor: approvedCount > 0 ? "#4ade80" : "var(--text-secondary)",
+      dotColor: approvedCount > 0 ? "rgba(34,197,94,0.08)" : "var(--bg-raised)",
+      borderColor: approvedCount > 0 ? "rgba(34,197,94,0.18)" : "var(--border-subtle)",
+      icon: "✓",
+    },
+    {
+      id: "ready",
+      value: pendingCount,
+      labelKey: "dash.trustReady" as TKey,
+      subKey: "dash.readyForReviewLine" as TKey,
+      valueColor: pendingCount > 0 ? "#fde047" : "var(--text-secondary)",
+      dotColor: pendingCount > 0 ? "rgba(250,204,21,0.06)" : "var(--bg-raised)",
+      borderColor: pendingCount > 0 ? "rgba(250,204,21,0.18)" : "var(--border-subtle)",
+      icon: "📋",
+    },
+    {
+      id: "sent",
+      value: 0,
+      labelKey: "dash.trustSentWithout" as TKey,
+      subKey: "dash.trustSentSub" as TKey,
+      valueColor: "#4ade80",
+      dotColor: "rgba(34,197,94,0.06)",
+      borderColor: "rgba(34,197,94,0.15)",
+      icon: "🛡",
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {metrics.map((m) => (
+        <div
+          key={m.id}
+          className="rounded-xl p-3 flex flex-col gap-1.5"
+          style={{ background: m.dotColor, border: `1px solid ${m.borderColor}` }}
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-[13px]" aria-hidden="true">{m.icon}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+              {t(m.labelKey)}
+            </span>
+          </div>
+          <p className="text-2xl font-bold leading-none tabular-nums" style={{ color: m.valueColor }}>
+            {m.value}
+          </p>
+          <p className="text-[10px] leading-tight" style={{ color: "var(--text-muted)" }}>
+            {t(m.subKey)}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function JobMatchesTable() {

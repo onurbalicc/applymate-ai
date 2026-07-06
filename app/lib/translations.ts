@@ -276,6 +276,14 @@ const en = {
   "dash.openTracker": "Open Tracker →",
   "dash.openInbox": "Open Inbox →",
 
+  // ── Control Center — Trust Metrics block ──
+  "dash.trustApprovedBy": "Approved by you",
+  "dash.trustApprovedSub": "application package(s) you reviewed and approved",
+  "dash.trustApprovedZero": "No approvals yet — every package waits for your review.",
+  "dash.trustReady": "Ready for review",
+  "dash.trustSentWithout": "Sent without review",
+  "dash.trustSentSub": "ApplyMate never submits without your approval.",
+
   // ── Profile ──
   "profile.intro": "Create one profile so ApplyMate can find, rank, and prepare the right applications for you.",
   "profile.readiness": "Profile readiness",
@@ -734,6 +742,14 @@ const tr: Record<TKey, string> = {
   "dash.openTracker": "Takibi Aç →",
   "dash.openInbox": "Gelen Kutusunu Aç →",
 
+  // ── Control Center — Trust Metrics block (EN fallback — TR polish later) ──
+  "dash.trustApprovedBy": "Approved by you",
+  "dash.trustApprovedSub": "application package(s) you reviewed and approved",
+  "dash.trustApprovedZero": "No approvals yet — every package waits for your review.",
+  "dash.trustReady": "Ready for review",
+  "dash.trustSentWithout": "Sent without review",
+  "dash.trustSentSub": "ApplyMate never submits without your approval.",
+
   "profile.intro": "Tek bir profil oluştur; ApplyMate senin için doğru başvuruları bulsun, sıralasın ve hazırlasın.",
   "profile.readiness": "Profil hazırlığı",
   "profile.cvAdded": "CV eklendi",
@@ -1185,6 +1201,14 @@ const de: Record<TKey, string> = {
   "dash.nextActions": "Nächste Schritte",
   "dash.openTracker": "Tracker öffnen →",
   "dash.openInbox": "Posteingang öffnen →",
+
+  // ── Control Center — Trust Metrics block (EN fallback — DE polish later) ──
+  "dash.trustApprovedBy": "Approved by you",
+  "dash.trustApprovedSub": "application package(s) you reviewed and approved",
+  "dash.trustApprovedZero": "No approvals yet — every package waits for your review.",
+  "dash.trustReady": "Ready for review",
+  "dash.trustSentWithout": "Sent without review",
+  "dash.trustSentSub": "ApplyMate never submits without your approval.",
 
   "profile.intro": "Erstelle ein Profil, damit ApplyMate die richtigen Bewerbungen für dich findet, bewertet und vorbereitet.",
   "profile.readiness": "Profil-Vollständigkeit",
