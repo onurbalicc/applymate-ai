@@ -33,6 +33,8 @@ export interface ReviewJob {
   recruiterMessage: string;
   cvImprovements: string[];
   interviewQuestions: string[];
+  /** Role-specific CV adaptation note — shown in the Application Package page. */
+  cvAdaptationNote: string;
 }
 
 export const reviewJobs: ReviewJob[] = [
@@ -102,6 +104,7 @@ I'm based in Germany and available as a working student. Would you be open to a 
       "Tell us about a Python/SQL project you worked on — what was the problem and how did you solve it?",
       "How would you evaluate whether an AI-generated application is good enough to send?",
     ],
+    cvAdaptationNote: "Emphasized Python, LLM/RAG portfolio, and applied AI coursework for this role. De-emphasized non-AI data work to keep the focus on AI engineering. FastAPI gap acknowledged with a note on backend transferability.",
   },
 
   // ── Job 1: DataCorp ──
@@ -166,6 +169,7 @@ I'm based in Berlin and ready to start. Would you be open to a brief call?`,
       "How comfortable are you writing complex SQL joins and window functions?",
       "How would you communicate a data insight to a non-technical stakeholder?",
     ],
+    cvAdaptationNote: "Led with SQL and Tableau as the primary evidence of analytical capability. Framed Python experience as an asset for advanced analysis and automation. Looker gap addressed by highlighting BI tool transferability.",
   },
 
   // ── Job 2: BioML Labs ──
@@ -231,6 +235,7 @@ Would you be open to a quick chat about the role and the team's work?`,
       "Describe a machine learning model you trained. How did you evaluate its performance?",
       "How quickly can you pick up a new programming language or framework? Give an example.",
     ],
+    cvAdaptationNote: "Leaned into statistics background and ML coursework as the core evidence. Positioned Python/PyTorch experience as transferable to TensorFlow. Added a note on academic research mindset as an asset for a lab environment.",
   },
 
   // ── Job 3: FinStack ──
@@ -296,6 +301,7 @@ I'd love to learn more about the analytics engineering team. Open to a quick cal
       "What's the difference between a view, a table, and an incremental model in dbt?",
       "How would you handle a situation where raw data from a source changes schema unexpectedly?",
     ],
+    cvAdaptationNote: "Centered dbt and SQL pipeline experience as the core match. Framed Git workflow habits as evidence of engineering discipline. Mentioned cloud warehouse transferability (BigQuery/Redshift → Snowflake) to offset the Snowflake gap.",
   },
 ];
 
