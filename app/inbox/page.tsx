@@ -180,6 +180,23 @@ export default function InboxPage() {
                           → {t(msg.actionKey)}
                         </span>
                       </div>
+
+                      {msg.jobIndex !== undefined && (
+                        <div
+                          className="mt-2 pt-2 border-t flex items-center gap-1.5 text-[11px]"
+                          style={{ borderColor: "var(--border-subtle)" }}
+                        >
+                          <span style={{ color: "var(--text-muted)" }}>{t("inbox.relatedPackage")}:</span>
+                          <Link
+                            href={`/review?job=${msg.jobIndex}`}
+                            className="font-semibold hover:underline flex items-center"
+                            style={{ color: "#60a5fa" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {t("inbox.viewPackage")} →
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   </button>
                 );
@@ -220,6 +237,22 @@ export default function InboxPage() {
                         {t(inboxTypeMeta[selected.type].labelKey)}
                       </span>
                     </div>
+
+                    {selected.jobIndex !== undefined && (
+                      <div
+                        className="rounded-lg p-2.5 mb-3 flex items-center justify-between text-[11px]"
+                        style={{ background: "rgba(59,130,246,0.03)", border: "1px solid rgba(59,130,246,0.12)" }}
+                      >
+                        <span style={{ color: "var(--text-secondary)" }}>💼 {t("inbox.relatedPackage")}</span>
+                        <Link
+                          href={`/review?job=${selected.jobIndex}`}
+                          className="font-semibold hover:underline"
+                          style={{ color: "#60a5fa" }}
+                        >
+                          {t("inbox.viewPackage")} →
+                        </Link>
+                      </div>
+                    )}
 
                     {selected.id === suggestedReply.forMessageId ? (
                       <>

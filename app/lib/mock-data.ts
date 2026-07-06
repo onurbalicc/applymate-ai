@@ -322,6 +322,7 @@ export interface InboxMessage {
   time: string;
   unread: boolean;
   actionKey: TKey;
+  jobIndex?: number;
 }
 
 /** Visual metadata per inbox message type (shared by /inbox and dashboard panel) */
@@ -345,6 +346,7 @@ export const inboxMessages: InboxMessage[] = [
     time: "2h ago",
     unread: true,
     actionKey: "action.prepareInterview",
+    jobIndex: 2,
   },
   {
     id: 2,
@@ -357,6 +359,7 @@ export const inboxMessages: InboxMessage[] = [
     time: "6h ago",
     unread: true,
     actionKey: "action.draftReply",
+    jobIndex: 3,
   },
   {
     id: 3,
@@ -369,6 +372,7 @@ export const inboxMessages: InboxMessage[] = [
     time: "1d ago",
     unread: true,
     actionKey: "action.classify",
+    jobIndex: 1,
   },
   {
     id: 4,
@@ -381,6 +385,7 @@ export const inboxMessages: InboxMessage[] = [
     time: "Due in 2d",
     unread: false,
     actionKey: "action.sendFollowUp",
+    jobIndex: 0,
   },
   {
     id: 5,
