@@ -43,6 +43,10 @@ export default function DashboardPage() {
     "/inbox": "3",
   };
 
+  /* Packages the user acted on — approved/declined/skipped are
+     mutually exclusive sets in the store, so this is a distinct count. */
+  const reviewedCount = state.approved.length + state.declined.length + state.skipped.length;
+
   return (
     <DashboardLayout
       activeNavId="auto-apply"
@@ -265,6 +269,9 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        {/* ── Usage & Plan Preview ────────── */}
+        <UsagePlanPanel reviewedCount={reviewedCount} t={t} />
+
         {/* ── Reset confirmation toast ────── */}
         {resetToast && (
           <div
@@ -358,6 +365,73 @@ function TrustMetricsBlock({
         </div>
       ))}
     </div>
+  );
+}
+
+/* ── Usage & Plan Preview panel ──────────────────────────────
+   Introduces the future pricing unit ("application packages")
+   without any payment logic, prices, or billing implication.
+   Reviewed count is derived from the existing demo state.
+   ─────────────────────────────────────────────────────────── */
+const USAGE_LIMIT = 20;
+
+function UsagePlanPanel({
+  reviewedCount,
+  t,
+}: {
+  reviewedCount: number;
+  t: (key: TKey, vars?: Record<string, string | number>) => string;
+}) {
+  const pct = Math.min((reviewedCount / USAGE_LIMIT) * 100, 100);
+  return (
+    <section className="dash-panel p-4">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+        {/* Left: plan + usage */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2.5">
+            <h2 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+              {t("dash.usageTitle")}
+            </h2>
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: "var(--blue-dim)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.25)" }}
+            >
+              {t("dash.usagePlan")}
+            </span>
+          </div>
+
+          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>
+            {t("dash.usageMetric")}
+          </p>
+          <p className="text-[13px] font-bold tabular-nums mb-1.5" style={{ color: "var(--text-primary)" }}>
+            {t("dash.usageCount", { n: reviewedCount, limit: USAGE_LIMIT })}
+          </p>
+          <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden mb-2.5" style={{ background: "var(--border-subtle)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${pct}%`, background: "linear-gradient(90deg, #2563eb, #22d3ee)" }}
+            />
+          </div>
+          <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+            {t("dash.usageSupport")}{" "}
+            <span className="font-medium" style={{ color: "var(--text-secondary)" }}>{t("dash.usageTrust")}</span>
+          </p>
+        </div>
+
+        {/* Right: upgrade teaser */}
+        <div
+          className="sm:w-[260px] flex-shrink-0 rounded-lg p-3"
+          style={{ background: "rgba(59,130,246,0.04)", border: "1px dashed var(--border-mid)" }}
+        >
+          <p className="text-[11px] leading-relaxed mb-2.5" style={{ color: "var(--text-secondary)" }}>
+            ⚡ {t("dash.usageTeaser")}
+          </p>
+          <Link href="/#pricing" className="text-[11px] font-semibold hover:underline" style={{ color: "#60a5fa" }}>
+            {t("dash.usageCta")}
+          </Link>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -283,6 +283,16 @@ const en = {
   "dash.modeChip1": "AI prepares",
   "dash.modeChip2": "You approve",
   "dash.modeChip3": "0 sent without review",
+  // ── Control Center — Usage & Plan Preview (no payments; demo limit) ──
+  "dash.usageTitle": "Usage & Plan Preview",
+  "dash.usagePlan": "Free Demo",
+  "dash.usageMetric": "Application packages this month",
+  "dash.usageCount": "{n} / {limit} packages reviewed",
+  "dash.usageSupport": "One reviewed package represents one application package prepared for your approval.",
+  "dash.usageTrust": "Approval is always required before anything moves forward.",
+  "dash.usageTeaser": "Pro plans will unlock higher monthly package limits, deeper tailoring, and follow-up automation.",
+  "dash.usageCta": "Join beta waitlist →",
+
   // ── Control Center — Trust Metrics block ──
   "dash.trustApprovedBy": "Approved by you",
   "dash.trustApprovedSub": "application package(s) you reviewed and approved",
@@ -767,6 +777,16 @@ const tr: Record<TKey, string> = {
   "dash.modeChip1": "AI prepares",
   "dash.modeChip2": "You approve",
   "dash.modeChip3": "0 sent without review",
+  // ── Control Center — Usage & Plan Preview (no payments; demo limit) ──
+  "dash.usageTitle": "Usage & Plan Preview",
+  "dash.usagePlan": "Free Demo",
+  "dash.usageMetric": "Application packages this month",
+  "dash.usageCount": "{n} / {limit} packages reviewed",
+  "dash.usageSupport": "One reviewed package represents one application package prepared for your approval.",
+  "dash.usageTrust": "Approval is always required before anything moves forward.",
+  "dash.usageTeaser": "Pro plans will unlock higher monthly package limits, deeper tailoring, and follow-up automation.",
+  "dash.usageCta": "Join beta waitlist →",
+
   // ── Control Center — Trust Metrics block (EN fallback — TR polish later) ──
   "dash.trustApprovedBy": "Approved by you",
   "dash.trustApprovedSub": "application package(s) you reviewed and approved",
@@ -1245,6 +1265,16 @@ const de: Record<TKey, string> = {
   "dash.modeChip1": "AI prepares",
   "dash.modeChip2": "You approve",
   "dash.modeChip3": "0 sent without review",
+  // ── Control Center — Usage & Plan Preview (no payments; demo limit) ──
+  "dash.usageTitle": "Usage & Plan Preview",
+  "dash.usagePlan": "Free Demo",
+  "dash.usageMetric": "Application packages this month",
+  "dash.usageCount": "{n} / {limit} packages reviewed",
+  "dash.usageSupport": "One reviewed package represents one application package prepared for your approval.",
+  "dash.usageTrust": "Approval is always required before anything moves forward.",
+  "dash.usageTeaser": "Pro plans will unlock higher monthly package limits, deeper tailoring, and follow-up automation.",
+  "dash.usageCta": "Join beta waitlist →",
+
   // ── Control Center — Trust Metrics block (EN fallback — DE polish later) ──
   "dash.trustApprovedBy": "Approved by you",
   "dash.trustApprovedSub": "application package(s) you reviewed and approved",

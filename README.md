@@ -1,102 +1,85 @@
-# AI Job Application Assistant
+# ApplyMate AI
 
-An AI-powered job application assistant that helps users analyze job descriptions, tailor their CVs, identify skill gaps, generate application materials, and prepare for interviews.
+**ApplyMate AI is a quality-first, user-approved job application operating system.** It helps candidates build one strong profile, generate a Master CV foundation, review AI-prepared application packages, approve what moves forward, and track replies.
 
-This project is inspired by modern AI career tools and is built as a practical AI Engineering portfolio project with potential SaaS direction.
+> **Core motto:** *"Let AI handle the applications. You focus on improving your profile, skills, and interviews."*
 
-## Project Goal
+## ⚠️ Project status — frontend MVP demo
 
-The goal of this project is to build a practical AI assistant for job seekers.
+This is a **frontend-only MVP/demo**:
 
-Instead of only comparing a CV with a job description, the application will support the full job application workflow:
+- **No real external applications are submitted.** Nothing leaves your browser.
+- **No real AI API is connected yet.** All generated content (CVs, cover letters, replies) is realistic mock data.
+- **Application state is demo-only**, persisted in `localStorage` (approve/decline/skip decisions, Master CV preview, language, theme).
+- No accounts, no backend, no payments.
 
-- understanding job requirements
-- comparing the user's CV with a job posting
-- identifying matching and missing skills
-- generating tailored improvement suggestions
-- preparing application documents
-- supporting interview preparation
+## Who it's for
 
-## Planned Features
+Job seekers — initially students and juniors targeting **Germany / Europe** (working student, internship, entry-level roles) — who are tired of manual job-board grinding but don't want a bot spraying low-quality applications in their name.
 
-### Version 1: CV-Job Matching
+## The problem
 
-- Input CV text
-- Input job description text
-- Extract important skills and requirements
-- Calculate a basic match score
-- Identify matching skills
-- Identify missing or weak skills
-- Generate short improvement suggestions
+Job searching is a repetitive workflow done with scattered tools: searching five boards daily, saving links in tabs, rewriting the same cover letter, applying to unrealistic roles, and forgetting who replied. Mass auto-apply tools "solve" this by submitting hundreds of blind applications — trading quality and reputation for volume.
 
-### Version 2: Application Content Generator
+## The solution
 
-- Generate tailored cover letter drafts
-- Generate LinkedIn recruiter messages
-- Suggest improved CV bullet points
-- Generate interview preparation questions
-- Generate short self-introduction answers
+ApplyMate treats the job search as one operated workflow:
 
-### Version 3: Application Workflow Assistant
+**Scan → Match → Prepare → Approve → Track**
 
-- Save job applications
-- Track company, role, status, and notes
-- Compare multiple job postings
-- Recommend which roles are the best fit
+The AI scans trusted sources, hides low-fit roles below your match threshold, and prepares a complete **application package** per role (tailored cover letter, CV adaptation notes, recruiter message, risk analysis, interview prep). Then it stops and waits.
 
-### Optional Future Direction
+## Key differentiator
 
-- User accounts
-- Saved CV profiles
-- Job application history
-- Portfolio website integration
-- SaaS-style product interface
-- Responsible and user-controlled application support
+**Nothing is submitted without your approval. Ever.**
 
-Note: The goal is to build an application copilot, not a spammy auto-apply bot. Final applications should remain user-controlled.
+Unlike volume-first auto-apply tools (Auto/Hybrid modes, credits, "hundreds of applications daily"), ApplyMate runs in a single **review-first approval mode**: *AI prepares → You approve → 0 sent without review*. Fewer, better applications — approved by you.
 
-## Tech Stack
+## Current demo flow
 
-Planned:
+```
+Landing → Control Center → Profile Setup → Master CV Preview
+        → Review Queue → Application Package → Approve → Tracker → Inbox
+```
 
-- Python
-- Streamlit
-- scikit-learn
-- Sentence Transformers
-- Hugging Face
-- LLM API or open-source LLM
-- FastAPI
-- Docker
-- GitHub documentation
+Try it: start at `/`, follow the **Getting started** checklist on the Control Center.
 
-## Project Status
+## Current features
 
-Current status: Planning and setup
+- **Landing page** — positioning, workflow story, control-room previews, free-beta pricing preview with demo waitlist
+- **Control Center** (`/dashboard`) — engine status (scan stats, job sources, match rules), approval trust metrics ("0 sent without review"), review-first mode panel, onboarding checklist, next actions, usage & plan preview, demo reset
+- **Profile Setup** (`/profile`) — one profile, readiness score, impact preview, **Master CV Preview** (mock generation)
+- **Review Queue** (`/review-queue`) — swipe-style approve / decline / skip with keyboard shortcuts
+- **Application Package** (`/review?job=N`) — full package: cover letter, CV adaptation, recruiter message, quality score, risk & gap analysis, interview prep
+- **Tracker** (`/tracker`) — pipeline board (Applied → Reply → Follow-up → Interview → Archived); approved packages land here with links back to their packages
+- **Inbox** (`/inbox`) — mock reply center with contextual recommended steps and approval-gated draft replies
+- **Demo state** — decisions persist across pages and refreshes via `localStorage`
+- **i18n** — EN / TR / DE with a typed, dependency-free dictionary (English-first development)
+- **Dark / light theme**
+- Internal tool: `/analyze` (manual CV/job analyzer, not in navigation)
 
-## Roadmap
+## Tech stack
 
-- [ ] Define MVP scope
-- [ ] Create basic CV and job description text input
-- [ ] Add skill extraction
-- [ ] Add similarity score
-- [ ] Add missing skill analysis
-- [ ] Add LLM-based feedback
-- [ ] Build Streamlit interface
-- [ ] Add cover letter generation
-- [ ] Add recruiter message generation
-- [ ] Add interview question generation
-- [ ] Improve repository structure
-- [ ] Add screenshots and demo
-- [ ] Deploy demo version
+- **Next.js 16** (App Router, Turbopack) · **React 19** · **TypeScript**
+- **Tailwind CSS 4** + custom design tokens (dark/light)
+- Custom lightweight i18n and state stores built on `useSyncExternalStore` + `localStorage` — **zero runtime dependencies beyond Next/React**
 
-## Why This Project Matters
+## Development
 
-This project connects my background in Data Analytics with practical AI Engineering. It demonstrates applied NLP, LLM usage, user-focused product thinking, project structuring, and future deployment potential.
+```bash
+npm install
+npm run dev     # http://localhost:3000
+npm run lint
+npm run build
+```
 
-It also reflects a real-world problem I understand personally: improving job applications and making the job search process more structured, efficient, and personalized.
+## Docs
+
+- [Demo script (2 minutes)](docs/demo-script.md)
+- [Roadmap](docs/roadmap.md)
+- [Agent council workflow](docs/agent-workflow.md) — how product decisions are made
 
 ## Author
 
-Onur Balic  
-M.Sc. Data Analytics, University of Hildesheim  
+Onur Balic — M.Sc. Data Analytics, University of Hildesheim
 GitHub: https://github.com/onurbalicc
