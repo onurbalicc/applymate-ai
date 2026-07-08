@@ -6,7 +6,6 @@ import DashboardLayout from "@/app/components/DashboardLayout";
 import {
   inboxMessages,
   inboxTypeMeta,
-  suggestedReply,
   type InboxType,
 } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
@@ -30,9 +29,12 @@ const hintKeys: Record<InboxType, TKey> = {
   reply: "inbox.hintDefault",
 };
 
+/* Initial selection: first message with a prepared draft */
+const initialSelectedId = inboxMessages.find((m) => m.suggestedReply)?.id ?? inboxMessages[0].id;
+
 export default function InboxPage() {
   const [filter, setFilter] = useState<Filter>("all");
-  const [selectedId, setSelectedId] = useState<number>(suggestedReply.forMessageId);
+  const [selectedId, setSelectedId] = useState<number>(initialSelectedId);
   const [copied, setCopied] = useState(false);
   const { t } = useI18n();
 
@@ -275,7 +277,7 @@ export default function InboxPage() {
                       >
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                            ⚡ Suggested Action
+                            ⚡ {t("inbox.recommendedStep")}
                           </span>
                         </div>
                         <div>
@@ -293,7 +295,7 @@ export default function InboxPage() {
                       </div>
                     )}
 
-                    {selected.id === suggestedReply.forMessageId ? (
+                    {selected.suggestedReply ? (
                       <>
                         <div
                           className="rounded-lg p-3.5 mb-3"
@@ -303,7 +305,7 @@ export default function InboxPage() {
                             {t("inbox.draftLabel")}
                           </p>
                           <p className="text-[12px] leading-[1.7] whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>
-                            {suggestedReply.body}
+                            {selected.suggestedReply}
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2">

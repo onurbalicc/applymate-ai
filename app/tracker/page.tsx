@@ -22,8 +22,8 @@ export default function TrackerPage() {
   const { t } = useI18n();
   const { state, approvedCount, pendingCount } = useApplicationState();
 
-  /* Jobs approved in this demo session → new "Applied" cards */
-  const approvedEntries = state.approved.map((id) => reviewJobs[id]);
+  /* Jobs approved in this demo session → new "Applied" cards (id kept for package link) */
+  const approvedEntries = state.approved.map((id) => ({ id, job: reviewJobs[id] }));
   const activeCount = trackerApps.filter((a) => a.stage !== "archived").length + approvedCount;
 
   function stageCount(stage: TrackerStage) {
@@ -90,7 +90,7 @@ export default function TrackerPage() {
                 </div>
 
                 {/* Newly approved (demo session) — Applied column only */}
-                {stage === "applied" && approvedEntries.map((job) => (
+                {stage === "applied" && approvedEntries.map(({ id, job }) => (
                   <div
                     key={"approved-" + job.role + job.company}
                     className="dash-panel p-3.5 flex flex-col gap-2.5"
@@ -126,6 +126,19 @@ export default function TrackerPage() {
                       style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}
                     >
                       → {t("demo.approvedNext")}
+                    </div>
+
+                    <div className="pt-0.5">
+                      <Link
+                        href={`/review?job=${id}`}
+                        className="text-[11px] font-semibold hover:underline"
+                        style={{ color: "#60a5fa" }}
+                      >
+                        📦 {t("tracker.viewPackage")}
+                      </Link>
+                      <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {t("tracker.viewPackageSub")}
+                      </p>
                     </div>
                   </div>
                 ))}

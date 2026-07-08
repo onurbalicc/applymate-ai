@@ -323,6 +323,8 @@ export interface InboxMessage {
   unread: boolean;
   actionKey: TKey;
   jobIndex?: number;
+  /** Draft text prepared for the user's review — never sent automatically. */
+  suggestedReply?: string;
 }
 
 /** Visual metadata per inbox message type (shared by /inbox and dashboard panel) */
@@ -360,6 +362,14 @@ export const inboxMessages: InboxMessage[] = [
     unread: true,
     actionKey: "action.draftReply",
     jobIndex: 3,
+    suggestedReply: `Hi, thanks a lot for getting back to me!
+
+I'd be glad to have a short call this week. I'm generally available Tuesday to Thursday between 10:00 and 16:00 — happy to adapt to whatever suits your schedule.
+
+Looking forward to speaking about the Analytics Engineer role and the team's dbt setup.
+
+Best regards,
+Onur Balic`,
   },
   {
     id: 3,
@@ -386,6 +396,14 @@ export const inboxMessages: InboxMessage[] = [
     unread: false,
     actionKey: "action.sendFollowUp",
     jobIndex: 0,
+    suggestedReply: `Dear ExampleTech team,
+
+I wanted to briefly follow up on my application for the AI Engineer Working Student position from last week. I remain very interested in the role and the team's applied AI work.
+
+I'd be happy to provide any additional information that would be helpful. Thank you for your time and consideration.
+
+Best regards,
+Onur Balic`,
   },
   {
     id: 5,
@@ -400,21 +418,6 @@ export const inboxMessages: InboxMessage[] = [
     actionKey: "action.archive",
   },
 ];
-
-/** Draft reply shown in the inbox suggested-reply card (for message id 2). */
-export const suggestedReply = {
-  forMessageId: 2,
-  to: "recruiting@finstack.io",
-  subject: "Re: Analytics Engineer application",
-  body: `Hi, thanks a lot for getting back to me!
-
-I'd be glad to have a short call this week. I'm generally available Tuesday to Thursday between 10:00 and 16:00 — happy to adapt to whatever suits your schedule.
-
-Looking forward to speaking about the Analytics Engineer role and the team's dbt setup.
-
-Best regards,
-Onur Balic`,
-};
 
 /* ─────────────────────────────────────────────────────────
    Tracker — application pipeline

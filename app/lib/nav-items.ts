@@ -28,7 +28,7 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   // ── Workflow ──
-  { id: "auto-apply",  icon: "🛰️", labelKey: "nav.controlCenter",  badge: "8", group: "workflow", href: "/dashboard" },
+  { id: "auto-apply",  icon: "🛰️", labelKey: "nav.controlCenter",              group: "workflow", href: "/dashboard" },
   { id: "review",      icon: "📋", labelKey: "nav.reviewQueue",    badge: "4", group: "workflow", href: "/review-queue" },
   { id: "inbox",       icon: "📬", labelKey: "nav.inbox",          badge: "3", group: "workflow", href: "/inbox" },
   // ── Manage ──

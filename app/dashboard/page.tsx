@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
   /* Live counts derived from the demo state */
   const stats = automationStats.map((s) =>
-    s.labelKey === "dash.readyForReview" ? { ...s, value: String(pendingCount) } : s
+    s.labelKey === "dash.activeApplications" ? { ...s, value: String(4 + approvedCount) } : s
   );
   const queueCounts = appQueue.map((q) =>
     q.labelKey === "dash.readyForApproval" ? { ...q, value: String(pendingCount) } : q
@@ -91,6 +91,9 @@ export default function DashboardPage() {
         {/* ── Trust Metrics block ──────────── */}
         <TrustMetricsBlock approvedCount={approvedCount} pendingCount={pendingCount} t={t} />
 
+        {/* ── Review-first approval mode ───── */}
+        <ApprovalModePanel t={t} />
+
         {/* ── Onboarding checklist ────────── */}
         <OnboardingChecklist />
 
@@ -99,7 +102,11 @@ export default function DashboardPage() {
           <SectionHeader title={t("dash.todaysAutomation")} />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {stats.map((s) => (
-              <div key={s.labelKey} className="dash-stat-card">
+              <div
+                key={s.labelKey}
+                className="dash-stat-card"
+                title={s.labelKey === "dash.activeApplications" ? t("dash.currentlyTracked") : undefined}
+              >
                 <p className="text-lg font-bold leading-tight" style={{ color: "var(--text-primary)" }}>{s.value}</p>
                 <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t(s.labelKey)}</p>
               </div>
@@ -354,6 +361,60 @@ function TrustMetricsBlock({
   );
 }
 
+/* ── Approval Mode panel ─────────────────────────────────────
+   Trust-positioning only — no mode selector, no auto mode.
+   Makes the review-first guarantee explicit on the Control
+   Center, countering volume-first auto-submit competitors.
+   ─────────────────────────────────────────────────────────── */
+function ApprovalModePanel({
+  t,
+}: {
+  t: (key: TKey, vars?: Record<string, string | number>) => string;
+}) {
+  const chipKeys: TKey[] = ["dash.modeChip1", "dash.modeChip2", "dash.modeChip3"];
+  return (
+    <div
+      className="rounded-xl px-4 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3"
+      style={{ background: "rgba(34,197,94,0.03)", border: "1px solid rgba(34,197,94,0.15)" }}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span aria-hidden="true">🛡️</span>
+          <span className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>
+            {t("dash.modeTitle")}
+          </span>
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)" }}
+          >
+            {t("dash.modeStatus")}
+          </span>
+        </div>
+        <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          {t("dash.modeBody")}
+        </p>
+      </div>
+      <div className="flex items-center gap-1.5 flex-wrap flex-shrink-0">
+        {chipKeys.map((key, i) => (
+          <span key={key} className="flex items-center gap-1.5">
+            <span
+              className="text-[11px] font-medium px-2 py-1 rounded-full"
+              style={{
+                background: i === 2 ? "rgba(34,197,94,0.08)" : "var(--bg-raised)",
+                color: i === 2 ? "#4ade80" : "var(--text-secondary)",
+                border: `1px solid ${i === 2 ? "rgba(34,197,94,0.2)" : "var(--border-mid)"}`,
+              }}
+            >
+              {t(key)}
+            </span>
+            {i < 2 && <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>→</span>}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function JobMatchesTable() {
   const { t } = useI18n();
   return (
@@ -392,7 +453,7 @@ const automationStats: { value: string; labelKey: TKey }[] = [
   { value: "1,240", labelKey: "common.jobsScanned" },
   { value: "49", labelKey: "dash.highMatchFound" },
   { value: "45", labelKey: "common.lowFitHidden" },
-  { value: "4", labelKey: "dash.readyForReview" },
+  { value: "4", labelKey: "dash.activeApplications" },
   { value: "3", labelKey: "dash.unreadInInbox" },
 ];
 
