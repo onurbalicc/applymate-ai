@@ -258,7 +258,7 @@ Would you be open to a quick chat about the role and the team's work?`,
     workType: "Working student / Part-time",
     salary: "Not listed",
     qualityScore: 85,
-    qualityLabel: "Ready to submit",
+    qualityLabel: "Ready for approval",
     qualityBreakdown: [
       { labelKey: "quality.jobFit", pct: 84 },
       { labelKey: "quality.cvAlignment", pct: 86 },

@@ -237,7 +237,7 @@ function ReviewContent() {
               {t("review.alreadyApproved")}
             </p>
             <Link href="/tracker" className="dash-btn dash-btn--primary text-[12px] flex-shrink-0">
-              Open Tracker →
+              {t("common.openTracker")}
             </Link>
           </div>
         )}
@@ -513,7 +513,7 @@ function ReviewContent() {
               ✓ {t("review.alreadyApproved")}
             </div>
             <Link href="/tracker" className="dash-btn dash-btn--primary w-full sm:w-auto justify-center">
-              Open Tracker →
+              {t("common.openTracker")}
             </Link>
           </div>
         ) : (

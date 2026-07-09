@@ -419,7 +419,7 @@ const en = {
   "review.saveDraft": "💾 Save draft",
   "review.draftSaved": "✓ Draft saved",
   "review.regenerate": "🔄 Regenerate materials",
-  "review.approveApply": "✓ Approve & Apply",
+  "review.approveApply": "✓ Approve & apply",
   "review.savedToast": "✓ Draft saved successfully",
   "review.packageHeader": "Application Package",
   "review.packageReady": "Ready for your approval",
