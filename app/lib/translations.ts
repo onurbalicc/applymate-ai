@@ -516,6 +516,11 @@ const en = {
   "analyze.readinessDesc": "Your application kit is ready. Review the materials above, fine-tune if needed, and apply with confidence.",
   "analyze.readyBadge": "✓ Ready",
   "analyze.demoNote": "This is a demo preview. Real AI-powered analysis is coming soon.",
+  "analyze.fitSummary": "Fit Summary",
+  "analyze.keyRisks": "Key Risks",
+  "analyze.recommendedAction": "Recommended Action",
+  "analyze.providerActive": "AI Analysis Active",
+  "analyze.providerMock": "Demo Fallback Mode",
 };
 
 export type TKey = keyof typeof en;
@@ -1006,6 +1011,11 @@ const tr: Record<TKey, string> = {
   "analyze.readinessDesc": "Başvuru kitin hazır. Yukarıdaki içerikleri incele, gerekiyorsa ince ayar yap ve güvenle başvur.",
   "analyze.readyBadge": "✓ Hazır",
   "analyze.demoNote": "Bu bir demo önizlemesidir. Gerçek AI destekli analiz yakında geliyor.",
+  "analyze.fitSummary": "Fit Summary",
+  "analyze.keyRisks": "Key Risks",
+  "analyze.recommendedAction": "Recommended Action",
+  "analyze.providerActive": "AI Analysis Active",
+  "analyze.providerMock": "Demo Fallback Mode",
 };
 
 const de: Record<TKey, string> = {
@@ -1494,6 +1504,11 @@ const de: Record<TKey, string> = {
   "analyze.readinessDesc": "Dein Bewerbungspaket ist fertig. Prüfe die Inhalte oben, feile bei Bedarf nach und bewirb dich mit gutem Gefühl.",
   "analyze.readyBadge": "✓ Bereit",
   "analyze.demoNote": "Dies ist eine Demo-Vorschau. Echte KI-Analyse kommt bald.",
+  "analyze.fitSummary": "Fit Summary",
+  "analyze.keyRisks": "Key Risks",
+  "analyze.recommendedAction": "Recommended Action",
+  "analyze.providerActive": "AI Analysis Active",
+  "analyze.providerMock": "Demo Fallback Mode",
 };
 
 export const translations: Record<Lang, Record<TKey, string>> = { en, tr, de };
