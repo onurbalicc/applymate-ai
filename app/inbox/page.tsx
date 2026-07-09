@@ -42,8 +42,11 @@ export default function InboxPage() {
   const selected = inboxMessages.find((m) => m.id === selectedId) ?? null;
 
   function handleCopy() {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (!selected?.suggestedReply) return;
+    navigator.clipboard.writeText(selected.suggestedReply).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
   }
 
   const summary: { labelKey: TKey; value: number; filterValue: Filter; color: string }[] = [

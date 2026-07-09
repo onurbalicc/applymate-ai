@@ -59,6 +59,24 @@ function ReviewContent() {
   const [actionState, setActionState] = useState<"idle" | "approving" | "declining" | "skipping">("idle");
   const [toast, setToast] = useState<{ text: string; color: string } | null>(null);
 
+  /* ── Copy-to-clipboard state (per material) ── */
+  const [copiedCover, setCopiedCover] = useState(false);
+  const [copiedRecruiter, setCopiedRecruiter] = useState(false);
+
+  function handleCopyCover() {
+    navigator.clipboard.writeText(job.coverLetter).then(() => {
+      setCopiedCover(true);
+      setTimeout(() => setCopiedCover(false), 1500);
+    });
+  }
+
+  function handleCopyRecruiter() {
+    navigator.clipboard.writeText(job.recruiterMessage ?? "").then(() => {
+      setCopiedRecruiter(true);
+      setTimeout(() => setCopiedRecruiter(false), 1500);
+    });
+  }
+
   const isApproved  = state.approved.includes(jobIdx);
   const isDeclined  = state.declined.includes(jobIdx);
   const isActing    = actionState !== "idle";
@@ -437,14 +455,26 @@ function ReviewContent() {
         {/* Cover Letter */}
         <MaterialCard title={t("review.coverLetterDraft")} icon="✉️">
           <p className="text-[13px] leading-[1.75] whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{job.coverLetter}</p>
-          <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>{t("common.copyToClipboard")}</button>
+          <button
+            className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+            style={{ background: "var(--blue-dim)", color: copiedCover ? "#4ade80" : "#93c5fd", border: `1px solid ${copiedCover ? "rgba(34,197,94,0.25)" : "rgba(59,130,246,0.2)"}` }}
+            onClick={handleCopyCover}
+          >
+            {copiedCover ? "✓ Copied" : t("common.copyToClipboard")}
+          </button>
         </MaterialCard>
 
         {/* Recruiter Message — only if materials include it */}
         {job.materials.some(m => m.labelKey === "material.recruiterMessage") && (
           <MaterialCard title={t("material.recruiterMessage")} icon="💬">
             <p className="text-[13px] leading-[1.75] whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{job.recruiterMessage}</p>
-            <button className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" }}>{t("common.copyToClipboard")}</button>
+            <button
+              className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              style={{ background: "var(--blue-dim)", color: copiedRecruiter ? "#4ade80" : "#93c5fd", border: `1px solid ${copiedRecruiter ? "rgba(34,197,94,0.25)" : "rgba(59,130,246,0.2)"}` }}
+              onClick={handleCopyRecruiter}
+            >
+              {copiedRecruiter ? "✓ Copied" : t("common.copyToClipboard")}
+            </button>
           </MaterialCard>
         )}
 
