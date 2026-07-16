@@ -1,24 +1,35 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
 import { reviewJobs, type ReviewJob } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
 import { useApplicationState } from "@/app/lib/application-state";
+import { startAutomation } from "@/app/lib/automation/orchestrator";
 
 /* ─────────────────────────────────────────────────────────
-   ApplyMate AI – Review Queue
+   ApplyMate AI – Review Queue (automation-first)
+
+   Swipe right / "Apply with ApplyMate" approves the job AND
+   starts the background application pipeline — the user does
+   not generate anything manually afterwards.
+
    Queue order and decisions live in the shared demo state
    (localStorage): approve/decline remove the job from the
    queue, skip moves it to the back. The card shown is
    always queue[0].
    ───────────────────────────────────────────────────────── */
 
+const SWIPE_THRESHOLD = 90;
+
 export default function ReviewQueuePage() {
   const [swipeAnim, setSwipeAnim] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<{ text: string; color: string } | null>(null);
   const [cardKey, setCardKey] = useState(0);
+  const [automationStarted, setAutomationStarted] = useState<{ role: string; company: string } | null>(null);
+  const [dragX, setDragX] = useState(0);
+  const touchStartX = useRef<number | null>(null);
   const { t } = useI18n();
   const { state, approve, decline, skip, reset, handledCount, totalCount } = useApplicationState();
 
@@ -37,25 +48,54 @@ export default function ReviewQueuePage() {
     const msgs = {
       declined: { text: t("queue.declined"), color: "#f87171" },
       skipped:  { text: t("queue.skipped"), color: "#fde047" },
-      approved: { text: t("queue.approved"), color: "#4ade80" },
+      approved: null, // the persistent "automationStarted" banner covers this — avoid showing two messages at once
     };
 
     setSwipeAnim(animClass);
-    setStatusMsg(msgs[action]);
+    if (msgs[action]) setStatusMsg(msgs[action]);
 
     // Wait for exit animation, then apply the decision — the
     // store update swaps in the next card (queue[0] changes).
     setTimeout(() => {
-      if (action === "approved") approve(currentJobId);
-      else if (action === "declined") decline(currentJobId);
+      if (action === "approved") {
+        const job = reviewJobs[currentJobId];
+        approve(currentJobId);
+        // Swipe right = start the full background application pipeline.
+        startAutomation(currentJobId);
+        setAutomationStarted({ role: job.role, company: job.company });
+      } else if (action === "declined") decline(currentJobId);
       else skip(currentJobId);
       setSwipeAnim(null);
       setCardKey((k) => k + 1);
     }, 500);
 
     // Clear status message after a bit
-    setTimeout(() => setStatusMsg(null), 2200);
+    setTimeout(() => setStatusMsg(null), 2600);
   }, [isAnimating, currentJobId, approve, decline, skip, t]);
+
+  /* ── Touch swipe gesture ──
+     dragXRef mirrors dragX state: touchend must read the latest
+     delta even when React batches the final touchmove update. */
+  const dragXRef = useRef(0);
+  function handleTouchStart(e: React.TouchEvent) {
+    if (isAnimating) return;
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function handleTouchMove(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const x = e.touches[0].clientX - touchStartX.current;
+    dragXRef.current = x;
+    setDragX(x);
+  }
+  function handleTouchEnd() {
+    if (touchStartX.current === null) return;
+    const x = dragXRef.current;
+    touchStartX.current = null;
+    dragXRef.current = 0;
+    setDragX(0);
+    if (x > SWIPE_THRESHOLD) advanceToNext("approved");
+    else if (x < -SWIPE_THRESHOLD) advanceToNext("declined");
+  }
 
   function resetQueue() {
     reset();
@@ -160,9 +200,53 @@ export default function ReviewQueuePage() {
           </div>
         )}
 
+        {/* ── Automation-started banner ───── */}
+        {automationStarted && (
+          <div
+            className="rounded-lg px-4 py-3 mb-4 flex items-center gap-3 flex-wrap animate-fade-up"
+            style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.18)" }}
+          >
+            <span className="text-base">🤖</span>
+            <p className="text-[12px] flex-1 min-w-[200px]" style={{ color: "var(--text-secondary)" }}>
+              <span className="font-semibold" style={{ color: "#4ade80" }}>ApplyMate is preparing your application</span>
+              {" "}for {automationStarted.role} at {automationStarted.company}. You can continue reviewing other jobs.
+            </p>
+            <Link href="/tracker" className="dash-btn dash-btn--outline text-[12px] flex-shrink-0">
+              View progress
+            </Link>
+          </div>
+        )}
+
         {/* ── Card ───────────────────────── */}
         {currentReview && currentJobId !== null ? (
-          <div key={cardKey} className={swipeAnim ?? "animate-card-enter"}>
+          <div
+            key={cardKey}
+            /* animate-card-enter uses fill-mode:forwards whose transform would
+               override the drag transform — drop the class while dragging */
+            className={swipeAnim ?? (dragX !== 0 ? undefined : "animate-card-enter")}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            style={{
+              transform: dragX !== 0 ? `translateX(${dragX}px) rotate(${dragX / 40}deg)` : undefined,
+              transition: dragX !== 0 ? "none" : "transform 0.2s ease-out",
+              touchAction: "pan-y",
+            }}
+          >
+            {/* Swipe direction feedback overlay */}
+            {dragX !== 0 && (
+              <div
+                className="text-center text-[12px] font-bold mb-2 rounded-lg py-1.5"
+                style={{
+                  background: dragX > 0 ? "rgba(34,197,94,0.08)" : "rgba(248,113,113,0.08)",
+                  color: dragX > 0 ? "#4ade80" : "#f87171",
+                  border: `1px solid ${dragX > 0 ? "rgba(34,197,94,0.2)" : "rgba(248,113,113,0.2)"}`,
+                  opacity: Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1),
+                }}
+              >
+                {dragX > 0 ? "→ Apply with ApplyMate" : "← Decline"}
+              </div>
+            )}
             <ReviewCard
               job={currentReview}
               jobIdx={currentJobId}
@@ -236,17 +320,14 @@ function ReviewCard({
           </span>
         )}
         <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
-          {t("common.approve")} →
+          Apply with ApplyMate →
         </span>
       </div>
 
-      {/* AI context */}
-      <div className="rounded-lg px-3 py-2 mb-4 flex items-center gap-2" style={{ background: "rgba(59,130,246,0.04)", border: "1px solid var(--border-subtle)" }}>
-        <span className="text-sm">🤖</span>
-        <p className="text-[12px]" style={{ color: "var(--text-secondary)" }}>
-          {t("queue.aiPrepared", { n: job.threshold })}
-        </p>
-      </div>
+      {/* Helper copy — single line, no boxed banners */}
+      <p className="text-[12px] text-center mb-4" style={{ color: "var(--text-muted)" }}>
+        Swipe right or tap <span style={{ color: "#4ade80", fontWeight: 600 }}>Apply with ApplyMate</span>. We&rsquo;ll prepare the application for you.
+      </p>
 
       <div className="flex flex-col lg:flex-row gap-5">
         {/* Job details */}
@@ -314,19 +395,26 @@ function ReviewCard({
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Actions — three clear choices: Skip, View details, Apply with ApplyMate.
+          Decline stays available as a subtle text action so it isn't lost, but
+          doesn't compete visually with the primary three. */}
       <div className="flex flex-wrap items-center gap-2 pt-4 mt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-        <button className="dash-btn dash-btn--ghost" onClick={onDecline} disabled={disabled}>{t("queue.declineBtn")}</button>
-        <button className="dash-btn dash-btn--ghost" onClick={onSkip} disabled={disabled}>{t("queue.skipBtn")}</button>
+        <button
+          className="text-[11px] font-medium"
+          style={{ color: "var(--text-muted)" }}
+          onClick={onDecline}
+          disabled={disabled}
+        >
+          {t("queue.declineBtn")}
+        </button>
         <div className="flex-1" />
-        <Link href={`/review?job=${jobIdx}`} className="dash-btn dash-btn--outline" style={{ pointerEvents: disabled ? "none" : "auto", opacity: disabled ? 0.5 : 1 }}>{t("queue.reviewApplication")}</Link>
-        <button className="dash-btn dash-btn--primary" onClick={onApprove} disabled={disabled}>{t("common.approveApply")}</button>
+        <button className="dash-btn dash-btn--ghost" onClick={onSkip} disabled={disabled}>{t("queue.skipBtn")}</button>
+        <Link href={`/review?job=${jobIdx}`} className="dash-btn dash-btn--outline" style={{ pointerEvents: disabled ? "none" : "auto", opacity: disabled ? 0.5 : 1 }}>View details</Link>
+        <button className="dash-btn dash-btn--primary" onClick={onApprove} disabled={disabled}>Apply with ApplyMate →</button>
       </div>
 
-      <p className="text-[10px] text-center mt-3 flex items-center justify-center gap-3" style={{ color: "var(--text-muted)" }}>
-        <span>🔒 {t("common.nothingSubmitted")}</span>
-        <span>·</span>
-        <span>{t("queue.reviewBefore")}</span>
+      <p className="text-[10px] text-center mt-3" style={{ color: "var(--text-muted)" }}>
+        🔒 {t("common.nothingSubmitted")}
       </p>
     </div>
   );

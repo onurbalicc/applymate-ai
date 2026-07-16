@@ -5,9 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/app/components/DashboardLayout";
+import AutomationProgress from "@/app/components/AutomationProgress";
+import GeneratedPackageView from "@/app/components/GeneratedPackageView";
 import { reviewJobs, type ReviewJob } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
 import { useApplicationState } from "@/app/lib/application-state";
+import { useAutomationJob } from "@/app/lib/automation/store";
+import { startAutomation } from "@/app/lib/automation/orchestrator";
 import type { TKey } from "@/app/lib/translations";
 
 /* ─────────────────────────────────────────────────────────
@@ -63,6 +67,9 @@ function ReviewContent() {
   const [copiedCover, setCopiedCover] = useState(false);
   const [copiedRecruiter, setCopiedRecruiter] = useState(false);
 
+  /* ── Automation state for this job (prepared automatically after swipe right) ── */
+  const automationJob = useAutomationJob(jobIdx);
+
   function handleCopyCover() {
     navigator.clipboard.writeText(job.coverLetter).then(() => {
       setCopiedCover(true);
@@ -89,10 +96,11 @@ function ReviewContent() {
   function handleApprove() {
     if (isActing || isApproved) return;
     setActionState("approving");
-    showToast(t("review.approvedToast"), "#4ade80");
-    // Apply state change and redirect after brief feedback
+    showToast("🤖 Application automation started", "#4ade80");
+    // Apply state change, start the background pipeline, then show progress in Tracker
     setTimeout(() => {
       approve(jobIdx);
+      startAutomation(jobIdx);
       router.push("/tracker");
     }, 900);
   }
@@ -123,15 +131,6 @@ function ReviewContent() {
     { labelKey: "review.found",  value: job.found },
     { labelKey: "dash.workType", value: job.workType },
     { labelKey: "review.salary", value: job.salary },
-  ];
-
-  const workflowSteps: { labelKey: TKey; done: boolean; active: boolean }[] = [
-    { labelKey: "landing.wf.scan",    done: true,  active: false },
-    { labelKey: "landing.wf.match",   done: true,  active: false },
-    { labelKey: "landing.wf.prepare", done: true,  active: false },
-    { labelKey: "review.stepReview",  done: false, active: true  },
-    { labelKey: "landing.wf.approve", done: false, active: false },
-    { labelKey: "landing.wf.track",   done: false, active: false },
   ];
 
   /* Checklist items derived from job data */
@@ -262,29 +261,36 @@ function ReviewContent() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 2 — Workflow pipeline status
+          SECTION 2 — Application Automation (prepared after swipe)
+          The automation panel below is the progress indicator for
+          this page — no separate generic workflow bar duplicating it.
           ═══════════════════════════════════════════════════════ */}
-      <div className="dash-panel p-4">
-        <div className="flex items-center justify-center gap-1 flex-wrap">
-          {workflowSteps.map((step, i) => (
-            <div key={step.labelKey} className="flex items-center gap-1">
-              <span
-                className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                style={{
-                  background: step.active ? "linear-gradient(135deg, #2563eb, #0ea5e9)" : step.done ? "rgba(34,197,94,0.08)" : "var(--bg-raised)",
-                  color: step.active ? "#fff" : step.done ? "#4ade80" : "var(--text-muted)",
-                  border: step.active ? "none" : `1px solid ${step.done ? "rgba(34,197,94,0.15)" : "var(--border-subtle)"}`,
-                }}
-              >
-                {step.done && !step.active ? "✓ " : ""}{t(step.labelKey)}
-              </span>
-              {i < workflowSteps.length - 1 && (
-                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>→</span>
-              )}
-            </div>
-          ))}
+      {automationJob ? (
+        <>
+          <AutomationProgress jobIndex={jobIdx} />
+          {automationJob.package && (
+            <GeneratedPackageView
+              pkg={automationJob.package}
+              isDemo={automationJob.isDemo}
+              userProvidedAnswers={automationJob.userProvidedAnswers}
+            />
+          )}
+        </>
+      ) : (
+        <div
+          className="rounded-lg px-4 py-3 flex items-center gap-3 flex-wrap"
+          style={{ background: "rgba(59,130,246,0.04)", border: "1px solid var(--border-subtle)" }}
+        >
+          <span className="text-base">🤖</span>
+          <p className="text-[12px] flex-1 min-w-[200px]" style={{ color: "var(--text-secondary)" }}>
+            This is a demo preview. Apply with ApplyMate from the Review Queue and we&rsquo;ll
+            prepare your real application automatically.
+          </p>
+          <Link href="/review-queue" className="dash-btn dash-btn--outline text-[12px] flex-shrink-0">
+            Open Review Queue
+          </Link>
         </div>
-      </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════
           SECTION 3 — Master CV Connection panel

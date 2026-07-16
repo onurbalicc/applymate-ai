@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import DashboardLayout from "@/app/components/DashboardLayout";
+import AutomationProgress from "@/app/components/AutomationProgress";
 import {
   reviewJobs,
   trackerApps,
@@ -11,6 +12,7 @@ import {
 } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
 import { useApplicationState } from "@/app/lib/application-state";
+import { useAutomationJobs } from "@/app/lib/automation/store";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Application Tracker
@@ -21,6 +23,7 @@ import { useApplicationState } from "@/app/lib/application-state";
 export default function TrackerPage() {
   const { t } = useI18n();
   const { state, approvedCount, pendingCount } = useApplicationState();
+  const automationJobs = useAutomationJobs();
 
   /* Jobs approved in this demo session → new "Applied" cards (id kept for package link) */
   const approvedEntries = state.approved.map((id) => ({ id, job: reviewJobs[id] }));
@@ -117,29 +120,35 @@ export default function TrackerPage() {
                       </span>
                     </div>
 
-                    <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                      ✓ {t("demo.approvedEvent")}
-                    </p>
-
-                    <div
-                      className="rounded-md px-2.5 py-1.5 text-[11px] leading-snug"
-                      style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}
-                    >
-                      → {t("demo.approvedNext")}
-                    </div>
-
-                    <div className="pt-0.5">
-                      <Link
-                        href={`/review?job=${id}`}
-                        className="text-[11px] font-semibold hover:underline"
-                        style={{ color: "#60a5fa" }}
-                      >
-                        📦 {t("tracker.viewPackage")}
-                      </Link>
-                      <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        {t("tracker.viewPackageSub")}
-                      </p>
-                    </div>
+                    {automationJobs[id] ? (
+                      /* Live automation status — one badge, one explanation,
+                         one CTA. Its own CTA replaces the static link below. */
+                      <AutomationProgress jobIndex={id} compact />
+                    ) : (
+                      <>
+                        <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                          ✓ {t("demo.approvedEvent")}
+                        </p>
+                        <div
+                          className="rounded-md px-2.5 py-1.5 text-[11px] leading-snug"
+                          style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}
+                        >
+                          → {t("demo.approvedNext")}
+                        </div>
+                        <div className="pt-0.5">
+                          <Link
+                            href={`/review?job=${id}`}
+                            className="text-[11px] font-semibold hover:underline"
+                            style={{ color: "#60a5fa" }}
+                          >
+                            📦 {t("tracker.viewPackage")}
+                          </Link>
+                          <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                            {t("tracker.viewPackageSub")}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
 

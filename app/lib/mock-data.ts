@@ -35,6 +35,8 @@ export interface ReviewJob {
   interviewQuestions: string[];
   /** Role-specific CV adaptation note — shown in the Application Package page. */
   cvAdaptationNote: string;
+  /** Full job description text of this demo posting — input for automatic package generation. */
+  jobDescription: string;
 }
 
 export const reviewJobs: ReviewJob[] = [
@@ -105,6 +107,24 @@ I'm based in Germany and available as a working student. Would you be open to a 
       "How would you evaluate whether an AI-generated application is good enough to send?",
     ],
     cvAdaptationNote: "Emphasized Python, LLM/RAG portfolio, and applied AI coursework for this role. De-emphasized non-AI data work to keep the focus on AI engineering. FastAPI gap acknowledged with a note on backend transferability.",
+    jobDescription: `AI Engineer Working Student — ExampleTech GmbH (Berlin / Remote)
+
+We are building applied AI products for mid-size European companies. As a working student on our AI team you will help develop LLM-based features and the data pipelines behind them.
+
+Responsibilities:
+- Build and evaluate LLM-based prototypes (RAG, structured generation)
+- Develop data pipelines in Python and SQL
+- Contribute to internal APIs (FastAPI) and containerized deployments (Docker)
+- Work closely with product and data teams
+
+Requirements:
+- Enrolled student in computer science, data science, or a related field
+- Solid Python and SQL skills
+- Understanding of machine learning fundamentals
+- Interest in applied LLM systems
+- Nice to have: FastAPI, Docker, German (B1+)
+
+Working student, 16–20 h/week, Berlin office or remote within Germany. Valid German work authorization required.`,
   },
 
   // ── Job 1: DataCorp ──
@@ -170,6 +190,24 @@ I'm based in Berlin and ready to start. Would you be open to a brief call?`,
       "How would you communicate a data insight to a non-technical stakeholder?",
     ],
     cvAdaptationNote: "Led with SQL and Tableau as the primary evidence of analytical capability. Framed Python experience as an asset for advanced analysis and automation. Looker gap addressed by highlighting BI tool transferability.",
+    jobDescription: `Junior Data Analyst — DataCorp (Berlin)
+
+DataCorp helps e-commerce companies make data-driven decisions. We are looking for a Junior Data Analyst to join our analytics team in Berlin.
+
+Responsibilities:
+- Write SQL queries and build analytical datasets
+- Create dashboards and reports for business stakeholders
+- Run ad-hoc analyses and A/B test evaluations
+- Maintain data quality checks
+
+Requirements:
+- Strong SQL skills
+- Python for data analysis (pandas)
+- Experience with a BI tool (we use Looker; Tableau experience is transferable)
+- Clear communication of insights to non-technical stakeholders
+- English working proficiency; German is a plus
+
+Full-time, Berlin-based, €42,000–€48,000 depending on experience.`,
   },
 
   // ── Job 2: BioML Labs ──
@@ -236,6 +274,22 @@ Would you be open to a quick chat about the role and the team's work?`,
       "How quickly can you pick up a new programming language or framework? Give an example.",
     ],
     cvAdaptationNote: "Leaned into statistics background and ML coursework as the core evidence. Positioned Python/PyTorch experience as transferable to TensorFlow. Added a note on academic research mindset as an asset for a lab environment.",
+    jobDescription: `Data Scientist Intern — BioML Labs (Munich)
+
+BioML Labs applies machine learning to biomedical research problems. We offer a 6-month internship in our Munich lab.
+
+Responsibilities:
+- Support ML experiments on biomedical datasets
+- Data cleaning, feature engineering, and model evaluation
+- Contribute to research documentation and reproducibility
+
+Requirements:
+- Student in data science, statistics, bioinformatics, or related field
+- Python and solid statistics foundation
+- Machine learning coursework or project experience
+- Nice to have: R, TensorFlow, bioinformatics or biology background
+
+Internship (6 months), Munich on-site, €1,800/month. Candidates should be eligible to work in Germany.`,
   },
 
   // ── Job 3: FinStack ──
@@ -302,6 +356,23 @@ I'd love to learn more about the analytics engineering team. Open to a quick cal
       "How would you handle a situation where raw data from a source changes schema unexpectedly?",
     ],
     cvAdaptationNote: "Centered dbt and SQL pipeline experience as the core match. Framed Git workflow habits as evidence of engineering discipline. Mentioned cloud warehouse transferability (BigQuery/Redshift → Snowflake) to offset the Snowflake gap.",
+    jobDescription: `Analytics Engineer (Working Student / Part-time) — FinStack (Remote, Germany)
+
+FinStack builds financial analytics software. Our data team is looking for an analytics engineer to help maintain and extend our dbt-based analytics layer.
+
+Responsibilities:
+- Develop and test dbt models on our Snowflake warehouse
+- Write clean, version-controlled SQL transformations
+- Improve data documentation and quality checks
+- Collaborate via Git-based code review
+
+Requirements:
+- Hands-on dbt and strong SQL experience
+- Python scripting ability
+- Git workflow experience
+- Nice to have: Airflow, Snowflake, FinTech interest
+
+Remote within Germany, working student or part-time. English-speaking team.`,
   },
 ];
 
