@@ -11,6 +11,11 @@ import {
   setAutomationStatus,
 } from "./store";
 import { PIPELINE_STEPS, type AutomationJobSeed } from "./contracts";
+import {
+  getUnresolvedMissingInfo,
+  mergeProvidedAnswers,
+  type ProvidedAnswer,
+} from "./missing-info";
 
 /* ─────────────────────────────────────────────────────────
    Application automation orchestrator.
@@ -189,10 +194,16 @@ async function runPipeline(key: string) {
     await delay(500);
     if (stopped(key)) return;
 
-    if (pkg.missingInformation.length > 0) {
+    // Strict check: every required missing-information item must have a
+    // valid user answer before the job may advance (missing-info.ts).
+    const unresolvedAfterGeneration = getUnresolvedMissingInfo({
+      missingInformation: pkg.missingInformation,
+      userProvidedAnswers: getAutomationJob(key)?.userProvidedAnswers ?? [],
+    });
+    if (unresolvedAfterGeneration.length > 0) {
       setAutomationStatus(key, "NEEDS_USER_INPUT", {
         requiresUserInput: true,
-        missingInformation: pkg.missingInformation,
+        missingInformation: unresolvedAfterGeneration.map((item) => item.question),
       });
       return;
     }
@@ -259,8 +270,15 @@ export function resumeAutomation(key: string): void {
 
   if (job.package) {
     // Package already generated — only re-run the final checks.
-    if (job.missingInformation.length > 0 && job.userProvidedAnswers.length === 0) {
-      setAutomationStatus(key, "NEEDS_USER_INPUT", { requiresUserInput: true, error: null });
+    // Strict rule: EVERY required missing-information item must have a
+    // valid answer; a single partial answer must not unlock readiness.
+    const unresolved = getUnresolvedMissingInfo(job);
+    if (unresolved.length > 0) {
+      setAutomationStatus(key, "NEEDS_USER_INPUT", {
+        requiresUserInput: true,
+        missingInformation: unresolved.map((item) => item.question),
+        error: null,
+      });
     } else {
       setAutomationStatus(key, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY"), error: null });
       setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });
@@ -287,16 +305,16 @@ export function cancelAutomation(key: string): void {
 /**
  * User answered the missing-information request.
  * Answers are stored on the job (never silently written into the
- * profile) and the application moves on to FORM_AUTOMATION_PENDING.
+ * profile). The job advances to FORM_AUTOMATION_PENDING only when
+ * EVERY required missing-information item has a valid answer —
+ * whitespace-only answers don't count, and partial answers keep
+ * the job in NEEDS_USER_INPUT showing exactly what's still open.
+ * This is domain-level enforcement: it holds even if a caller
+ * bypasses the UI's own client-side validation.
  */
-export function provideMissingAnswers(
-  key: string,
-  answers: { question: string; answer: string }[]
-): void {
+export function provideMissingAnswers(key: string, answers: ProvidedAnswer[]): void {
   const job = getAutomationJob(key);
   if (!job || job.status !== "NEEDS_USER_INPUT") return;
-
-  const nonEmpty = answers.filter((a) => a.answer.trim().length > 0);
 
   if (!job.package) {
     // Fundamentals were missing — the profile itself needs editing;
@@ -304,9 +322,33 @@ export function provideMissingAnswers(
     return;
   }
 
+  // Merge (new valid answers override same-identity older ones; nothing
+  // previously saved is discarded; empty answers are ignored).
+  const merged = mergeProvidedAnswers(job.userProvidedAnswers ?? [], answers);
+
+  const unresolved = getUnresolvedMissingInfo({
+    missingInformation: job.missingInformation,
+    userProvidedAnswers: merged,
+  });
+
+  if (unresolved.length > 0) {
+    // Keep collected answers, stay blocked, and narrow the visible
+    // list to exactly what is still unanswered.
+    updateAutomationJob(key, {
+      userProvidedAnswers: merged,
+      requiresUserInput: true,
+      missingInformation: unresolved.map((item) => item.question),
+    });
+    return;
+  }
+
   updateAutomationJob(key, {
-    userProvidedAnswers: [...job.userProvidedAnswers, ...nonEmpty],
+    userProvidedAnswers: merged,
     requiresUserInput: false,
+    // job.missingInformation is the LIVE unresolved list — everything is
+    // answered now. The original questions remain preserved on
+    // package.missingInformation and in userProvidedAnswers.
+    missingInformation: [],
   });
   setAutomationStatus(key, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY") });
   setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });

@@ -72,8 +72,13 @@ export interface AutomationJob {
   isDemo: boolean;
   requiresUserInput: boolean;
   missingInformation: string[];
-  /** Answers the user provided for missing information items. */
-  userProvidedAnswers: { question: string; answer: string }[];
+  /**
+   * Answers the user provided for missing information items.
+   * `id` is the stable identity from missing-info.ts; optional
+   * because legacy localStorage records predate it (those are
+   * matched by question text, which derives the same id).
+   */
+  userProvidedAnswers: { id?: string; question: string; answer: string }[];
   error: string | null;
   /** The automatically generated package, once available. */
   package: ApplicationPackage | null;

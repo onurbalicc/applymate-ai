@@ -55,12 +55,18 @@ The core interaction: **swipe right → ApplyMate prepares the application autom
 - Encrypted profile and document storage; CV/letter file uploads
 - GDPR-compliant deletion
 
-## Phase 6 — Browser Extension / Automation Worker Prototype ⬜
+## Phase 6 — Browser Extension / Automation Worker Prototype 🚧
 
-- Form field detection and mapping to the structured Candidate Profile
-- User-visible proposed fills; MISSING_INFORMATION and MANUAL_ACTION_REQUIRED surfaced
-- Initial ATS targets: Greenhouse, Lever, Workable
-- See `docs/auto-apply-architecture.md`
+Foundation implemented (see `docs/auto-apply-architecture.md` §1c) — the extension itself does not exist yet:
+
+- Unified ATS-independent application field contract (`app/lib/application-fields/`) ✅
+- Deterministic sensitive-question classifier (SAFE / NEEDS_CONFIRMATION / NEVER_AUTO_FILL), unit-tested ✅
+- Strict missing-information enforcement at the domain level ✅
+- Browser-extension application data contract + payload builder with honest readiness states ✅
+- Form field detection and DOM mapping on real ATS pages ⬜
+- The extension itself (manifest, content scripts, review sidebar) ⬜
+- Résumé file generation/upload (no CV file exists anywhere yet) ⬜
+- Initial ATS targets: Greenhouse, Lever, Workable ⬜
 
 ## Phase 7 — One ATS End-to-End Application Pilot ⬜
 

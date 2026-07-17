@@ -34,6 +34,60 @@ Next.js app (`app/lib/automation/`):
   set — no external submission capability exists yet. That capability is the worker /
   extension described below.
 
+## 1c. Implemented Extension Foundation (in code, not just prose)
+
+The following browser-extension prerequisites are now **implemented as real
+TypeScript modules** — no extension, DOM automation, or ATS selectors exist yet,
+but the data layer an extension will consume is in place:
+
+### Unified Application Field Contract — `app/lib/application-fields/contracts.ts`
+An ATS-independent field vocabulary: 13 categories (identity, contact,
+professionalLinks, documents, location, workAuthorization, salary, education,
+experience, generatedAnswers, legalDeclarations, demographicQuestions,
+customQuestions) and ~50 normalized field ids (givenName … captcha), each field
+candidate carrying value, source, input type, confidence, sensitivity,
+review-requirement, fill status, and required flag. Strict TypeScript unions
+throughout; dependency-free so a future extension can share it directly.
+
+### Deterministic Sensitive-Question Classifier — `app/lib/application-fields/classifier.ts`
+No LLM involved. Classifies a normalized field and/or raw label into exactly one of:
+
+| Category | Behavior |
+|---|---|
+| `SAFE_AUTO_FILL` | Objective facts (name, email, phone, links, education/experience facts) — fill without pausing |
+| `NEEDS_CONFIRMATION` | Known but high-stakes (salary, notice period, start date, relocation, all AI-generated content, ambiguous/unknown labels) — pre-fill allowed, blocked until the user confirms |
+| `NEVER_AUTO_FILL` | Work authorization, sponsorship, visa status, criminal history, gender, race/ethnicity, veteran status, disability, pronouns, legal certifications, consent checkboxes, background checks, CAPTCHA — never touched automatically, even when the profile stores a value |
+
+Safety rules enforced in code and covered by unit tests: label evidence can only
+**escalate** severity, never reduce it; unknown fields default to
+NEEDS_CONFIRMATION, never SAFE; sensitive answers are never inferred from
+indirect data (the classifier produces no values at all).
+
+### Strict Missing-Information Enforcement — `app/lib/automation/missing-info.ts`
+The previous flaw (a job could advance with partially-answered missing
+information) is fixed at the domain level: every required item must have a
+non-whitespace answer, matched by a stable derived id (with legacy
+question-text matching for old localStorage records), before the orchestrator
+allows PACKAGE_READY / FORM_AUTOMATION_PENDING. Partial submissions keep the
+job in NEEDS_USER_INPUT and narrow the visible list to exactly what remains.
+Previously saved answers are never discarded.
+
+### Browser Extension Data Contract + Builder — `app/lib/extension-payload/`
+`buildExtensionApplicationPayload(job, profile)` produces one validated,
+self-contained payload per AutomationJob (schemaVersion 1) with: metadata
+(including expected ATS detection), form-relevant candidate facts only,
+**honest document availability** (`resumeFileAvailable: false` — no résumé file
+generation exists anywhere yet), the generated package, resolved answers with
+user-over-generated precedence, pre-classified normalized field candidates, and
+an explicit readiness verdict:
+
+`READY_FOR_TEXT_FIELD_ASSISTANCE` · `NEEDS_USER_INPUT` · `PACKAGE_NOT_READY` · `INVALID_APPLICATION_STATE`
+
+plus blockingReasons / manualSteps / warnings. The name of the ready state is
+deliberate: only **text-field assistance** is in scope — final submission
+always remains a manual user action, and nothing in this foundation fills or
+submits any external form today.
+
 ---
 
 ## 2. Approval Modes

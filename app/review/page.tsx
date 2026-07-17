@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/app/components/DashboardLayout";
 import AutomationProgress from "@/app/components/AutomationProgress";
 import GeneratedPackageView from "@/app/components/GeneratedPackageView";
+import ExtensionReadinessCard from "@/app/components/ExtensionReadinessCard";
 import { reviewJobs, type ReviewJob } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
 import { useApplicationState } from "@/app/lib/application-state";
@@ -128,6 +129,7 @@ function DiscoveredJobReview({ jobKey }: { jobKey: string }) {
           userProvidedAnswers={automationJob.userProvidedAnswers}
         />
       )}
+      {automationJob.package && <ExtensionReadinessCard job={automationJob} />}
 
       <p className="text-[11px] text-center pb-4" style={{ color: "var(--text-muted)" }}>
         {automationJob.isFromDiscovery
@@ -371,6 +373,7 @@ function MockJobReview({
               userProvidedAnswers={automationJob.userProvidedAnswers}
             />
           )}
+          {automationJob.package && <ExtensionReadinessCard job={automationJob} />}
         </>
       ) : (
         <div

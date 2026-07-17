@@ -101,7 +101,7 @@ function compactCopy(job: AutomationJob): { explanation: string; ctaLabel: strin
 /* ── Missing information form ────────────────────────────── */
 
 function MissingInfoForm({ job }: { job: AutomationJob }) {
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   // Fundamentals missing (no package yet) — the profile itself is incomplete.
   if (!job.package) {
@@ -125,7 +125,10 @@ function MissingInfoForm({ job }: { job: AutomationJob }) {
   }
 
   // Package-level missing information — compact answer request.
-  const allFilled = job.missingInformation.every((_, i) => (answers[i] ?? "").trim());
+  // Answers are keyed by question text so state stays attached to the
+  // right item even when the unresolved list shrinks after a partial
+  // submission (the orchestrator enforces completeness domain-side too).
+  const allFilled = job.missingInformation.every((q) => (answers[q] ?? "").trim());
   return (
     <div className="rounded-lg px-3.5 py-3 flex flex-col gap-2.5"
          style={{ background: "rgba(251,146,60,0.05)", border: "1px solid rgba(251,146,60,0.18)" }}>
@@ -137,13 +140,13 @@ function MissingInfoForm({ job }: { job: AutomationJob }) {
           ApplyMate never guesses legal, salary, authorization, or personal information.
         </p>
       </div>
-      {job.missingInformation.map((item, i) => (
-        <div key={i} className="flex flex-col gap-1">
+      {job.missingInformation.map((item) => (
+        <div key={item} className="flex flex-col gap-1">
           <label className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{item}</label>
           <input
             type="text"
-            value={answers[i] ?? ""}
-            onChange={(e) => setAnswers((prev) => ({ ...prev, [i]: e.target.value }))}
+            value={answers[item] ?? ""}
+            onChange={(e) => setAnswers((prev) => ({ ...prev, [item]: e.target.value }))}
             placeholder="Your answer…"
             className="px-3 py-2 rounded-lg text-[12px]"
             style={{ background: "var(--bg-raised)", border: "1px solid var(--border-mid)", color: "var(--text-primary)", outline: "none" }}
@@ -157,7 +160,7 @@ function MissingInfoForm({ job }: { job: AutomationJob }) {
         onClick={() =>
           provideMissingAnswers(
             job.key,
-            job.missingInformation.map((q, i) => ({ question: q, answer: (answers[i] ?? "").trim() }))
+            job.missingInformation.map((q) => ({ question: q, answer: (answers[q] ?? "").trim() }))
           )
         }
       >
