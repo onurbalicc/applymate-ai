@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { reviewJobs } from "@/app/lib/mock-data";
 import { useAutomationJob } from "@/app/lib/automation/store";
 import {
   PIPELINE_STEPS,
@@ -157,7 +156,7 @@ function MissingInfoForm({ job }: { job: AutomationJob }) {
         style={{ opacity: allFilled ? 1 : 0.6 }}
         onClick={() =>
           provideMissingAnswers(
-            job.jobIndex,
+            job.key,
             job.missingInformation.map((q, i) => ({ question: q, answer: (answers[i] ?? "").trim() }))
           )
         }
@@ -171,17 +170,16 @@ function MissingInfoForm({ job }: { job: AutomationJob }) {
 /* ── Main component ──────────────────────────────────────── */
 
 export default function AutomationProgress({
-  jobIndex,
+  jobKey,
   compact = false,
 }: {
-  jobIndex: number;
+  jobKey: string;
   compact?: boolean;
 }) {
-  const job = useAutomationJob(jobIndex);
-  const reviewJob = reviewJobs[jobIndex];
+  const job = useAutomationJob(jobKey);
   const [showDetails, setShowDetails] = useState(false);
   const [showManage, setShowManage] = useState(false);
-  if (!job || !reviewJob) return null;
+  if (!job) return null;
 
   const simple = toSimpleStatus(job.status);
   const isRunning = RUNNING_STATUSES.includes(job.status);
@@ -202,7 +200,7 @@ export default function AutomationProgress({
           <AiSourceBadge job={job} />
         </div>
         <p className="text-[11px] leading-snug" style={{ color: "var(--text-secondary)" }}>{explanation}</p>
-        <Link href={`/review?job=${jobIndex}`} className="text-[11px] font-semibold" style={{ color: "#60a5fa" }}>
+        <Link href={`/review?job=${encodeURIComponent(jobKey)}`} className="text-[11px] font-semibold" style={{ color: "#60a5fa" }}>
           {ctaLabel} →
         </Link>
       </div>
@@ -229,7 +227,7 @@ export default function AutomationProgress({
             {heading}
           </p>
           <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-            {reviewJob.role} · {reviewJob.company}
+            {job.role} · {job.company}
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -352,18 +350,18 @@ export default function AutomationProgress({
         {showManage && (
           <div className="flex items-center gap-2 flex-wrap pt-3">
             {isRunning && (
-              <button className="dash-btn dash-btn--outline text-[12px]" onClick={() => pauseAutomation(jobIndex)}>
+              <button className="dash-btn dash-btn--outline text-[12px]" onClick={() => pauseAutomation(jobKey)}>
                 Pause
               </button>
             )}
             {(job.status === "PAUSED" || job.status === "FAILED") && (
-              <button className="dash-btn dash-btn--primary text-[12px]" onClick={() => resumeAutomation(jobIndex)}>
+              <button className="dash-btn dash-btn--primary text-[12px]" onClick={() => resumeAutomation(jobKey)}>
                 {job.status === "FAILED" ? "Retry" : "Resume"}
               </button>
             )}
             {job.status !== "CANCELLED" && job.status !== "FORM_AUTOMATION_PENDING" && (
               <button className="dash-btn dash-btn--ghost text-[12px]" style={{ color: "var(--text-muted)" }}
-                      onClick={() => cancelAutomation(jobIndex)}>
+                      onClick={() => cancelAutomation(jobKey)}>
                 Cancel
               </button>
             )}

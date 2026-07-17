@@ -37,7 +37,30 @@ export type AutomationStatus =
 
 export interface AutomationJob {
   id: string;
-  jobIndex: number;
+  /**
+   * Stable identity key — the store's map key.
+   * For mock jobs: String(reviewJobs index), e.g. "0".
+   * For discovered jobs: the DiscoveredJob's own id, e.g. "demo:demo-004"
+   * or "greenhouse:gitlab:8503792002". Never a derived/hashed value —
+   * this is what makes the job resolvable after any reload.
+   */
+  key: string;
+  /** The underlying job's own stable id (equal to `key` in all current cases). */
+  sourceJobId: string;
+  /** True when this automation job originated from job discovery, not the mock queue. */
+  isFromDiscovery: boolean;
+  /** Job metadata persisted directly on the automation job — never re-derived
+      from a static array, so the job remains fully displayable after reload
+      even if its source record is gone. */
+  role: string;
+  company: string;
+  jobDescription: string;
+  applyUrl: string | null;
+  /** Technical source id: "mock", "demo", "greenhouse:<board>", "lever:<site>". */
+  provider: string;
+  /** Human-readable source label shown in the UI, e.g. "Demo", "Greenhouse — GitLab". */
+  sourceLabel: string;
+
   status: AutomationStatus;
   /** Last pipeline step reached — kept when status is an interruption state. */
   currentStep: AutomationStatus;
@@ -54,6 +77,19 @@ export interface AutomationJob {
   error: string | null;
   /** The automatically generated package, once available. */
   package: ApplicationPackage | null;
+}
+
+/** Data needed to create an automation job — independent of where the job came from. */
+export interface AutomationJobSeed {
+  key: string;
+  sourceJobId: string;
+  isFromDiscovery: boolean;
+  role: string;
+  company: string;
+  jobDescription: string;
+  applyUrl: string | null;
+  provider: string;
+  sourceLabel: string;
 }
 
 /** Statuses in which the pipeline is actively running. */

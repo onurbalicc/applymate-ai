@@ -13,6 +13,7 @@ import {
 import { useI18n } from "@/app/lib/i18n";
 import { useApplicationState } from "@/app/lib/application-state";
 import { useAutomationJobs } from "@/app/lib/automation/store";
+import { useDiscoveryState } from "@/app/lib/job-discovery/store";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Application Tracker
@@ -24,14 +25,30 @@ export default function TrackerPage() {
   const { t } = useI18n();
   const { state, approvedCount, pendingCount } = useApplicationState();
   const automationJobs = useAutomationJobs();
+  const discoveryState = useDiscoveryState();
 
   /* Jobs approved in this demo session → new "Applied" cards (id kept for package link) */
-  const approvedEntries = state.approved.map((id) => ({ id, job: reviewJobs[id] }));
-  const activeCount = trackerApps.filter((a) => a.stage !== "archived").length + approvedCount;
+  const approvedEntries = state.approved.map((id) => ({
+    key: String(id),
+    role: reviewJobs[id]?.role,
+    company: reviewJobs[id]?.company,
+  })).filter((e) => e.role != null);
+
+  /* Discovered jobs approved via the Review Queue — the automation job's key
+     is always the discovered job's own stable id, so no separate lookup or
+     linkage table is needed to find it. */
+  const discoveredApprovedEntries = discoveryState.records
+    .filter((r) => r.decision === "approved")
+    .map((r) => ({ key: r.job.id, role: r.job.role, company: r.job.company }));
+
+  const allApprovedEntries = [...approvedEntries, ...discoveredApprovedEntries];
+
+  const totalApprovedCount = approvedCount + discoveredApprovedEntries.length;
+  const activeCount = trackerApps.filter((a) => a.stage !== "archived").length + totalApprovedCount;
 
   function stageCount(stage: TrackerStage) {
     const base = trackerApps.filter((a) => a.stage === stage).length;
-    return stage === "applied" ? base + approvedCount : base;
+    return stage === "applied" ? base + totalApprovedCount : base;
   }
 
   return (
@@ -93,9 +110,9 @@ export default function TrackerPage() {
                 </div>
 
                 {/* Newly approved (demo session) — Applied column only */}
-                {stage === "applied" && approvedEntries.map(({ id, job }) => (
+                {stage === "applied" && allApprovedEntries.map(({ key, role, company }) => (
                   <div
-                    key={"approved-" + job.role + job.company}
+                    key={"approved-" + key}
                     className="dash-panel p-3.5 flex flex-col gap-2.5"
                     style={{ borderColor: "rgba(59,130,246,0.35)" }}
                   >
@@ -104,13 +121,13 @@ export default function TrackerPage() {
                         className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
                         style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
                       >
-                        {job.company[0]}
+                        {company?.[0]}
                       </div>
                       <div className="min-w-0">
                         <p className="text-[12px] font-semibold leading-snug" style={{ color: "var(--text-primary)" }}>
-                          {job.role}
+                          {role}
                         </p>
-                        <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{job.company}</p>
+                        <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{company}</p>
                       </div>
                       <span
                         className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
@@ -120,10 +137,10 @@ export default function TrackerPage() {
                       </span>
                     </div>
 
-                    {automationJobs[id] ? (
+                    {automationJobs[key] ? (
                       /* Live automation status — one badge, one explanation,
                          one CTA. Its own CTA replaces the static link below. */
-                      <AutomationProgress jobIndex={id} compact />
+                      <AutomationProgress jobKey={key} compact />
                     ) : (
                       <>
                         <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
@@ -137,7 +154,7 @@ export default function TrackerPage() {
                         </div>
                         <div className="pt-0.5">
                           <Link
-                            href={`/review?job=${id}`}
+                            href={`/review?job=${encodeURIComponent(key)}`}
                             className="text-[11px] font-semibold hover:underline"
                             style={{ color: "#60a5fa" }}
                           >

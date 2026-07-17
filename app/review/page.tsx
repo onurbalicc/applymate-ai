@@ -52,10 +52,109 @@ function ReviewShell({ children }: { children: React.ReactNode }) {
 function ReviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawIdx = Number(searchParams.get("job"));
-  const jobIdx = Number.isInteger(rawIdx) && rawIdx >= 0 && rawIdx < reviewJobs.length ? rawIdx : 0;
-  const job = reviewJobs[jobIdx];
+  const rawKey = searchParams.get("job") ?? "";
+  const numericKey = Number(rawKey);
+  const isMockJob = Number.isInteger(numericKey) && numericKey >= 0 && numericKey < reviewJobs.length;
+  const jobKey = isMockJob ? String(numericKey) : rawKey;
 
+  /* ── Automation state for this job (prepared automatically after swipe right) ── */
+  const automationJob = useAutomationJob(jobKey);
+
+  if (!isMockJob) {
+    return <DiscoveredJobReview jobKey={jobKey} />;
+  }
+
+  return <MockJobReview jobIdx={numericKey} jobKey={jobKey} automationJob={automationJob} router={router} />;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Discovered / non-mock job path — the automation job itself
+   is the single source of truth (role, company, package).
+   No static reviewJobs[] fallback exists for these, so an
+   unresolvable key shows an explicit not-found state instead
+   of silently substituting a different job.
+   ───────────────────────────────────────────────────────── */
+function DiscoveredJobReview({ jobKey }: { jobKey: string }) {
+  const automationJob = useAutomationJob(jobKey);
+
+  if (!automationJob) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="dash-panel p-10 text-center" style={{ borderStyle: "dashed" }}>
+          <p className="text-3xl mb-3">❓</p>
+          <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>
+            Application not found
+          </p>
+          <p className="text-[13px] mb-6 max-w-md mx-auto leading-relaxed" style={{ color: "var(--text-muted)" }}>
+            We couldn&rsquo;t find an application for this link. It may have been cleared, or the link may be out of date.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Link href="/review-queue" className="dash-btn dash-btn--primary">Open Review Queue</Link>
+            <Link href="/tracker" className="dash-btn dash-btn--outline">Open Tracker</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto flex flex-col gap-5">
+      <div
+        className="rounded-2xl p-5"
+        style={{
+          background: "linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(14,165,233,0.06) 100%)",
+          border: "1px solid rgba(59,130,246,0.18)",
+        }}
+      >
+        <span
+          className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full inline-block mb-2"
+          style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.25)" }}
+        >
+          Application Package
+        </span>
+        <h2 className="text-xl font-bold leading-tight mb-0.5" style={{ color: "var(--text-primary)" }}>
+          {automationJob.role}
+        </h2>
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          {automationJob.company} · {automationJob.sourceLabel}
+        </p>
+      </div>
+
+      <AutomationProgress jobKey={jobKey} />
+      {automationJob.package && (
+        <GeneratedPackageView
+          pkg={automationJob.package}
+          isDemo={automationJob.isDemo}
+          userProvidedAnswers={automationJob.userProvidedAnswers}
+        />
+      )}
+
+      <p className="text-[11px] text-center pb-4" style={{ color: "var(--text-muted)" }}>
+        {automationJob.isFromDiscovery
+          ? "This application was prepared from a discovered job posting."
+          : "This application was prepared automatically."}
+      </p>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Mock job path — the original rich demo page, unchanged in
+   behavior, backward compatible with existing automation
+   records keyed 0–3.
+   ───────────────────────────────────────────────────────── */
+function MockJobReview({
+  jobIdx,
+  jobKey,
+  automationJob,
+  router,
+}: {
+  jobIdx: number;
+  jobKey: string;
+  automationJob: ReturnType<typeof useAutomationJob>;
+  router: ReturnType<typeof useRouter>;
+}) {
+  const job = reviewJobs[jobIdx];
   const { t } = useI18n();
   const { state, approve, decline, skip } = useApplicationState();
 
@@ -66,9 +165,6 @@ function ReviewContent() {
   /* ── Copy-to-clipboard state (per material) ── */
   const [copiedCover, setCopiedCover] = useState(false);
   const [copiedRecruiter, setCopiedRecruiter] = useState(false);
-
-  /* ── Automation state for this job (prepared automatically after swipe right) ── */
-  const automationJob = useAutomationJob(jobIdx);
 
   function handleCopyCover() {
     navigator.clipboard.writeText(job.coverLetter).then(() => {
@@ -267,7 +363,7 @@ function ReviewContent() {
           ═══════════════════════════════════════════════════════ */}
       {automationJob ? (
         <>
-          <AutomationProgress jobIndex={jobIdx} />
+          <AutomationProgress jobKey={jobKey} />
           {automationJob.package && (
             <GeneratedPackageView
               pkg={automationJob.package}

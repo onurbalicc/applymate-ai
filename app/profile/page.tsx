@@ -10,6 +10,7 @@ import DashboardLayout from "@/app/components/DashboardLayout";
 const MasterCvPreview = dynamic(() => import("@/app/components/MasterCvPreview"), { ssr: false });
 import { useI18n } from "@/app/lib/i18n";
 import type { TKey } from "@/app/lib/translations";
+import { useCandidateProfile, saveProfile } from "@/app/lib/candidate-profile";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Profile Setup
@@ -186,18 +187,6 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* ── Job Preferences ────────────── */}
-        <section id="preferences">
-          <SectionHeader title={t("profile.jobPreferences")} />
-          <div className="dash-panel p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {jobPreferences.map((pref) => (
-                <PreferenceField key={pref.labelKey} labelKey={pref.labelKey} value={pref.value} />
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ── Dealbreakers ───────────────── */}
         <section>
           <SectionHeader title={t("profile.dealbreakers")} />
@@ -228,6 +217,11 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* ── Job Preferences (the one editable section — drives discovery) ── */}
+        <div id="preferences">
+          <JobPreferencesSection />
+        </div>
 
         {/* ── CTA ────────────────────────── */}
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
@@ -266,23 +260,188 @@ function SectionHeader({ title }: { title: string }) {
   return <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>{title}</h2>;
 }
 
-function PreferenceField({ labelKey, value }: { labelKey: TKey; value: string | string[] }) {
+/* ── Job Preferences Section ─────────────────────────────── */
+function JobPreferencesSection() {
   const { t } = useI18n();
+  const profile = useCandidateProfile();
+  const [prefsSaved, setPrefsSaved] = useState(false);
+
+  // Local editable state — seeded from profile, and re-synced whenever the
+  // underlying store changes (hydration from localStorage after mount,
+  // a save completing, or a reload). useState's initializer only runs once,
+  // so without this effect a reload would show stale defaults even though
+  // the saved values are correctly persisted underneath.
+  const [targetRoles, setTargetRoles] = useState(profile.targetJobTitles.join(", "));
+  const [locations, setLocations]     = useState(profile.preferredLocations.join(", "));
+  const [remote, setRemote]           = useState<"remote" | "hybrid" | "onsite" | "flexible">(profile.remotePreference);
+  const [minScore, setMinScore]       = useState(profile.minMatchScore);
+  const [excluded, setExcluded]       = useState(profile.excludedKeywords.join(", "));
+
+  // Re-sync local editable state whenever the underlying profile store
+  // changes (hydration from localStorage after mount, or a save completing
+  // elsewhere) — derived during render, not in an effect, per React's
+  // "adjusting state when a prop changes" pattern. Without this, a reload
+  // would show stale defaults even though the saved values persisted fine.
+  const [syncedProfile, setSyncedProfile] = useState(profile);
+  if (profile !== syncedProfile) {
+    setSyncedProfile(profile);
+    setTargetRoles(profile.targetJobTitles.join(", "));
+    setLocations(profile.preferredLocations.join(", "));
+    setRemote(profile.remotePreference);
+    setMinScore(profile.minMatchScore);
+    setExcluded(profile.excludedKeywords.join(", "));
+  }
+
+  function handleSave() {
+    saveProfile({
+      targetJobTitles: targetRoles.split(",").map((s) => s.trim()).filter(Boolean),
+      preferredLocations: locations.split(",").map((s) => s.trim()).filter(Boolean),
+      remotePreference: remote,
+      minMatchScore: minScore,
+      excludedKeywords: excluded.split(",").map((s) => s.trim()).filter(Boolean),
+    });
+    setPrefsSaved(true);
+    setTimeout(() => setPrefsSaved(false), 2500);
+  }
+
+  const remoteOptions: { value: "remote" | "hybrid" | "onsite" | "flexible"; labelKey: string }[] = [
+    { value: "remote",   labelKey: "prefs.remote.remote" },
+    { value: "hybrid",   labelKey: "prefs.remote.hybrid" },
+    { value: "onsite",   labelKey: "prefs.remote.onsite" },
+    { value: "flexible", labelKey: "prefs.remote.flexible" },
+  ];
+
   return (
-    <div>
-      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>{t(labelKey)}</p>
-      {Array.isArray(value) ? (
-        <div className="flex flex-wrap gap-1">
-          {value.map((v) => (
-            <span key={v} className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--blue-dim)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.18)" }}>{v}</span>
-          ))}
+    <section>
+      <SectionHeader title={t("prefs.title")} />
+      <div className="dash-panel p-4 flex flex-col gap-4">
+        <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          {t("prefs.desc")}
+        </p>
+
+        {/* Target roles */}
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: "var(--text-muted)" }}>
+            {t("prefs.targetRoles")}
+          </label>
+          <input
+            id="input-target-roles"
+            type="text"
+            value={targetRoles}
+            onChange={(e) => setTargetRoles(e.target.value)}
+            placeholder={t("prefs.targetRolesPlaceholder")}
+            className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
+            style={{
+              background: "var(--surface-inset, rgba(0,0,0,0.15))",
+              border: "1px solid var(--border-mid)",
+              color: "var(--text-primary)",
+            }}
+          />
+          <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>Comma-separated list</p>
         </div>
-      ) : (
-        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{value}</p>
-      )}
-    </div>
+
+        {/* Preferred locations */}
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: "var(--text-muted)" }}>
+            {t("prefs.locations")}
+          </label>
+          <input
+            id="input-locations"
+            type="text"
+            value={locations}
+            onChange={(e) => setLocations(e.target.value)}
+            placeholder={t("prefs.locationsPlaceholder")}
+            className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
+            style={{
+              background: "var(--surface-inset, rgba(0,0,0,0.15))",
+              border: "1px solid var(--border-mid)",
+              color: "var(--text-primary)",
+            }}
+          />
+        </div>
+
+        {/* Remote preference */}
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: "var(--text-muted)" }}>
+            {t("prefs.remote")}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {remoteOptions.map((opt) => (
+              <button
+                key={opt.value}
+                id={`btn-remote-${opt.value}`}
+                onClick={() => setRemote(opt.value)}
+                className="text-[11px] font-medium px-3 py-1.5 rounded-lg transition-all duration-150"
+                style={
+                  remote === opt.value
+                    ? { background: "rgba(37,99,235,0.15)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.3)" }
+                    : { background: "transparent", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }
+                }
+              >
+                {t(opt.labelKey as TKey)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Min match score */}
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: "var(--text-muted)" }}>
+            {t("prefs.minScore")} — <span style={{ color: "#93c5fd" }}>{minScore}%</span>
+          </label>
+          <input
+            id="input-min-score"
+            type="range"
+            min={40}
+            max={95}
+            step={5}
+            value={minScore}
+            onChange={(e) => setMinScore(Number(e.target.value))}
+            className="w-full"
+            style={{ accentColor: "#2563eb" }}
+          />
+          <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>{t("prefs.minScoreDesc")}</p>
+        </div>
+
+        {/* Excluded keywords */}
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: "var(--text-muted)" }}>
+            {t("prefs.excludedKeywords")}
+          </label>
+          <input
+            id="input-excluded-keywords"
+            type="text"
+            value={excluded}
+            onChange={(e) => setExcluded(e.target.value)}
+            placeholder={t("prefs.excludedKeywordsPlaceholder")}
+            className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
+            style={{
+              background: "var(--surface-inset, rgba(0,0,0,0.15))",
+              border: "1px solid var(--border-mid)",
+              color: "var(--text-primary)",
+            }}
+          />
+          <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>{t("prefs.excludedKeywordsDesc")}</p>
+        </div>
+
+        {/* Save button */}
+        <div className="flex items-center gap-3">
+          <button
+            id="btn-save-job-prefs"
+            className="dash-btn dash-btn--primary text-[12px]"
+            onClick={handleSave}
+          >
+            {prefsSaved ? `✓ ${t("prefs.saved")}` : t("profile.saveProfile")}
+          </button>
+          <Link href="/review-queue" className="dash-btn dash-btn--outline text-[12px]">
+            🔍 Go to Review Queue
+          </Link>
+        </div>
+      </div>
+    </section>
   );
 }
+
 
 /* ── DATA (roles, skills, and mock recommendation content
       stay in English; labels are translated) ─────────────── */
@@ -297,15 +456,6 @@ const readinessItems: { labelKey: TKey; done: boolean }[] = [
 const profileSkills = ["Python", "SQL", "dbt", "Machine Learning", "Data Analytics", "Git", "LLMs", "RAG"];
 
 const allRoles = ["Data Analyst", "AI Engineer", "Data Scientist", "Analytics Engineer", "Machine Learning Engineer", "Working Student AI/Data"];
-
-const jobPreferences: { labelKey: TKey; value: string | string[] }[] = [
-  { labelKey: "dash.location", value: "Germany / Remote" },
-  { labelKey: "dash.workType", value: ["Working student", "Internship", "Junior", "Entry-level"] },
-  { labelKey: "profile.language", value: "English + German" },
-  { labelKey: "profile.minMatchScore", value: "75%" },
-  { labelKey: "profile.remotePref", value: "Hybrid / Remote" },
-  { labelKey: "profile.jobSources", value: ["LinkedIn", "StepStone", "Indeed", "Company pages"] },
-];
 
 const dealbreakerKeys: TKey[] = [
   "profile.db1",

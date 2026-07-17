@@ -10,14 +10,16 @@ import {
   updateAutomationJob,
   setAutomationStatus,
 } from "./store";
-import { PIPELINE_STEPS } from "./contracts";
+import { PIPELINE_STEPS, type AutomationJobSeed } from "./contracts";
 
 /* ─────────────────────────────────────────────────────────
    Application automation orchestrator.
 
-   startAutomation(jobIndex) is the single entry point,
-   triggered by swipe-right / "Apply with ApplyMate".
-   It runs the full preparation pipeline in the background:
+   startAutomation(jobIndex) / startAutomationForJob(seed) are
+   the entry points, triggered by swipe-right / "Apply with
+   ApplyMate". They run the full preparation pipeline in the
+   background, keyed by the job's own stable identity — see
+   lib/automation/store.ts for the key scheme.
 
      ANALYZING_JOB
      → PREPARING_MASTER_CV      (reuses cache when present)
@@ -41,7 +43,7 @@ import { PIPELINE_STEPS } from "./contracts";
    and the user resumes explicitly — nothing restarts silently.
    ───────────────────────────────────────────────────────── */
 
-const inFlight = new Set<number>();
+const inFlight = new Set<string>();
 
 function progressOf(status: (typeof PIPELINE_STEPS)[number]["status"]): number {
   return PIPELINE_STEPS.find((s) => s.status === status)?.progress ?? 0;
@@ -52,8 +54,8 @@ function delay(ms: number) {
 }
 
 /** True when the user paused/cancelled while a step was awaiting. */
-function stopped(jobIndex: number): boolean {
-  const job = getAutomationJob(jobIndex);
+function stopped(key: string): boolean {
+  const job = getAutomationJob(key);
   return !job || job.status === "PAUSED" || job.status === "CANCELLED";
 }
 
@@ -100,26 +102,26 @@ export async function generateMasterCvNow(): Promise<{ result: MasterCvResult; i
 
 /* ── Pipeline ────────────────────────────────────────────── */
 
-async function runPipeline(jobIndex: number) {
-  if (inFlight.has(jobIndex)) return;
-  inFlight.add(jobIndex);
+async function runPipeline(key: string) {
+  if (inFlight.has(key)) return;
+  inFlight.add(key);
 
   try {
-    const reviewJob = reviewJobs[jobIndex];
-    if (!reviewJob) {
-      setAutomationStatus(jobIndex, "FAILED", { error: "Unknown job." });
+    const job = getAutomationJob(key);
+    if (!job) {
+      setAutomationStatus(key, "FAILED", { error: "Unknown job." });
       return;
     }
 
     /* Step 1 — analyze job + profile fundamentals */
-    setAutomationStatus(jobIndex, "ANALYZING_JOB", { progress: progressOf("ANALYZING_JOB"), error: null });
+    setAutomationStatus(key, "ANALYZING_JOB", { progress: progressOf("ANALYZING_JOB"), error: null });
     await delay(700);
-    if (stopped(jobIndex)) return;
+    if (stopped(key)) return;
 
     const profile = getProfileSnapshot();
     const missingFundamentals = checkProfileFundamentals(profile);
     if (missingFundamentals.length > 0) {
-      setAutomationStatus(jobIndex, "NEEDS_USER_INPUT", {
+      setAutomationStatus(key, "NEEDS_USER_INPUT", {
         requiresUserInput: true,
         missingInformation: missingFundamentals,
         error: null,
@@ -128,7 +130,7 @@ async function runPipeline(jobIndex: number) {
     }
 
     /* Step 2 — Master CV (reuse cache when available) */
-    setAutomationStatus(jobIndex, "PREPARING_MASTER_CV", { progress: progressOf("PREPARING_MASTER_CV") });
+    setAutomationStatus(key, "PREPARING_MASTER_CV", { progress: progressOf("PREPARING_MASTER_CV") });
     let masterCv = loadMasterCv();
     if (!masterCv) {
       const generated = await generateMasterCvNow();
@@ -136,11 +138,11 @@ async function runPipeline(jobIndex: number) {
     } else {
       await delay(500); // cached — brief step for visible progress
     }
-    if (stopped(jobIndex)) return;
+    if (stopped(key)) return;
 
     /* Step 3 — job description must exist; never fabricate it */
-    if (!reviewJob.jobDescription?.trim()) {
-      setAutomationStatus(jobIndex, "MANUAL_ACTION_REQUIRED", {
+    if (!job.jobDescription?.trim()) {
+      setAutomationStatus(key, "MANUAL_ACTION_REQUIRED", {
         error: "No job description is available for this posting. ApplyMate never fabricates job details.",
       });
       return;
@@ -148,7 +150,7 @@ async function runPipeline(jobIndex: number) {
 
     /* Steps 4–6 — one package generation covers the job-specific
        CV adaptation, motivation letter, and application answers */
-    setAutomationStatus(jobIndex, "GENERATING_JOB_SPECIFIC_CV", { progress: progressOf("GENERATING_JOB_SPECIFIC_CV") });
+    setAutomationStatus(key, "GENERATING_JOB_SPECIFIC_CV", { progress: progressOf("GENERATING_JOB_SPECIFIC_CV") });
 
     const res = await fetch("/api/generate-package", {
       method: "POST",
@@ -156,9 +158,9 @@ async function runPipeline(jobIndex: number) {
       body: JSON.stringify({
         profile,
         masterCvSummary: `${masterCv.result.headline}\n${masterCv.result.professionalSummary}`,
-        jobDescriptionText: reviewJob.jobDescription,
-        companyName: reviewJob.company,
-        roleTitle: reviewJob.role,
+        jobDescriptionText: job.jobDescription,
+        companyName: job.company,
+        roleTitle: job.role,
         applicationLanguage: profile.preferredApplicationLanguage || "English",
       }),
     });
@@ -168,27 +170,27 @@ async function runPipeline(jobIndex: number) {
     }
     const pkg: ApplicationPackage = data.result;
     const isDemo = !!data.isMock || masterCv.isMock;
-    if (stopped(jobIndex)) return;
+    if (stopped(key)) return;
 
-    setAutomationStatus(jobIndex, "GENERATING_COVER_LETTER", { progress: progressOf("GENERATING_COVER_LETTER"), isDemo });
+    setAutomationStatus(key, "GENERATING_COVER_LETTER", { progress: progressOf("GENERATING_COVER_LETTER"), isDemo });
     await delay(500);
-    if (stopped(jobIndex)) return;
+    if (stopped(key)) return;
 
-    setAutomationStatus(jobIndex, "PREPARING_FORM_ANSWERS", { progress: progressOf("PREPARING_FORM_ANSWERS") });
+    setAutomationStatus(key, "PREPARING_FORM_ANSWERS", { progress: progressOf("PREPARING_FORM_ANSWERS") });
     await delay(500);
-    if (stopped(jobIndex)) return;
+    if (stopped(key)) return;
 
     /* Step 7 — missing information check */
-    setAutomationStatus(jobIndex, "CHECKING_MISSING_INFORMATION", {
+    setAutomationStatus(key, "CHECKING_MISSING_INFORMATION", {
       progress: progressOf("CHECKING_MISSING_INFORMATION"),
       package: pkg,
       isDemo,
     });
     await delay(500);
-    if (stopped(jobIndex)) return;
+    if (stopped(key)) return;
 
     if (pkg.missingInformation.length > 0) {
-      setAutomationStatus(jobIndex, "NEEDS_USER_INPUT", {
+      setAutomationStatus(key, "NEEDS_USER_INPUT", {
         requiresUserInput: true,
         missingInformation: pkg.missingInformation,
       });
@@ -196,66 +198,90 @@ async function runPipeline(jobIndex: number) {
     }
 
     /* Step 8 — done (honest stop before external automation) */
-    setAutomationStatus(jobIndex, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY") });
+    setAutomationStatus(key, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY") });
     await delay(500);
-    if (stopped(jobIndex)) return;
-    setAutomationStatus(jobIndex, "FORM_AUTOMATION_PENDING", { progress: 100 });
+    if (stopped(key)) return;
+    setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });
   } catch (err) {
     console.error("Automation pipeline failed:", err);
-    setAutomationStatus(jobIndex, "FAILED", {
+    setAutomationStatus(key, "FAILED", {
       error: err instanceof Error ? err.message : "An unexpected error occurred.",
     });
   } finally {
-    inFlight.delete(jobIndex);
+    inFlight.delete(key);
   }
 }
 
 /* ── Public actions ──────────────────────────────────────── */
 
 /**
- * Swipe-right entry point. Creates the automation job and starts
- * the background pipeline. Duplicate-safe: an existing job that
- * is not CANCELLED/FAILED is returned untouched.
+ * Generic entry point — creates the automation job (or reuses an
+ * already-running/prepared one) from a fully-formed seed, then
+ * starts the background pipeline. Duplicate-safe by construction:
+ * the seed's key IS the job's stable identity, so re-invoking with
+ * the same key never creates a second job.
+ */
+export function startAutomationForJob(seed: AutomationJobSeed): string {
+  const existing = getAutomationJob(seed.key);
+  if (existing && existing.status !== "CANCELLED" && existing.status !== "FAILED") {
+    return seed.key; // already running or already prepared — never duplicate
+  }
+  createAutomationJob(seed);
+  void runPipeline(seed.key);
+  return seed.key;
+}
+
+/**
+ * Swipe-right entry point for mock (reviewJobs) jobs. Thin wrapper
+ * around startAutomationForJob that resolves the seed from the
+ * static mock array and uses String(jobIndex) as the stable key.
  */
 export function startAutomation(jobIndex: number): void {
-  const existing = getAutomationJob(jobIndex);
-  if (existing && existing.status !== "CANCELLED" && existing.status !== "FAILED") {
-    return; // already running or already prepared — never duplicate
-  }
-  createAutomationJob(jobIndex);
-  void runPipeline(jobIndex);
+  const mock = reviewJobs[jobIndex];
+  if (!mock) return;
+  startAutomationForJob({
+    key: String(jobIndex),
+    sourceJobId: String(jobIndex),
+    isFromDiscovery: false,
+    role: mock.role,
+    company: mock.company,
+    jobDescription: mock.jobDescription,
+    applyUrl: null,
+    provider: "mock",
+    sourceLabel: "ApplyMate Demo",
+  });
 }
 
 /** Resume a PAUSED or retry a FAILED job. Reuses cached results. */
-export function resumeAutomation(jobIndex: number): void {
-  const job = getAutomationJob(jobIndex);
+export function resumeAutomation(key: string): void {
+  const job = getAutomationJob(key);
   if (!job || (job.status !== "PAUSED" && job.status !== "FAILED")) return;
 
   if (job.package) {
     // Package already generated — only re-run the final checks.
     if (job.missingInformation.length > 0 && job.userProvidedAnswers.length === 0) {
-      setAutomationStatus(jobIndex, "NEEDS_USER_INPUT", { requiresUserInput: true, error: null });
+      setAutomationStatus(key, "NEEDS_USER_INPUT", { requiresUserInput: true, error: null });
     } else {
-      setAutomationStatus(jobIndex, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY"), error: null });
-      setAutomationStatus(jobIndex, "FORM_AUTOMATION_PENDING", { progress: 100 });
+      setAutomationStatus(key, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY"), error: null });
+      setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });
     }
     return;
   }
 
-  updateAutomationJob(jobIndex, { status: "QUEUED", error: null });
-  void runPipeline(jobIndex);
+  updateAutomationJob(key, { status: "QUEUED", error: null });
+  void runPipeline(key);
 }
 
-export function pauseAutomation(jobIndex: number): void {
-  const job = getAutomationJob(jobIndex);
+export function pauseAutomation(key: string): void {
+  const job = getAutomationJob(key);
   if (!job) return;
-  setAutomationStatus(jobIndex, "PAUSED", { error: null });
+  setAutomationStatus(key, "PAUSED", { error: null });
 }
 
-export function cancelAutomation(jobIndex: number): void {
-  const job = getAutomationJob(jobIndex);
+export function cancelAutomation(key: string): void {
+  const job = getAutomationJob(key);
   if (!job) return;
-  setAutomationStatus(jobIndex, "CANCELLED", { error: null });
+  setAutomationStatus(key, "CANCELLED", { error: null });
 }
 
 /**
@@ -264,10 +290,10 @@ export function cancelAutomation(jobIndex: number): void {
  * profile) and the application moves on to FORM_AUTOMATION_PENDING.
  */
 export function provideMissingAnswers(
-  jobIndex: number,
+  key: string,
   answers: { question: string; answer: string }[]
 ): void {
-  const job = getAutomationJob(jobIndex);
+  const job = getAutomationJob(key);
   if (!job || job.status !== "NEEDS_USER_INPUT") return;
 
   const nonEmpty = answers.filter((a) => a.answer.trim().length > 0);
@@ -278,10 +304,10 @@ export function provideMissingAnswers(
     return;
   }
 
-  updateAutomationJob(jobIndex, {
+  updateAutomationJob(key, {
     userProvidedAnswers: [...job.userProvidedAnswers, ...nonEmpty],
     requiresUserInput: false,
   });
-  setAutomationStatus(jobIndex, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY") });
-  setAutomationStatus(jobIndex, "FORM_AUTOMATION_PENDING", { progress: 100 });
+  setAutomationStatus(key, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY") });
+  setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });
 }

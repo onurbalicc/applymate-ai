@@ -7,6 +7,10 @@ import OnboardingChecklist from "@/app/components/OnboardingChecklist";
 import { reviewJobs } from "@/app/lib/mock-data";
 import { useI18n } from "@/app/lib/i18n";
 import { useApplicationState } from "@/app/lib/application-state";
+import { useDiscoveryState, getPendingCount } from "@/app/lib/job-discovery/store";
+import { useAutoDiscovery } from "@/app/lib/job-discovery/scheduler";
+import { useAutomationJobs } from "@/app/lib/automation/store";
+import { toSimpleStatus } from "@/app/lib/automation/contracts";
 import type { TKey } from "@/app/lib/translations";
 
 /* ─────────────────────────────────────────────────────────
@@ -21,6 +25,12 @@ export default function DashboardPage() {
   const [resetToast, setResetToast] = useState(false);
   const { t } = useI18n();
   const { state, reset, pendingCount, approvedCount } = useApplicationState();
+
+  // Automatic discovery — same guarded trigger as Review Queue; opening
+  // either page can be what kicks off a check, never both at once.
+  useAutoDiscovery();
+  const discoveryState = useDiscoveryState();
+  const automationJobs = useAutomationJobs();
 
   const topMatch = state.queue.length > 0 ? reviewJobs[state.queue[0]] : null;
 
@@ -97,6 +107,9 @@ export default function DashboardPage() {
 
         {/* ── Review-first approval mode ───── */}
         <ApprovalModePanel t={t} />
+
+        {/* ── Discovery status — real, compact ──── */}
+        <DiscoveryStatusPanel discoveryState={discoveryState} automationJobs={automationJobs} />
 
         {/* ── Onboarding checklist ────────── */}
         <OnboardingChecklist />
@@ -485,6 +498,61 @@ function ApprovalModePanel({
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ── Discovery status panel ───────────────────────────────────
+   Real state, not decoration: how many recommendations are
+   waiting, how many applications are being prepared right now,
+   how many need the user's input, and when ApplyMate last
+   checked. No fake counts, no "Submitted" — automation stops at
+   FORM_AUTOMATION_PENDING honestly.
+   ─────────────────────────────────────────────────────────── */
+function DiscoveryStatusPanel({
+  discoveryState,
+  automationJobs,
+}: {
+  discoveryState: ReturnType<typeof useDiscoveryState>;
+  automationJobs: ReturnType<typeof useAutomationJobs>;
+}) {
+  const meta = discoveryState.meta;
+  const pendingRecommendations = getPendingCount(discoveryState);
+
+  const jobList = Object.values(automationJobs);
+  const preparingCount = jobList.filter((j) => toSimpleStatus(j.status) === "preparing").length;
+  const needsInputCount = jobList.filter((j) => toSimpleStatus(j.status) === "needs_input").length;
+
+  const statusLine =
+    meta.status === "running" ? "Checking for new jobs…"
+    : meta.status === "error" ? "Last check failed — will retry automatically"
+    : meta.status === "partial-error" ? "Some sources had trouble on the last check"
+    : meta.lastDiscoveryAt ? `Last checked ${new Date(meta.lastDiscoveryAt).toLocaleString()}`
+    : "No checks yet";
+
+  const tiles = [
+    { label: "Recommended jobs", value: pendingRecommendations, color: "#4ade80" },
+    { label: "Being prepared", value: preparingCount, color: "#60a5fa" },
+    { label: "Need your input", value: needsInputCount, color: "#fb923c" },
+  ];
+
+  return (
+    <div className="dash-panel p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold mb-1" style={{ color: "var(--text-primary)" }}>Job discovery</p>
+        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{statusLine}</p>
+      </div>
+      <div className="flex items-center gap-4">
+        {tiles.map((tile) => (
+          <div key={tile.label} className="text-center">
+            <p className="text-lg font-bold leading-tight tabular-nums" style={{ color: tile.value > 0 ? tile.color : "var(--text-muted)" }}>{tile.value}</p>
+            <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{tile.label}</p>
+          </div>
+        ))}
+      </div>
+      <Link href="/review-queue" className="dash-btn dash-btn--primary flex-shrink-0">
+        Review matches
+      </Link>
     </div>
   );
 }

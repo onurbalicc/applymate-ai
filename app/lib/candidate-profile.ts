@@ -118,6 +118,8 @@ export const DEFAULT_CANDIDATE_PROFILE: CandidateProfile = {
   visaSponsorshipRequired: false,
   willingToRelocate: false,
   preferredApplicationLanguage: "English",
+  excludedKeywords: ["senior", "lead", "manager", "10+ years", "5+ years"],
+  minMatchScore: 60,
 
   // Reusable answers
   whyInterestedInRoleTemplate:

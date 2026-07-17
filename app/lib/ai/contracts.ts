@@ -69,6 +69,10 @@ export interface CandidateProfile {
   visaSponsorshipRequired: boolean;
   willingToRelocate: boolean;
   preferredApplicationLanguage: string;
+  /** Keywords that auto-exclude a job from discovery (e.g. "senior", "10+ years"). */
+  excludedKeywords: string[];
+  /** Jobs below this score are filtered out before entering the review queue (0–100). */
+  minMatchScore: number;
 
   // Reusable application answers — never infer sensitive fields
   whyInterestedInRoleTemplate: string;
