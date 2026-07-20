@@ -88,6 +88,134 @@ deliberate: only **text-field assistance** is in scope — final submission
 always remains a manual user action, and nothing in this foundation fills or
 submits any external form today.
 
+## 1d. Browser Extension MVP Part 1: Detection and Field Mapping (implemented)
+
+The extension itself now exists — `browser-extension/` — as a standalone
+Chrome Manifest V3 package (its own `package.json`/`tsconfig.json`, built
+with `esbuild`, no framework). It is **read-only**: it detects the ATS,
+discovers form fields, and maps them into ApplyMate's Unified Application
+Field Contract, but never fills in, changes, or submits anything. Automatic
+form filling is the next sprint (Part 2), not this one.
+
+**Scan lifecycle:**
+1. A content script (`src/content/index.ts`) is injected on
+   `*.greenhouse.io`, `*.grnh.se`, and `*.lever.co` pages only
+   (`manifest.json` → `content_scripts`), and runs a delayed (800 ms) initial
+   scan so client-side-rendered questions have time to appear.
+2. A debounced (1000 ms) `MutationObserver` on `document.body` triggers
+   re-scans on meaningful DOM changes (e.g. async question lists) — never on
+   every mutation, and the scanner performs no writes, so it cannot trigger
+   itself in a loop.
+3. The popup panel (`src/panel/panel.ts`, no background service worker)
+   messages the content script directly (`GET_SCAN_RESULT` / `SCAN_PAGE`)
+   and renders the latest `PageScanResult`.
+
+**Detection (`src/ats/detect.ts` + `src/ats/{greenhouse,lever}.ts`):**
+Each adapter scores hostname, URL path, and DOM markers (e.g. Greenhouse's
+`job_application[...]` field naming; Lever's `.application-question` cards)
+into a `high` / `medium` / `low` confidence `AtsDetectionResult`. A page that
+matches neither adapter is always `unsupported` — the detector never
+guesses a platform for an unrecognized site.
+
+**Field discovery (`src/shared/dom-utils.ts`):** ATS-agnostic. Discovers
+every interactive control, resolves a label per the priority order
+`for=` → wrapping `<label>` → `aria-labelledby` → `aria-label` →
+ATS-specific container → nearby question text → placeholder → name/id,
+collapses radio/checkbox groups sharing a `name` into one logical field
+(and — because a group's representative input often carries its own
+option-level `for` label like "Yes"/"No" — skips the direct-association
+steps for grouped fields so the real question text is found instead), and
+derives a locator (id → name → stable data attribute → label association →
+scoped CSS selector → structural fallback, each flagged `fragile: true` when
+it depends on DOM position). No sensitive values are ever read — only
+whether a field currently has one (`hasValue: boolean`).
+
+**Mapping (`src/shared/mapper.ts` + `src/shared/field-signals.ts`):**
+Deterministic, scoring-based — no LLM. Combines label/name/id/placeholder/
+aria-label/option-text signals against a table of patterns for every
+`NormalizedFieldId`, with input-type corroboration bonuses. A field is
+`mapped` only when one candidate clearly wins; tied or close candidates stay
+`ambiguous` (with `alternativeFields` listed); no signal match is `unmapped`;
+an unrecognized input type (e.g. a slider) is `unsupported`. Sensitivity is
+computed by the **existing** `classifySensitivity()` from
+`app/lib/application-fields/classifier.ts` — imported directly, not
+reimplemented — so a field that maps ambiguously between, say,
+`sponsorshipRequired` and `visaStatus` is still correctly surfaced as
+`NEVER_AUTO_FILL` from the raw label alone, even with no confirmed
+`normalizedField`.
+
+**Privacy:** the extension requests only `activeTab` plus host permissions
+scoped to the three supported domains (no `<all_urls>`); it never sends page
+data anywhere (no network calls at all); it never logs a field's actual
+value, only whether one is present; and — confirmed by grepping the source
+for any `.value =`, `.checked =`, `.click(`, or `.submit(` call — it performs
+no writes to the page whatsoever.
+
+**Known limitation:** custom-domain Greenhouse/Lever deployments (e.g. a
+company's own `careers.` subdomain proxying a Greenhouse board) are not
+matched by the current host permissions; broadening to `<all_urls>` was
+deliberately avoided in favor of this narrower, safer default. See
+`browser-extension/MANUAL_TESTING.md` for the full limitations list and
+manual verification steps.
+
+## 1e. Live-browser validation findings (initial pass)
+
+The extension was validated two ways against real, public Greenhouse and
+Lever job postings — see `browser-extension/MANUAL_TESTING.md` for URLs,
+method, and the CLI-loading recipe: first by running the production
+scanning logic (`runScan` and everything it calls) directly in-page, then
+by actually loading the unpacked extension into a real Chromium instance
+(Playwright + `--load-extension`, with Developer mode enabled in the
+profile first — `chrome://extensions`'s own UI was never opened by hand)
+and exercising the real content script, the real popup at
+`chrome-extension://<id>/dist/panel.html`, and a real `chrome.tabs.sendMessage`
+"Scan again" round-trip (verified by injecting a harmless extra field into
+the live DOM and confirming the popup's unmapped count updated). Six real
+defects were found and fixed:
+
+1. **Safety gap (most important — shared `classifier.ts`):** real EEO
+   question phrasing — "sexual orientation," "transgender," "racial/ethnic
+   background" — was not matching `NEVER_LABEL_PATTERNS` (only bare
+   "gender"/"race"/"ethnicity" were covered), so these fell through to
+   `NEEDS_CONFIRMATION` instead of `NEVER_AUTO_FILL`. Patterns broadened to
+   `/\bsex(ual)?\b/`, `/sexual\s+orientation/`, `/transgender/`, `/\blgbtq/`,
+   `/\brac(e|ial)\b/`, `/ethnic/` — an escalation-only change (can only add
+   `NEVER_AUTO_FILL` matches, never remove them), covered by new tests.
+2. **Duplicate phantom fields:** react-select/intl-tel-input libraries
+   inject invisible native shadow `<input>`s (validation targets, internal
+   search boxes) alongside the real styled combobox — these were being
+   reported as confusing duplicate/near-duplicate entries. `discoverFieldsGeneric`
+   now skips invisible elements — **except `type="file"`**, since hiding
+   the native file input behind a styled "Attach" button is the near-
+   universal accessible upload pattern (confirmed live on Lever; the first
+   version of this fix incorrectly dropped the résumé field entirely).
+3. **Underscore-separated ids not matching signal patterns:** Greenhouse's
+   cover-letter upload (`id="cover_letter"`, no distinguishing label) missed
+   `/cover\s*letter/` because of the underscore. The mapper now humanizes
+   `name`/`id` (`_`/`-` → spaces) before matching.
+4. **Unrelated page text leaking into labels:** a label container can also
+   wrap dynamic widget state ("Analyzing resume...Success!", full EEO
+   option descriptions) — `resolveLabel` now strips
+   `[role="status"]`/`[class*="loading"]`/`[class*="description"]`-style
+   descendants before reading text, plus a 200-char cap as a final
+   safeguard, directly satisfying "avoid collecting unrelated page text."
+5. **Required-field detection:** many custom-styled forms mark a field
+   required only visually (a trailing `*`/`✱` in the label), with the HTML
+   `required` attribute living on a hidden shadow input instead. `required`
+   is now also true when the resolved label ends in `*`/`✱`.
+6. **Upload-status noise the first noise selector missed:** Lever's résumé
+   widget uses class `resume-upload-label` for its status text ("Couldn't
+   auto-read resume.", "Analyzing resume...", "Success!") — no "status" or
+   "loading" substring, so fix #4's selector missed it initially. Found via
+   the real loaded popup (not the in-page injection pass, which happened
+   before this class name was known); `[class*="upload"]` added to the
+   noise selector.
+
+All six are escalation-only or purely additive fixes, covered by regression
+tests (`browser-extension/tests/fixtures/greenhouse-live-quirks.html`,
+`browser-extension/tests/fixtures/lever.html`,
+`browser-extension/tests/scan.test.ts`).
+
 ---
 
 ## 2. Approval Modes

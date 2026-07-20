@@ -1,0 +1,58 @@
+<div class="posting-apply">
+  <form class="application-form" data-qa="postings-apply-form">
+    <div class="application-question">
+      <div class="application-label">Full name</div>
+      <input type="text" name="name" required />
+    </div>
+    <div class="application-question">
+      <div class="application-label">Email</div>
+      <input type="email" name="email" required />
+    </div>
+    <div class="application-question">
+      <div class="application-label">Phone</div>
+      <input type="tel" name="phone" />
+    </div>
+    <div class="application-question">
+      <div class="application-label">Current location</div>
+      <input type="text" name="location" />
+    </div>
+    <div class="application-question">
+      <label>
+        <div class="application-label">Resume/CV <span class="required">✱</span></div>
+        <div class="application-field">
+          <a href="#" class="postings-btn"><span class="default-label">ATTACH RESUME/CV</span>
+            <input type="file" name="resume" required />
+          </a>
+          <span class="resume-upload-failure"><div class="resume-upload-label">Couldn't auto-read resume.</div></span>
+          <span class="resume-upload-working"><div class="resume-upload-label">Analyzing resume...</div></span>
+          <span class="resume-upload-success"><div class="resume-upload-label">Success!</div></span>
+        </div>
+      </label>
+    </div>
+    <div class="application-question">
+      <div class="application-label">LinkedIn URL</div>
+      <input type="url" name="urls[LinkedIn]" />
+    </div>
+    <div class="application-question">
+      <div class="application-label">Additional Information</div>
+      <textarea name="comments"></textarea>
+    </div>
+    <div class="application-question" data-qa="application-question">
+      <div class="application-label">Do you now or will you in the future require visa sponsorship?</div>
+      <select name="cards[sponsorship][field0]">
+        <option value="">Select...</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </div>
+    <div class="application-question">
+      <div class="application-label">Gender</div>
+      <select name="cards[eeo][gender]">
+        <option value="">Select...</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="decline">Decline to answer</option>
+      </select>
+    </div>
+  </form>
+</div>

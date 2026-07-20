@@ -1,0 +1,58 @@
+<div id="main">
+  <h1 class="app-title">Software Engineer at TestCo</h1>
+  <form id="application_form" action="/testco/jobs/123" method="post">
+    <div class="field">
+      <label for="first_name">First Name</label>
+      <input type="text" id="first_name" name="job_application[first_name]" required />
+    </div>
+    <div class="field">
+      <label for="last_name">Last Name</label>
+      <input type="text" id="last_name" name="job_application[last_name]" required />
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="job_application[email]" required />
+    </div>
+    <div class="field">
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" name="job_application[phone]" />
+    </div>
+    <div class="field">
+      <label for="resume">Resume/CV</label>
+      <input type="file" id="resume" name="job_application[resume]" required />
+    </div>
+    <div class="field">
+      <label>Website</label>
+      <input type="url" name="job_application[website]" placeholder="https://example.com" />
+    </div>
+
+    <h2 class="section-title">Application Questions</h2>
+
+    <div class="field custom-question" data-field-id="q1">
+      <label for="q1_authorized">Are you legally authorized to work in this country?</label>
+      <select id="q1_authorized" name="job_application[answers_attributes][0][text_value]">
+        <option value="">Select...</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </div>
+
+    <div class="field custom-question" data-field-id="q2">
+      <label for="q2_sponsor">Will you now or in the future require visa sponsorship?</label>
+      <input type="radio" id="q2_sponsor_yes" name="job_application[answers_attributes][1][text_value]" value="yes" />
+      <label for="q2_sponsor_yes">Yes</label>
+      <input type="radio" id="q2_sponsor_no" name="job_application[answers_attributes][1][text_value]" value="no" />
+      <label for="q2_sponsor_no">No</label>
+    </div>
+
+    <div class="field custom-question" data-field-id="q3">
+      <label for="q3_notes">Tell us anything else you'd like us to know</label>
+      <textarea id="q3_notes" name="job_application[answers_attributes][2][text_value]"></textarea>
+    </div>
+
+    <div class="field">
+      <div>Mystery slider question</div>
+      <input type="range" id="mystery_slider" name="job_application[answers_attributes][3][text_value]" min="0" max="10" />
+    </div>
+  </form>
+</div>

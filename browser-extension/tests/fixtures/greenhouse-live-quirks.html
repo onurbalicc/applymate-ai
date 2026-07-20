@@ -1,0 +1,43 @@
+<div id="main">
+  <form class="application--form" action="/testco/jobs/999" method="post">
+    <div class="field">
+      <label for="first_name">First Name*</label>
+      <input type="text" id="first_name" name="first_name" />
+    </div>
+
+    <!-- Mimics a react-select combobox: the visible text input the user
+         actually types into, plus a hidden shadow <input required> used
+         only for native HTML5 validation styling. -->
+    <div class="field">
+      <label for="country">Country*</label>
+      <input type="text" id="country" class="select__input" />
+      <input type="text" required style="display:none" />
+    </div>
+
+    <!-- Mimics intl-tel-input's internal country-code search box. -->
+    <input type="text" id="iti-0__search-input" aria-label="Search" style="display:none" />
+
+    <div class="field">
+      <label for="cover_letter">Attach</label>
+      <input type="file" id="cover_letter" />
+    </div>
+
+    <!-- Mimics a Lever/Greenhouse upload widget where the label container
+         also wraps dynamic status text from the upload flow. -->
+    <div class="field">
+      <label for="resume">
+        Resume/CV*
+        <span class="status" role="status">Analyzing resume...Success!</span>
+      </label>
+      <input type="file" id="resume" />
+    </div>
+
+    <!-- Mimics Lever's accessible upload pattern: the real file input is
+         visually hidden behind a custom-styled "Attach" button. Must still
+         be reported — unlike the invisible text-input decoys above. -->
+    <div class="field">
+      <label for="portfolio_file">Portfolio Attachment</label>
+      <input type="file" id="portfolio_file" style="display:none" />
+    </div>
+  </form>
+</div>

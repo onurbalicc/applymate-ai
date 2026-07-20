@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "ApplyMate — Application Form Scanner",
+  "version": "0.1.0",
+  "description": "Detects Greenhouse and Lever application forms and shows how their fields map to your ApplyMate profile. Read-only: nothing is filled in or submitted.",
+  "action": {
+    "default_title": "ApplyMate form scanner",
+    "default_popup": "dist/panel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.greenhouse.io/*",
+        "*://*.grnh.se/*",
+        "*://*.lever.co/*"
+      ],
+      "js": ["dist/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "*://*.greenhouse.io/*",
+    "*://*.grnh.se/*",
+    "*://*.lever.co/*"
+  ]
+}

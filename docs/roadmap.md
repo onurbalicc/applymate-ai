@@ -57,16 +57,25 @@ The core interaction: **swipe right → ApplyMate prepares the application autom
 
 ## Phase 6 — Browser Extension / Automation Worker Prototype 🚧
 
-Foundation implemented (see `docs/auto-apply-architecture.md` §1c) — the extension itself does not exist yet:
+Foundation implemented (see `docs/auto-apply-architecture.md` §1c):
 
 - Unified ATS-independent application field contract (`app/lib/application-fields/`) ✅
 - Deterministic sensitive-question classifier (SAFE / NEEDS_CONFIRMATION / NEVER_AUTO_FILL), unit-tested ✅
 - Strict missing-information enforcement at the domain level ✅
 - Browser-extension application data contract + payload builder with honest readiness states ✅
-- Form field detection and DOM mapping on real ATS pages ⬜
-- The extension itself (manifest, content scripts, review sidebar) ⬜
+
+**Browser Extension MVP Part 1: Detection and Field Mapping** ✅ (see `docs/auto-apply-architecture.md` §1d, `browser-extension/`)
+- Chrome Manifest V3 extension package (Greenhouse + Lever), read-only ✅
+- ATS detection (hostname + DOM markers, fails safe to "unsupported") ✅
+- Form field discovery + label resolution + stable locator generation ✅
+- Deterministic field mapping into the existing Unified Field Contract, reusing the real classifier ✅
+- Read-only popup panel (detected ATS, field counts, per-field mapping/confidence/safety) ✅
+- Automatic + manual ("Scan again") scan lifecycle, debounced MutationObserver ✅
+
+**Browser Extension MVP Part 2: Safe Auto Fill** ⬜ (next)
+- Actually filling SAFE_AUTO_FILL fields using the locators from Part 1, with review before anything is written
 - Résumé file generation/upload (no CV file exists anywhere yet) ⬜
-- Initial ATS targets: Greenhouse, Lever, Workable ⬜
+- Initial ATS targets remain Greenhouse, Lever; Workable considered afterward ⬜
 
 ## Phase 7 — One ATS End-to-End Application Pilot ⬜
 
