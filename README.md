@@ -75,6 +75,7 @@ npm run build
 
 ## Docs
 
+- [Current project context and handoff](docs/project-context.md)
 - [Demo script (2 minutes)](docs/demo-script.md)
 - [Roadmap](docs/roadmap.md)
 - [Agent council workflow](docs/agent-workflow.md) — how product decisions are made
