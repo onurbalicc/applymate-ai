@@ -92,6 +92,8 @@ export type NormalizedFieldId =
   | "raceOrEthnicity"
   | "veteranStatus"
   | "disabilityStatus"
+  | "sexualOrientation"
+  | "transgenderStatus"
   | "captcha";
 
 /** Category of each normalized field — exhaustive, compiler-checked. */
@@ -157,6 +159,8 @@ export const FIELD_CATEGORY: Record<NormalizedFieldId, FieldCategory> = {
   raceOrEthnicity: "demographicQuestions",
   veteranStatus: "demographicQuestions",
   disabilityStatus: "demographicQuestions",
+  sexualOrientation: "demographicQuestions",
+  transgenderStatus: "demographicQuestions",
   captcha: "legalDeclarations",
 };
 

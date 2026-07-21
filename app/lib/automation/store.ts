@@ -7,7 +7,28 @@ import {
   type AutomationJobSeed,
   type AutomationStatus,
   RUNNING_STATUSES,
+  RUNNING_EXECUTION_STATUSES,
+  EXECUTION_STEPS,
 } from "./contracts";
+
+/** Records written before Part 2 (or a mid-migration legacy record) lack
+    the newer execution fields entirely on disk — `job` is typed as a
+    complete AutomationJob, but the on-disk JSON that produced it may not
+    actually have these keys. Backfill with honest nulls rather than
+    leaving them `undefined`, which several call sites type as `null`. */
+function backfillExecutionFields(job: AutomationJob): AutomationJob {
+  return {
+    ...job,
+    authorizedAt: job.authorizedAt ?? null,
+    authorizedAction: job.authorizedAction ?? null,
+    executionProgress: job.executionProgress ?? null,
+    executionAttemptId: job.executionAttemptId ?? null,
+    authorizedApplyUrl: job.authorizedApplyUrl ?? null,
+    submittedAt: job.submittedAt ?? null,
+    submissionOutcome: job.submissionOutcome ?? null,
+    reviewRequiredReason: job.reviewRequiredReason ?? null,
+  };
+}
 
 /* ─────────────────────────────────────────────────────────
    Automation job store — localStorage-backed, one job per
@@ -105,17 +126,22 @@ function read(): AutomationJobMap {
       const entry = parsed[key] as Record<string, unknown> | null;
       if (!entry) continue;
 
-      const job = migrateLegacyJob(key, entry);
-      if (!job) {
+      const migratedLegacy = migrateLegacyJob(key, entry);
+      if (!migratedLegacy) {
         changed = true; // dropped
         continue;
       }
+      const job = backfillExecutionFields(migratedLegacy);
       // Any record that needed migrateLegacyJob's backfill differs from
       // what was on disk — always true unless it was already new-shape,
       // which migrateLegacyJob returns unchanged (still safe to rewrite).
       changed = true;
 
-      // Normalize jobs interrupted by a reload: RUNNING → PAUSED.
+      // Normalize jobs interrupted by a reload. Package-preparation steps
+      // (RUNNING_STATUSES) resume manually via PAUSED, same as before.
+      // Autonomous-execution steps (RUNNING_EXECUTION_STATUSES) must NOT
+      // silently resume filling/submitting on next load — normalize to
+      // REVIEW_REQUIRED instead, per the duplicate-submission safety rule.
       if (RUNNING_STATUSES.includes(job.status)) {
         migrated[job.key] = {
           ...job,
@@ -123,7 +149,17 @@ function read(): AutomationJobMap {
           error: "Preparation was interrupted by a page reload. Resume to continue.",
           updatedAt: new Date().toISOString(),
         };
-        changed = true;
+      } else if (RUNNING_EXECUTION_STATUSES.includes(job.status)) {
+        migrated[job.key] = {
+          ...job,
+          status: "REVIEW_REQUIRED",
+          reviewRequiredReason: {
+            kind: "execution-interrupted",
+            description: `The autonomous application was interrupted mid-execution (last step: ${job.status}) by a page or extension reload.`,
+            requiredAction: "Open the extension popup to check the live page state, then retry from the Tracker.",
+          },
+          updatedAt: new Date().toISOString(),
+        };
       } else {
         migrated[job.key] = job;
       }
@@ -191,6 +227,14 @@ export function createAutomationJob(seed: AutomationJobSeed): AutomationJob {
     userProvidedAnswers: [],
     error: null,
     package: null,
+    authorizedAt: null,
+    authorizedAction: null,
+    executionProgress: null,
+    executionAttemptId: null,
+    authorizedApplyUrl: null,
+    submittedAt: null,
+    submissionOutcome: null,
+    reviewRequiredReason: null,
   };
   write({ ...getMap(), [seed.key]: job });
   return job;
@@ -228,6 +272,27 @@ export function setAutomationStatus(
   updateAutomationJob(key, {
     status,
     ...(isStep ? { currentStep: status } : {}),
+    ...extra,
+  });
+}
+
+/**
+ * Sync one autonomous-execution status update from the extension into the
+ * web app's own AutomationJob record (the single Tracker source of truth —
+ * see lib/automation/execution-sync.ts for the polling caller). Sets
+ * `executionProgress` from EXECUTION_STEPS automatically when the status
+ * is a known execution step.
+ */
+export function setExecutionStatus(
+  key: string,
+  status: AutomationStatus,
+  extra: Partial<AutomationJob> = {}
+) {
+  const stepProgress = EXECUTION_STEPS.find((s) => s.status === status)?.progress;
+  updateAutomationJob(key, {
+    status,
+    currentStep: status,
+    ...(stepProgress !== undefined ? { executionProgress: stepProgress } : {}),
     ...extra,
   });
 }

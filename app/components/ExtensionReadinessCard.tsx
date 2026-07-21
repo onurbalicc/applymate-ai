@@ -8,13 +8,15 @@ import type { ExtensionReadinessState } from "@/app/lib/extension-payload/contra
 
 /* ─────────────────────────────────────────────────────────
    ExtensionReadinessCard — verifies the browser-extension
-   foundation end-to-end by building the real payload for
-   this job and summarizing it honestly:
+   payload end-to-end by building the real
+   ApplicationExecutionPayload for this job and summarizing it
+   honestly:
 
-   - readiness state (text-field assistance only — nothing
-     fills or submits external forms yet)
+   - readiness state
    - how many fields are auto-fillable / need confirmation /
-     always manual
+     always manual (the extension's own answer-resolver
+     enforces this at execution time, independently of this
+     preview)
    - manual steps and blocking questions
 
    A raw JSON preview is available in development builds only.
@@ -126,8 +128,9 @@ export default function ExtensionReadinessCard({ job }: { job: AutomationJob }) 
       )}
 
       <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-        🔒 The browser assistant is a future step — nothing fills or submits external forms yet,
-        and final submission will always be your own click.
+        🧩 Once you approve, the browser extension fills and submits this application for you — your
+        approval here is the one-time authorization for exactly this application. It never guesses a
+        sensitive or legal answer; anything it can&rsquo;t verify goes to Tracker as &ldquo;Review required&rdquo; instead.
       </p>
 
       {/* Dev-only payload preview */}

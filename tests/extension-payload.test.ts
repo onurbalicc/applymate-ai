@@ -43,6 +43,9 @@ function makeProfile(overrides: Partial<CandidateProfile> = {}): CandidateProfil
     minMatchScore: 60,
     whyInterestedInRoleTemplate: "",
     availabilityNote: "",
+    reusableAnswers: [],
+    demographicAnswerPolicy: "not-set",
+    demographicAnswers: {},
     ...overrides,
   };
 }
@@ -94,6 +97,14 @@ function makeJob(overrides: Partial<AutomationJob> = {}): AutomationJob {
     userProvidedAnswers: [],
     error: null,
     package: makePackage(),
+    authorizedAt: null,
+    authorizedAction: null,
+    executionProgress: null,
+    executionAttemptId: null,
+    authorizedApplyUrl: null,
+    submittedAt: null,
+    submissionOutcome: null,
+    reviewRequiredReason: null,
     ...overrides,
   };
 }

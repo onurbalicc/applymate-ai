@@ -1,8 +1,13 @@
-# Manual Testing — ApplyMate Form Scanner (Browser Extension MVP Part 1)
+# Manual Testing — ApplyMate Browser Extension
 
-This extension is **read-only**: it detects Greenhouse/Lever application forms
-and shows how their fields map to ApplyMate's field vocabulary. It never
-fills in, changes, or submits anything on the page.
+**Part 1** (detection + field mapping) shipped read-only. **Part 2** (this
+update) adds autonomous execution: once a job is authorized via a right
+swipe in the ApplyMate web app, the extension opens the application, fills
+and answers what it can verify or has an explicit approved answer for, and
+submits — no further per-field or per-submit confirmation. Sections 1–8
+below cover the original Part 1 read-only scanner (still exactly as
+described — the popup's own scan/"Scan again" flow is unchanged). Part 2's
+own validation is documented in its own section further down.
 
 ## 1. Build
 
@@ -231,5 +236,140 @@ re-focused afterward) before triggering "Scan again".
   0.28.1 upgrade — left as-is; no practical exposure with the current
   script. (Root repo has a separate, pre-existing `postcss`/`next` advisory,
   unrelated to this sprint and not touched.)
-- No automatic form filling, clicking, or submission exists — by design, per
-  this sprint's scope.
+- (Part 1 scope) No automatic form filling, clicking, or submission existed
+  in this sprint — see the Part 2 section below for what changed and how it
+  was validated.
+
+---
+
+# Part 2: Autonomous Execution — Manual Testing
+
+## 9. Build and load (same as Part 1, with two additions)
+
+`npm run build` now also bundles `dist/background.js` (the new background
+service worker — see `docs/auto-apply-architecture.md` §1f). Load exactly as
+in §2 above. Two things changed in `manifest.json`:
+
+- **A pinned `key`** — the extension's id is now stable across reloads
+  (`bhmjneikkldlmlkcgkkbpacnfgijnkac` for this repo's checked-in key). This
+  matters because the web app's `NEXT_PUBLIC_APPLYMATE_EXTENSION_ID`
+  (`app/lib/automation/extension-bridge.ts`) needs a fixed id to send
+  messages to — without the pinned key, every reload during development
+  would generate a new id and silently break the bridge.
+- **`externally_connectable`** matching `http://localhost/*` and
+  `http://localhost:3000/*` — this is what lets the ApplyMate web app (or
+  any test harness page on those origins) call
+  `chrome.runtime.sendMessage(EXTENSION_ID, ...)` at all. A production
+  deployment must add its real origin here.
+
+## 10. Triggering autonomous execution
+
+In the real product, this happens automatically: swipe right on a job in
+`/review-queue` → the orchestrator reaches `FORM_AUTOMATION_PENDING` →
+`handOffToExtension()` authorizes and messages the extension → the extension
+opens the tab itself. You do not need to open the popup for this to start.
+
+To trigger it directly without the full app (useful for isolated testing),
+send the extension an `AUTHORIZE_EXECUTION` message from any page on an
+`externally_connectable`-matched origin:
+
+```js
+chrome.runtime.sendMessage(
+  "bhmjneikkldlmlkcgkkbpacnfgijnkac",
+  { type: "AUTHORIZE_EXECUTION", payload: /* ExtensionApplicationPayload */, dryRun: true },
+  (response) => console.log(response)
+);
+```
+
+Poll status the same way the web app does:
+
+```js
+chrome.runtime.sendMessage(
+  "bhmjneikkldlmlkcgkkbpacnfgijnkac",
+  { type: "GET_EXECUTION_STATUS", authorizationId: "..." },
+  (response) => console.log(response.record)
+);
+```
+
+**Always pass `dryRun: true` against any real ATS page.** `dryRun: false`
+should only ever be used against `tests/fixtures/local-ats-fixture.html`
+(see §12) — never against a real employer's application.
+
+## 11. What was actually validated (real loaded extension, Playwright + Chrome for Testing)
+
+Same loading method as Part 1 (§2's "scripted alternative" — two-phase
+launch to get Developer mode enabled before `--load-extension` is honored).
+Three scenarios were run against a real, loaded extension — not code
+injection:
+
+1. **Local fixture, `dryRun: true`.** Authorized against
+   `local-ats-fixture.html` served over `http://localhost:8000`. Confirmed:
+   tab opened automatically, execution reached `READY_TO_SUBMIT`, the real
+   form was left completely intact (no click), and fields were correctly
+   filled (verified by reading `.value` directly from the live page).
+2. **Local fixture, `dryRun: false`.** Same fixture, real run: filled every
+   field, validated, **actually clicked the real submit button**, and
+   correctly detected `"submitted"` from the fixture's own confirmation
+   text/DOM change. A second attempt reusing the same idempotency key was
+   correctly refused before touching the page at all.
+3. **Real Greenhouse posting, `dryRun: true`** (the same EarnIn posting used
+   in Part 1's validation). Confirmed: 20 fields scanned (matches Part 1's
+   count exactly), `first_name`/`email`/`phone`/`country` correctly filled
+   with real values on the live page, the work-authorization field
+   (`NEVER_AUTO_FILL`) confirmed still empty throughout, execution correctly
+   stopped at `REVIEW_REQUIRED` (6 unresolved required fields, résumé
+   unavailable) **before ever reaching the submit gate**, and the real popup
+   correctly rendered this state end-to-end.
+
+Two real defects were found and fixed during this pass (full detail in
+`docs/auto-apply-architecture.md` §1g) — a message-delivery race between tab
+load and content-script readiness, and a stale-DOM-reference bug in fill
+verification that made `first_name` silently fail to fill while `email` on
+the same page succeeded. Both were only reproducible against a real page's
+real load/hydration timing — neither surfaced in the jsdom test suite.
+
+**What was not done, and why:** a real submit was never attempted against
+any real employer ATS. This is intentional — see AGENTS.md's explicit
+instruction never to submit a real application during development testing.
+Real-ATS validation stopped at the dry-run/review-required boundary by
+design.
+
+## 12. The local ATS fixture
+
+`browser-extension/tests/fixtures/local-ats-fixture.html` is a minimal,
+self-contained HTML page (no résumé field, so it never blocks on the
+known résumé-file gap) whose inline script simulates a same-page SPA
+success response on submit — no real network request anywhere. It's used
+both by the automated end-to-end test (`tests/execution-engine.test.ts`,
+via jsdom with `runScripts: "dangerously"` — the only fixture that needs
+its script to actually execute) and by real-browser validation (served over
+plain HTTP, e.g. `python3 -m http.server 8000` from
+`browser-extension/tests/fixtures/`). This is the only page real
+(non-dry-run) submission was ever exercised against.
+
+## 13. Known limitations (Part 2)
+
+- **No résumé/cover-letter file exists anywhere in ApplyMate.**
+  `resumeFileAvailable`/`coverLetterFileAvailable` are always `false` — any
+  real ATS form with a required résumé upload will always stop at
+  `review-required`. This is the primary blocker to genuine end-to-end
+  autonomous submission on a real form today; it is not a bug, it's an
+  honest reflection of upstream product state.
+- Fill verification retries up to 3 times (150ms/400ms/900ms) — a page that
+  takes longer than ~1.5s to settle after a write could still report a
+  false failure. Not observed in testing, but not proven impossible either.
+- The submit-control finder (`findSubmitControl`) is generic + text-pattern
+  based, not ATS-specific selectors — validated against Greenhouse's
+  and the local fixture's standard button markup; an unusual ATS theme
+  could defeat it (it fails safe to `unclear-submit-control`, never guesses).
+- Outcome detection's success-text patterns are generic English phrases;
+  non-English confirmation pages would likely fall through to `"unknown"`
+  (safe — routes to review-required — but not a true submission failure).
+- The web app ↔ extension bridge assumes the pinned extension id above; a
+  Chrome Web Store–published build would get a different, store-assigned id
+  requiring `NEXT_PUBLIC_APPLYMATE_EXTENSION_ID` to be reconfigured.
+- No submission receipt (screenshot, persisted confirmation artifact) is
+  captured — only the structured execution log.
+- Only one real employer ATS page (the same EarnIn Greenhouse posting from
+  Part 1) was used for Part 2's real-page validation — an initial pass, not
+  broad coverage.

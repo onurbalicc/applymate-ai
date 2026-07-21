@@ -18,11 +18,15 @@
      text-field assistance — never submission.
    ───────────────────────────────────────────────────────── */
 
-import type { ApplicationPackage } from "../ai/contracts";
+import type { ApplicationPackage, DemographicAnswerPolicy, DemographicAnswers } from "../ai/contracts";
 import type { AutomationStatus } from "../automation/contracts";
 import type { ApplicationFieldCandidate } from "../application-fields/contracts";
 
-export const EXTENSION_PAYLOAD_SCHEMA_VERSION = 1;
+/** v2 (Browser Extension MVP Part 2): added `authorization` (the right
+    swipe's one-time authorization for this exact application — see
+    docs/auto-apply-architecture.md §1f), `reusableAnswers`, and
+    `demographicPolicy`. Additive only; every v1 field is unchanged. */
+export const EXTENSION_PAYLOAD_SCHEMA_VERSION = 2;
 
 /** ATS the extension should expect at the apply URL, when known. */
 export type ExpectedAts = "greenhouse" | "lever" | "unknown";
@@ -63,6 +67,21 @@ export interface ExtensionApplicationPayload {
     sourceLabel: string;
     expectedAts: ExpectedAts;
     applicationState: AutomationStatus;
+  };
+
+  /**
+   * The one-time authorization the right swipe granted for exactly this
+   * application. `authorizationId` is always `automationJobKey` — job.key
+   * already is a stable, non-hashed identity (see lib/automation/store.ts),
+   * so there is no separate authorization id or store to keep in sync.
+   * The execution engine must refuse to act if the live page it's running
+   * on doesn't match `authorizedApplyUrl`.
+   */
+  authorization: {
+    authorizationId: string;
+    authorizedAction: "fill-and-submit";
+    authorizedAt: string; // ISO 8601
+    authorizedApplyUrl: string;
   };
 
   /** Form-relevant, factual profile data only — no internal
@@ -144,6 +163,31 @@ export interface ExtensionApplicationPayload {
   /** Pre-classified fill candidates in the Unified Field Contract.
       detectedLabel is null throughout — no live form has been read. */
   normalizedFields: ApplicationFieldCandidate[];
+
+  /**
+   * Explicit, user-approved answers reusable across applications — see
+   * CandidateProfile.reusableAnswers. The ONLY legitimate source for a
+   * NEEDS_CONFIRMATION or NEVER_AUTO_FILL answer during autonomous
+   * execution besides an explicit demographic policy below.
+   */
+  reusableAnswers: { questionKey: string; question: string; answer: string; approvedAt: string }[];
+
+  /** The user's standing policy for demographic self-identification
+      questions — see CandidateProfile.demographicAnswerPolicy. Defaults to
+      "not-set", which always routes a required demographic question to
+      review-required; never treated as an implicit decline. */
+  demographicPolicy: {
+    policy: DemographicAnswerPolicy;
+    answers: DemographicAnswers;
+  };
+
+  /** Execution-behavior preferences. `overwriteExistingValues` always
+      defaults to false — the execution engine never overwrites a value
+      the user (or an earlier ApplyMate run) already put in a field unless
+      this is explicitly true. Not user-configurable yet; always false. */
+  preferences: {
+    overwriteExistingValues: boolean;
+  };
 
   unresolvedRequirements: {
     /** Must be resolved before assistance can be considered ready. */

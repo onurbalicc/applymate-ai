@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { reviewJobs } from "../mock-data";
 import { getProfileSnapshot } from "../candidate-profile";
 import { loadMasterCv, saveMasterCv } from "../master-cv-store";
@@ -9,13 +10,17 @@ import {
   createAutomationJob,
   updateAutomationJob,
   setAutomationStatus,
+  setExecutionStatus,
+  useAutomationJobs,
 } from "./store";
-import { PIPELINE_STEPS, type AutomationJobSeed } from "./contracts";
+import { PIPELINE_STEPS, RUNNING_EXECUTION_STATUSES, type AutomationJob, type AutomationJobSeed, type AutomationStatus } from "./contracts";
 import {
   getUnresolvedMissingInfo,
   mergeProvidedAnswers,
   type ProvidedAnswer,
 } from "./missing-info";
+import { buildExtensionApplicationPayload } from "../extension-payload/builder";
+import { authorizeExecution, getExecutionStatus, stopExecution as bridgeStop, retryExecution as bridgeRetry } from "./extension-bridge";
 
 /* ─────────────────────────────────────────────────────────
    Application automation orchestrator.
@@ -103,6 +108,123 @@ export async function generateMasterCvNow(): Promise<{ result: MasterCvResult; i
   }
   saveMasterCv(data.result, !!data.isMock);
   return { result: data.result, isMock: !!data.isMock };
+}
+
+/* ── Autonomous execution hand-off (Part 2) ──────────────── */
+
+/**
+ * The moment a package is ready, hand it to the browser extension for
+ * autonomous execution — no extra button click beyond the original swipe
+ * (§14: "the right swipe is the confirmation"). Mock/demo jobs have no
+ * real `applyUrl` and honestly stop at FORM_AUTOMATION_PENDING, same as
+ * Part 1 — there is nothing to open or authorize.
+ */
+async function handOffToExtension(key: string): Promise<void> {
+  setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });
+
+  const job = getAutomationJob(key);
+  if (!job || !job.applyUrl) return;
+
+  const authorizedAt = new Date().toISOString();
+  const attemptId = `attempt-${key}-${Date.now()}`;
+  updateAutomationJob(key, {
+    authorizedAt,
+    authorizedAction: "fill-and-submit",
+    authorizedApplyUrl: job.applyUrl,
+    executionAttemptId: attemptId,
+  });
+
+  const authorizedJob = getAutomationJob(key);
+  if (!authorizedJob) return;
+  const payload = buildExtensionApplicationPayload(authorizedJob, getProfileSnapshot());
+
+  setExecutionStatus(key, "AUTHORIZED");
+
+  const result = await authorizeExecution(payload);
+  if (!result.ok) {
+    setExecutionStatus(key, "REVIEW_REQUIRED", {
+      reviewRequiredReason: {
+        kind: "unsupported-ats-interaction",
+        description: `ApplyMate's browser extension could not be reached (${result.reason}).`,
+        requiredAction: "Install/enable the ApplyMate browser extension, then retry from the Tracker.",
+      },
+    });
+    return;
+  }
+
+  // The extension takes over from here — it opens the tab itself and
+  // reports progress, picked up by useAutomationExecutionSync's polling.
+  setExecutionStatus(key, "OPENING_APPLICATION");
+}
+
+/** Stop the in-flight extension execution and mark the job for manual
+    review — the "Stop automation" control (§14). */
+export async function stopExecution(key: string): Promise<void> {
+  const job = getAutomationJob(key);
+  if (!job) return;
+  await bridgeStop(key);
+  setExecutionStatus(key, "REVIEW_REQUIRED", {
+    reviewRequiredReason: {
+      kind: "execution-interrupted",
+      description: "Stopped by the user.",
+      requiredAction: "Retry from the Tracker when ready.",
+    },
+  });
+}
+
+/** Retry a REVIEW_REQUIRED/FAILED execution — always with a fresh
+    idempotency key (§16: never reuse a stale attempt id). */
+export async function retryExecution(key: string): Promise<void> {
+  const job = getAutomationJob(key);
+  if (!job || (job.status !== "REVIEW_REQUIRED" && job.status !== "FAILED")) return;
+  const attemptId = `attempt-${key}-${Date.now()}`;
+  updateAutomationJob(key, { executionAttemptId: attemptId, reviewRequiredReason: null });
+  const result = await bridgeRetry(key);
+  if (!result.ok) {
+    setExecutionStatus(key, "REVIEW_REQUIRED", {
+      reviewRequiredReason: {
+        kind: "unsupported-ats-interaction",
+        description: `Could not reach the ApplyMate browser extension (${result.reason}).`,
+        requiredAction: "Make sure the extension is installed and enabled, then retry.",
+      },
+    });
+    return;
+  }
+  setExecutionStatus(key, "OPENING_APPLICATION");
+}
+
+/**
+ * Poll the extension for execution status while any job is in an
+ * in-flight execution stage, and sync it into the web app's own
+ * AutomationJob store — the single source of truth Tracker reads from.
+ * Mount once (e.g. in the dashboard layout) — cheap no-op when nothing
+ * is executing.
+ */
+export function useAutomationExecutionSync(): void {
+  const jobs = useAutomationJobs();
+
+  useEffect(() => {
+    const inFlightKeys = Object.values(jobs)
+      .filter((j) => RUNNING_EXECUTION_STATUSES.includes(j.status))
+      .map((j) => j.key);
+    if (inFlightKeys.length === 0) return;
+
+    const interval = setInterval(() => {
+      for (const key of inFlightKeys) {
+        void getExecutionStatus(key).then((res) => {
+          if (!res.ok) return;
+          const record = res.data;
+          setExecutionStatus(key, record.stage as AutomationStatus, {
+            submissionOutcome: (record.submissionOutcome as AutomationJob["submissionOutcome"]) ?? null,
+            reviewRequiredReason: record.reviewRequired as AutomationJob["reviewRequiredReason"],
+            ...(record.stage === "SUBMITTED" ? { submittedAt: new Date().toISOString() } : {}),
+          });
+        });
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [jobs]);
 }
 
 /* ── Pipeline ────────────────────────────────────────────── */
@@ -208,11 +330,11 @@ async function runPipeline(key: string) {
       return;
     }
 
-    /* Step 8 — done (honest stop before external automation) */
+    /* Step 8 — package ready; hand off to the extension for autonomous execution */
     setAutomationStatus(key, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY") });
     await delay(500);
     if (stopped(key)) return;
-    setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });
+    await handOffToExtension(key);
   } catch (err) {
     console.error("Automation pipeline failed:", err);
     setAutomationStatus(key, "FAILED", {
@@ -281,7 +403,7 @@ export function resumeAutomation(key: string): void {
       });
     } else {
       setAutomationStatus(key, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY"), error: null });
-      setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });
+      void handOffToExtension(key);
     }
     return;
   }
@@ -351,5 +473,5 @@ export function provideMissingAnswers(key: string, answers: ProvidedAnswer[]): v
     missingInformation: [],
   });
   setAutomationStatus(key, "PACKAGE_READY", { progress: progressOf("PACKAGE_READY") });
-  setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });
+  void handOffToExtension(key);
 }

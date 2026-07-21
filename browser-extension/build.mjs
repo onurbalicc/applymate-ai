@@ -13,6 +13,7 @@ const options = {
   entryPoints: {
     content: "src/content/index.ts",
     panel: "src/panel/panel.ts",
+    background: "src/background/index.ts",
   },
   outdir: "dist",
   bundle: true,

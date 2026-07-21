@@ -1,27 +1,38 @@
 {
   "manifest_version": 3,
-  "name": "ApplyMate — Application Form Scanner",
-  "version": "0.1.0",
-  "description": "Detects Greenhouse and Lever application forms and shows how their fields map to your ApplyMate profile. Read-only: nothing is filled in or submitted.",
+  "name": "ApplyMate — Autonomous Application Assistant",
+  "version": "0.2.0",
+  "description": "Detects Greenhouse and Lever application forms, fills them from your ApplyMate profile, and submits applications you've authorized with a right swipe.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApZsIrFUOwu8LG3qFPFskjfxiYRUdTrT6RnjxueXQqFjJQj2jRJVsDYGoS/9W5TvRh704yVTRIVrMQUeZYk0MUn+yZmLcdL0J0G/HrbbgWj2GIFs4onne8oUap2M1tytoDsWLOC2Y7n8ADELA6dbda9eSLC4Up+5PL3RVR2pAlJ/3QykqjtnDRc6XP/kC6URzbFlNmEMwcKG9rlRmWsjVn01M+mNEFSCTh6lIOS3btu15qe5E37pD2z5mHWT4nlZZ4O4SmmWKTX6y6J8uJGSZ1gs7br6vdGdHvJW+RGAbZ4KhUBubp7TL9UNbzEUG7dgpGb9DTn9qL/R+zcqP833ebwIDAQAB",
   "action": {
-    "default_title": "ApplyMate form scanner",
+    "default_title": "ApplyMate — Application Assistant",
     "default_popup": "dist/panel.html"
+  },
+  "background": {
+    "service_worker": "dist/background.js"
   },
   "content_scripts": [
     {
       "matches": [
         "*://*.greenhouse.io/*",
         "*://*.grnh.se/*",
-        "*://*.lever.co/*"
+        "*://*.lever.co/*",
+        "http://localhost/*"
       ],
       "js": ["dist/content.js"],
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "storage", "tabs"],
   "host_permissions": [
     "*://*.greenhouse.io/*",
     "*://*.grnh.se/*",
     "*://*.lever.co/*"
-  ]
+  ],
+  "externally_connectable": {
+    "matches": [
+      "http://localhost/*",
+      "http://localhost:3000/*"
+    ]
+  }
 }

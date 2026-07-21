@@ -103,5 +103,7 @@ export const FIELD_SIGNAL_RULES: FieldSignalRule[] = [
   { field: "raceOrEthnicity", textPatterns: [/\brace\b/, /ethnicit/] },
   { field: "veteranStatus", textPatterns: [/veteran/, /military\s*(status|service)/] },
   { field: "disabilityStatus", textPatterns: [/disabilit/] },
+  { field: "sexualOrientation", textPatterns: [/sexual\s*orientation/, /\blgbtq/] },
+  { field: "transgenderStatus", textPatterns: [/transgender/] },
   { field: "captcha", textPatterns: [/captcha/, /human\s*verification/, /not\s*a\s*robot/] },
 ];

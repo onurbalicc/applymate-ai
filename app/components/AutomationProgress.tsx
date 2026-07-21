@@ -5,11 +5,14 @@ import Link from "next/link";
 import { useAutomationJob } from "@/app/lib/automation/store";
 import {
   PIPELINE_STEPS,
+  EXECUTION_STEPS,
   SIMPLE_STAGES,
   SIMPLE_STATUS_LABELS,
   RUNNING_STATUSES,
+  RUNNING_EXECUTION_STATUSES,
   toSimpleStatus,
   simpleStageIndex,
+  executionStepIndex,
   type AutomationJob,
   type SimpleStatus,
 } from "@/app/lib/automation/contracts";
@@ -18,6 +21,8 @@ import {
   resumeAutomation,
   cancelAutomation,
   provideMissingAnswers,
+  stopExecution,
+  retryExecution,
 } from "@/app/lib/automation/orchestrator";
 
 /* ─────────────────────────────────────────────────────────
@@ -89,6 +94,12 @@ function compactCopy(job: AutomationJob): { explanation: string; ctaLabel: strin
     }
     case "ready":
       return { explanation: "Your application package is ready.", ctaLabel: "View application" };
+    case "applying":
+      return { explanation: "ApplyMate is applying for you in the browser extension.", ctaLabel: "View progress" };
+    case "applied":
+      return { explanation: "Application submitted successfully.", ctaLabel: "View confirmation" };
+    case "review_required":
+      return { explanation: job.reviewRequiredReason?.description ?? "This application needs your review before it can continue.", ctaLabel: "Review now" };
     case "paused":
       return { explanation: "Preparation is paused.", ctaLabel: "View progress" };
     case "failed":
@@ -186,8 +197,10 @@ export default function AutomationProgress({
 
   const simple = toSimpleStatus(job.status);
   const isRunning = RUNNING_STATUSES.includes(job.status);
+  const isExecuting = RUNNING_EXECUTION_STATUSES.includes(job.status);
   const currentIdx = simpleStageIndex(job.currentStep);
   const currentDetailedIdx = PIPELINE_STEPS.findIndex((s) => s.status === job.currentStep);
+  const currentExecutionIdx = executionStepIndex(job.currentStep);
   const isReady = simple === "ready";
 
   /* ── Compact variant (Tracker cards) ── */
@@ -211,7 +224,13 @@ export default function AutomationProgress({
   }
 
   /* ── Full variant ── */
-  const heading = isReady
+  const heading = simple === "applied"
+    ? "Application submitted"
+    : simple === "review_required"
+    ? "Needs your review"
+    : simple === "applying"
+    ? "Applying automatically"
+    : isReady
     ? "Application prepared"
     : simple === "paused"
     ? "Application paused"
@@ -241,30 +260,56 @@ export default function AutomationProgress({
         </div>
       </div>
 
-      <ProgressBar value={job.progress} />
+      <ProgressBar value={isExecuting || simple === "applied" ? (job.executionProgress ?? 0) : job.progress} />
 
-      {/* Simple 4-stage checklist */}
-      <div className="flex flex-col gap-1.5">
-        {SIMPLE_STAGES.map((stage, i) => {
-          const done = isReady ? true : i < currentIdx;
-          const active = !isReady && i === currentIdx && isRunning;
-          return (
-            <div key={stage.label} className="flex items-center gap-2.5 text-[12px]">
-              <span className="w-4 text-center flex-shrink-0" style={{
-                color: done ? "#4ade80" : active ? "#60a5fa" : "var(--text-muted)",
-              }}>
-                {done ? "✓" : active ? "●" : "○"}
-              </span>
-              <span style={{
-                color: done ? "var(--text-secondary)" : active ? "var(--text-primary)" : "var(--text-muted)",
-                fontWeight: active ? 600 : 400,
-              }}>
-                {stage.label}{active && "…"}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      {/* Autonomous-execution checklist — replaces the prep checklist once
+          the extension has taken over (its own progress scale). */}
+      {(isExecuting || simple === "applied") ? (
+        <div className="flex flex-col gap-1.5">
+          {EXECUTION_STEPS.map((step, i) => {
+            const done = simple === "applied" ? true : i < currentExecutionIdx;
+            const active = simple !== "applied" && i === currentExecutionIdx;
+            return (
+              <div key={step.status} className="flex items-center gap-2.5 text-[12px]">
+                <span className="w-4 text-center flex-shrink-0" style={{
+                  color: done ? "#4ade80" : active ? "#60a5fa" : "var(--text-muted)",
+                }}>
+                  {done ? "✓" : active ? "●" : "○"}
+                </span>
+                <span style={{
+                  color: done ? "var(--text-secondary)" : active ? "var(--text-primary)" : "var(--text-muted)",
+                  fontWeight: active ? 600 : 400,
+                }}>
+                  {step.label}{active && "…"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* Simple stage checklist — package preparation phase */
+        <div className="flex flex-col gap-1.5">
+          {SIMPLE_STAGES.map((stage, i) => {
+            const done = isReady ? true : i < currentIdx;
+            const active = !isReady && i === currentIdx && isRunning;
+            return (
+              <div key={stage.label} className="flex items-center gap-2.5 text-[12px]">
+                <span className="w-4 text-center flex-shrink-0" style={{
+                  color: done ? "#4ade80" : active ? "#60a5fa" : "var(--text-muted)",
+                }}>
+                  {done ? "✓" : active ? "●" : "○"}
+                </span>
+                <span style={{
+                  color: done ? "var(--text-secondary)" : active ? "var(--text-primary)" : "var(--text-muted)",
+                  fontWeight: active ? 600 : 400,
+                }}>
+                  {stage.label}{active && "…"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Detailed internal steps — opt-in only */}
       <div>
@@ -294,9 +339,14 @@ export default function AutomationProgress({
                   <span style={{ color: done ? "var(--text-secondary)" : active ? "var(--text-primary)" : "var(--text-muted)" }}>
                     {step.label}
                     {active && "…"}
-                    {pendingFormAutomation && job.status === "FORM_AUTOMATION_PENDING" && (
+                    {pendingFormAutomation && job.status === "FORM_AUTOMATION_PENDING" && job.applyUrl && (
                       <span className="ml-1.5" style={{ color: "var(--text-muted)" }}>
-                        (coming soon — nothing is submitted yet)
+                        (handing off to the browser extension)
+                      </span>
+                    )}
+                    {pendingFormAutomation && job.status === "FORM_AUTOMATION_PENDING" && !job.applyUrl && (
+                      <span className="ml-1.5" style={{ color: "var(--text-muted)" }}>
+                        (demo job — no real application to open)
                       </span>
                     )}
                   </span>
@@ -308,11 +358,41 @@ export default function AutomationProgress({
       </div>
 
       {/* Honest completion note */}
-      {job.status === "FORM_AUTOMATION_PENDING" && (
+      {job.status === "FORM_AUTOMATION_PENDING" && !job.applyUrl && (
         <div className="rounded-lg px-3.5 py-2.5 text-[12px]"
              style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)", color: "var(--text-secondary)" }}>
           ✅ <span className="font-semibold" style={{ color: "#4ade80" }}>Your application package is ready.</span>{" "}
-          Submitting it automatically is the next step we&rsquo;re building — nothing has been submitted yet.
+          This demo job has no real application URL, so there is nothing for the browser extension to open — nothing has been submitted.
+        </div>
+      )}
+      {(job.status === "FORM_AUTOMATION_PENDING" || job.status === "AUTHORIZED") && job.applyUrl && (
+        <div className="rounded-lg px-3.5 py-2.5 text-[12px]"
+             style={{ background: "var(--blue-dim)", border: "1px solid rgba(59,130,246,0.2)", color: "var(--text-secondary)" }}>
+          🧩 <span className="font-semibold" style={{ color: "#93c5fd" }}>Handing off to the ApplyMate browser extension.</span>{" "}
+          It will open the application, fill and answer what it can verify, and submit once everything required is resolved.
+        </div>
+      )}
+
+      {job.status === "SUBMITTED" && (
+        <div className="rounded-lg px-3.5 py-2.5 text-[12px]"
+             style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)", color: "var(--text-secondary)" }}>
+          ✅ <span className="font-semibold" style={{ color: "#4ade80" }}>Application submitted</span>
+          {job.submittedAt ? ` on ${new Date(job.submittedAt).toLocaleString()}.` : "."}
+        </div>
+      )}
+
+      {job.status === "REVIEW_REQUIRED" && job.reviewRequiredReason && (
+        <div className="rounded-lg px-3.5 py-2.5 text-[12px] flex flex-col gap-1.5"
+             style={{ background: "rgba(251,146,60,0.05)", border: "1px solid rgba(251,146,60,0.18)", color: "var(--text-secondary)" }}>
+          <p style={{ color: "#fb923c" }}>
+            <span className="font-semibold">Needs your review: </span>{job.reviewRequiredReason.description}
+          </p>
+          <p style={{ color: "var(--text-muted)" }}>→ {job.reviewRequiredReason.requiredAction}</p>
+          {job.applyUrl && (
+            <a href={job.applyUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold" style={{ color: "#60a5fa" }}>
+              Open application ↗
+            </a>
+          )}
         </div>
       )}
 
@@ -362,7 +442,22 @@ export default function AutomationProgress({
                 {job.status === "FAILED" ? "Retry" : "Resume"}
               </button>
             )}
-            {job.status !== "CANCELLED" && job.status !== "FORM_AUTOMATION_PENDING" && (
+            {isExecuting && (
+              <button className="dash-btn dash-btn--outline text-[12px]" onClick={() => void stopExecution(jobKey)}>
+                Stop automation
+              </button>
+            )}
+            {job.status === "REVIEW_REQUIRED" && (
+              <button className="dash-btn dash-btn--primary text-[12px]" onClick={() => void retryExecution(jobKey)}>
+                Retry
+              </button>
+            )}
+            {job.applyUrl && (job.status === "REVIEW_REQUIRED" || isExecuting || job.status === "SUBMITTED") && (
+              <a href={job.applyUrl} target="_blank" rel="noreferrer" className="dash-btn dash-btn--ghost text-[12px]" style={{ color: "var(--text-muted)" }}>
+                Open application ↗
+              </a>
+            )}
+            {job.status !== "CANCELLED" && job.status !== "FORM_AUTOMATION_PENDING" && job.status !== "SUBMITTED" && !isExecuting && (
               <button className="dash-btn dash-btn--ghost text-[12px]" style={{ color: "var(--text-muted)" }}
                       onClick={() => cancelAutomation(jobKey)}>
                 Cancel

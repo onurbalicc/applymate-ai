@@ -5,15 +5,36 @@ import { JSDOM } from "jsdom";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export function loadFixture(name: string, url: string): { document: Document; location: Location } {
+export function loadFixture(
+  name: string,
+  url: string,
+  options: { runScripts?: boolean } = {}
+): { document: Document; location: Location } {
   const html = readFileSync(join(__dirname, "fixtures", name), "utf-8");
-  const dom = new JSDOM(html, { url });
+  // Only local-ats-fixture.html needs its inline <script> to actually run
+  // (it simulates a same-page SPA success response for the submit-
+  // controller/outcome-detector end-to-end test) — every other fixture is
+  // static markup and stays script-inert, the safer jsdom default.
+  const dom = new JSDOM(html, { url, runScripts: options.runScripts ? "dangerously" : undefined });
 
   // isVisible() reads window.getComputedStyle; buildLocator()'s cssEscape
-  // fallback checks the global CSS — wire both to jsdom's globals so the
-  // scanner code (written for a real browser) runs unmodified under Node.
-  (globalThis as unknown as { window: typeof dom.window }).window = dom.window;
-  (globalThis as unknown as { CSS: typeof dom.window.CSS }).CSS = dom.window.CSS;
+  // fallback checks the global CSS; field-filler.ts/document-uploader.ts
+  // construct real `new Event(...)`/`new DataTransfer()` instances to
+  // dispatch at elements — jsdom's dispatchEvent rejects an Event built
+  // from Node's OWN global Event class (a different constructor than
+  // jsdom's window.Event), so every one of these must be aliased onto
+  // globalThis too. Wire them all so code written for a real browser runs
+  // unmodified under Node.
+  const g = globalThis as unknown as Record<string, unknown>;
+  g.window = dom.window;
+  g.CSS = dom.window.CSS;
+  g.Event = dom.window.Event;
+  g.DataTransfer = dom.window.DataTransfer;
+  g.File = dom.window.File;
+  g.HTMLElement = dom.window.HTMLElement;
+  g.HTMLInputElement = dom.window.HTMLInputElement;
+  g.HTMLSelectElement = dom.window.HTMLSelectElement;
+  g.HTMLTextAreaElement = dom.window.HTMLTextAreaElement;
 
   // jsdom performs no real layout, so every element's getBoundingClientRect
   // is {0,0,0,0} by default — isVisible() would then treat every field as

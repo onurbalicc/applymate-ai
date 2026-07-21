@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Local ATS Fixture — Software Engineer at Fixture Co</title></head>
+<body>
+<h1>Software Engineer at Fixture Co</h1>
+<form id="application_form" class="application--form" action="#">
+  <label for="first_name">First Name*</label>
+  <input type="text" id="first_name" name="first_name" required />
+
+  <label for="last_name">Last Name*</label>
+  <input type="text" id="last_name" name="last_name" required />
+
+  <label for="email">Email*</label>
+  <input type="email" id="email" name="email" required />
+
+  <label for="phone">Phone</label>
+  <input type="tel" id="phone" name="phone" />
+
+  <label for="linkedin">LinkedIn URL</label>
+  <input type="url" id="linkedin" name="linkedin" />
+
+  <!-- Deliberately no résumé/file field: this fixture exists to validate
+       the fill → validate → submit → detect-outcome cycle end-to-end
+       without the "no résumé file exists" gap always short-circuiting
+       to review-required, which is otherwise correct and expected
+       behavior against a real Greenhouse/Lever form (see
+       document-uploader.ts). -->
+
+  <button type="submit" id="submit_btn">Submit application</button>
+</form>
+
+<div id="confirmation" style="display:none">
+  <h2>Thank you for applying!</h2>
+  <p>We've received your application and will be in touch.</p>
+</div>
+
+<script>
+  document.getElementById("application_form").addEventListener("submit", function (e) {
+    e.preventDefault();
+  });
+  document.getElementById("submit_btn").addEventListener("click", function () {
+    // Simulate a same-page SPA success response: replace the form with a
+    // confirmation message and push a "confirmation" URL, exactly the
+    // signal outcome-detector.ts looks for. No real network request is
+    // made anywhere in this fixture.
+    document.getElementById("application_form").remove();
+    document.getElementById("confirmation").style.display = "block";
+    history.pushState({}, "", window.location.pathname + "#confirmation");
+  });
+</script>
+</body>
+</html>

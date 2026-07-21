@@ -218,31 +218,185 @@ tests (`browser-extension/tests/fixtures/greenhouse-live-quirks.html`,
 
 ---
 
-## 2. Approval Modes
+## 1f. Browser Extension MVP Part 2: Autonomous Application Execution (implemented)
 
-### 2.1 Review-First (default, always available)
+The extension is no longer a read-only scanner. The right swipe that creates an `AutomationJob`
+(unchanged from Phase 3) is now also the **one-time authorization** for ApplyMate to autonomously
+fill and submit that exact application — no further per-field or per-submit confirmation. `job.key`
+doubles as the authorization id (`ExtensionApplicationPayload.authorization.authorizationId`); there
+is deliberately no separate authorization store, per the "don't create a second disconnected
+application state" constraint this sprint was built under.
 
-Every application package waits for explicit individual user approval before any form is touched. This is the only mode available until Approved Autopilot is explicitly enabled by the user.
+**Lifecycle** (`app/lib/automation/orchestrator.ts` → `browser-extension/src/execution/`):
 
-### 2.2 Approved Autopilot (opt-in, strict conditions)
+1. `runPipeline()` reaches `FORM_AUTOMATION_PENDING` exactly as before, then (for any job with a
+   real `applyUrl` — mock/demo jobs honestly stop here, same as Part 1) immediately calls
+   `handOffToExtension()`: sets `authorizedAt`/`authorizedApplyUrl`/`executionAttemptId`, builds the
+   `ExtensionApplicationPayload` (`app/lib/extension-payload/builder.ts`, schema v2 — additive over
+   Part 1's v1: `authorization`, `reusableAnswers`, `demographicPolicy`, `preferences`), and sends it
+   to the extension via `chrome.runtime.sendMessage(EXTENSION_ID, ...)`.
+2. The extension's background service worker (`src/background/index.ts` — Part 2's only new
+   background script; Part 1 deliberately had none) receives it via `onMessageExternal`, persists it
+   to `chrome.storage.local` keyed by authorization id, and opens (or focuses) the application tab
+   itself — the user never has to open the popup.
+3. Once the tab finishes loading, the background worker sends `RUN_EXECUTION` to that tab's content
+   script, which runs `execution-engine.ts`'s `runExecution()`: detect ATS + scan (reusing Part 1's
+   exact `runScan`/adapters/mapper) → resolve each field's value → decide the field action → fill →
+   upload documents → validate → submit (or dry-run) → detect the outcome. Every stage is logged and
+   relayed back to the background worker, which the web app polls (`useAutomationExecutionSync()`,
+   ~3s interval) to keep the Tracker's `AutomationJob` in sync — the single source of truth Tracker
+   already read from stays the single source of truth.
 
-The user explicitly enables this mode and configures strict rules. Before enabling it, the system requires:
+**Value resolution** (`value-resolver.ts`) — strict priority, never fabricated:
+explicit per-job approved answer → verified candidate profile value → previously-approved reusable
+answer (`CandidateProfile.reusableAnswers`, matched via the same `missingInfoId` stable-question-key
+function used everywhere else in the product) → generated application-package answer → deterministic
+derivation (e.g. full name from given+family name) → unresolved. An unresolved field is never
+guessed; it becomes `unresolved-required` (blocks) or `skipped-optional`.
 
-- All reusable profile answers are complete and confirmed.
-- Work authorization status is explicitly set.
-- No unresolved "needs-user-input" answers in the profile.
-- Minimum match score threshold is configured.
-- Explicitly excluded company types or job categories are listed.
+**Sensitivity enforcement — the safety-critical layer** (`answer-resolver.ts`), a second, independent
+gate that never trusts value-resolver.ts's source alone:
+- `SAFE_AUTO_FILL` / `NEEDS_CONFIRMATION`: any properly-sourced resolution fills.
+- `NEVER_AUTO_FILL`: fills **only** from an explicit per-question approved/reusable answer — refused
+  even if value-resolver.ts somehow resolved a value from the candidate profile or generated content
+  (tested directly: `answer-resolver.test.ts`'s "refused even when value-resolver somehow found a
+  value from an unsafe source"). For the `demographicQuestions` category specifically, a new
+  `CandidateProfile.demographicAnswerPolicy` (`"not-set"` by default | `"decline"` |
+  `"use-explicit-profile-answer"`) additionally allows selecting the ATS's own decline option or an
+  explicit stored answer for that *exact* field — never inferred, never borrowed from a related
+  field. Two new `NormalizedFieldId`s (`sexualOrientation`, `transgenderStatus`) were added to close
+  a mapping gap Part 1's live validation had already found but not fully closed.
 
-Autopilot must **not submit** when any of the following conditions are true:
-- A form contains a CAPTCHA or unusual bot-detection.
-- A form contains a sensitive legal declaration not pre-reviewed.
-- A form has fields with confidence < configured threshold.
-- A form asks demographic, disability, or other sensitive questions not pre-approved.
-- The application has already been submitted (duplicate detection).
-- The automation worker encounters an error in the form.
+**Form filling** (`field-filler.ts`): native-setter + dispatched input/change/blur events — the
+standard technique for framework-controlled inputs. **Live validation finding:** against a real,
+still-hydrating Greenhouse React page, a synchronous "it didn't throw" success was not enough
+evidence a write actually persisted — the framework's own render can silently discard it moments
+later, or replace the DOM node entirely. Every fill now re-locates the element fresh and verifies the
+value stuck, retrying up to 3 times with increasing delay (150ms/400ms/900ms) before reporting
+failure; re-locating (not reusing the original element reference) was the fix that mattered — a
+detached, stale reference always "verifies successfully" against itself even when the live page never
+received the write.
 
-Full audit log is mandatory for every autopilot submission.
+**Document upload** (`document-uploader.ts`): the real technique (`DataTransfer` + a native file
+input) is implemented and tested, but `resolveDocumentSource()` always returns `null` today —
+`resumeFileAvailable`/`coverLetterFileAvailable` are always `false` (no résumé/cover-letter FILE
+exists anywhere in ApplyMate yet, unchanged from Part 1). This is stated honestly rather than
+skipped or faked: any required upload field routes the whole application to review-required with
+kind `document-upload-failed`.
+
+**Submission controller** (`submit-controller.ts`) — every gate checked before any click, in order:
+duplicate idempotency-key rejection → authorized-URL page match → form readiness → CAPTCHA absence →
+confident submit-control identification (scoped to the detected form root; refuses ambiguous or
+external-auth-looking buttons). `dryRun: true` runs every gate and identifies the exact control that
+*would* be clicked without clicking it — the mode used for all real, public Greenhouse/Lever
+validation below; `dryRun: false` was only ever exercised against the controlled local fixture.
+
+**Outcome detection** (`outcome-detector.ts`): SUBMITTED requires a real signal (confirmation text,
+URL transition to a confirmation-looking path, or form removal + URL change) — never "the button was
+clicked." CAPTCHA/login/validation-rejected/external-redirect are detected explicitly; anything
+inconclusive is `"unknown"`, which becomes review-required, never SUBMITTED.
+
+**Review-required fallback**: a structured `ReviewRequiredDetail { kind, description, requiredAction,
+question? }` for every stop-short case (13 `kind` values covering CAPTCHA, login, missing
+answers/verification, unresolved legal/demographic questions, unsupported ATS interaction, upload
+failure, unclear submit control, unknown outcome, page mismatch, and reload interruption) — never a
+silent failure.
+
+**Web app side**: `AutomationStatus` gained the execution-phase states (`AUTHORIZED` →
+`OPENING_APPLICATION` → `SCANNING_FORM` → `FILLING_FORM` → `ANSWERING_QUESTIONS` →
+`UPLOADING_DOCUMENTS` → `VALIDATING_FORM` → `READY_TO_SUBMIT` → `SUBMITTING` → `SUBMITTED` |
+`REVIEW_REQUIRED`), with their own `executionProgress`/`EXECUTION_STEPS` scale kept deliberately
+separate from the existing `progress`/`PIPELINE_STEPS` (package-preparation) scale so neither phase's
+meaning gets diluted. `AutomationProgress.tsx` renders the execution checklist, a review-required
+detail panel with an "Open application" link, and Stop/Retry controls — no mandatory "Confirm Fill"
+or "Confirm Submit" step exists anywhere; the right swipe is the confirmation, per this sprint's
+explicit design constraint.
+
+**Extension ↔ web app bridge**: `chrome.runtime.sendMessage(EXTENSION_ID, ...)`, which Chrome exposes
+to any page matching the extension's `externally_connectable.matches` manifest entry
+(`http://localhost/*`, `http://localhost:3000/*` today — a production deployment would add its real
+origin). `EXTENSION_ID` is stable across reloads because `manifest.json` now pins a `key` (an RSA
+public key whose SHA-256 hash Chrome uses to derive the id deterministically) — without it, an
+unpacked extension's id regenerates every reload, which would break the bridge constantly during
+development. `chrome.storage.local` (not the web page's own `localStorage`, which a content script on
+a different origin can't reach anyway) is the persistence layer — it survives popup reload, web page
+reload, and extension reload, satisfying the recovery requirement.
+
+**Permissions added**: `storage` (chrome.storage.local), `tabs` (reading a tab's URL to match against
+an authorization, and `chrome.tabs.create`/`onUpdated`), and the `externally_connectable` entry above.
+`host_permissions` are unchanged from Part 1 — still scoped to the three ATS domains, no `<all_urls>`.
+
+---
+
+## 1g. Part 2 live-browser validation findings
+
+Validated via the same Playwright + Chrome for Testing approach as Part 1 (see
+`browser-extension/MANUAL_TESTING.md`), extended with: (a) a controlled local ATS fixture
+(`browser-extension/tests/fixtures/local-ats-fixture.html`, served over `http://localhost`) for
+genuine end-to-end fill → submit → outcome-detection testing without ever touching a real employer,
+and (b) `dryRun: true` runs against the same real Greenhouse posting used in Part 1's validation, to
+confirm real-page field filling and the review-required stop **without ever clicking submit**.
+
+**Local fixture, real (non-dry-run) execution**: genuinely filled every field, validated, clicked the
+real submit button, and correctly detected `"submitted"` from the fixture's own confirmation text —
+proof the full pipeline works end-to-end in an actually-loaded extension, not just in jsdom. A
+second attempt with the same idempotency key was correctly refused before touching the DOM.
+
+**Real Greenhouse posting, dry-run**: correctly scanned 20 fields (matching Part 1's count exactly),
+correctly stopped at `REVIEW_REQUIRED` before ever reaching the submit gate (6 required fields
+unresolved, résumé upload unavailable), and — critically — the work-authorization field
+(`NEVER_AUTO_FILL`) was confirmed still empty on the live page throughout.
+
+Two real defects were found and fixed during this pass, both invisible to jsdom testing by
+construction (jsdom has no real page-load timing or hydration):
+
+1. **Message-delivery race**: the very first `RUN_EXECUTION` sent to a freshly-created tab was
+   silently dropped — `chrome.tabs.onUpdated`'s `"complete"` status is not the same event as "the
+   content script's `onMessage` listener is registered." Fixed with a retry loop keyed off
+   `chrome.runtime.lastError` (up to 10 attempts, 400ms apart) rather than a guessed fixed delay.
+2. **Stale element reference in fill verification**: the first fix attempt (verify-after-write) still
+   failed for `first_name` specifically, while `email` on the same page succeeded — because the
+   verification re-read the *same* captured element reference rather than re-querying the live DOM.
+   A framework can swap the node out entirely, not just reset its value; a detached reference always
+   "verifies successfully" against itself. Fixed by re-locating fresh on every attempt. After the
+   fix, `first_name`, `email`, `phone`, and `country` all confirmed correctly filled on the real page
+   in a follow-up run, with the work-authorization field still confirmed empty.
+
+Both fixes are structural (they change how filling/messaging is verified, not a one-off patch) and
+are exactly the kind of finding that only running the real, loaded extension against real page
+timing can surface — reinforcing why this validation step is not optional for a feature this
+consequential.
+
+---
+
+## 2. Approval Model
+
+**Superseded by Part 2's implementation** (§1f) — recorded below for history, then reconciled with
+what actually shipped.
+
+This section originally proposed two modes: "Review-First" (every package waits for individual
+approval before any form is touched) as the default, and an opt-in "Approved Autopilot" with its own
+enable flow and rule set. What was actually built, per this sprint's explicit product-intent
+constraint ("the default behavior is autonomous completion and submission... human review is an
+exception used only when the application cannot be completed truthfully or technically"), is closer
+to a single model:
+
+- **The right swipe is the one-time authorization** for exactly one application — there is no
+  separate "enable autopilot" step, toggle, or second confirmation. This is a deliberate reversal of
+  this document's original "final submission always remains a manual user action" framing; see the
+  roadmap for the product-direction note.
+- Every one of the old "Autopilot must not submit when..." conditions is enforced as a hard gate in
+  the shipped code, not a configurable rule a user could loosen: CAPTCHA presence
+  (`submit-controller.ts`), sensitive/legal declarations and demographic questions with no explicit
+  approved answer (`answer-resolver.ts`), unresolved required fields (`form-validator.ts`), and
+  duplicate submission (idempotency keys in `submit-controller.ts`).
+- What was **not** built: a distinct minimum-match-score-for-autonomous-execution setting, an
+  explicit company/category exclusion list scoped to execution (the review queue's own match-score
+  filtering still applies before a job is ever swiped on), and a visible on/off toggle for
+  autonomous-vs-manual behavior. These remain real, honest gaps — see `docs/roadmap.md` Phase 8.
+- Full execution log is captured for every run (`ExecutionResult.log`, synced into the Tracker) —
+  the "full audit log" requirement is met at the field/stage level; a submission *receipt*
+  (screenshot, persisted confirmation artifact) is not yet implemented (`docs/roadmap.md` Phase 7).
 
 ---
 

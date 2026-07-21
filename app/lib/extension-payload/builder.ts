@@ -430,6 +430,16 @@ export function buildExtensionApplicationPayload(
       expectedAts: detectExpectedAts(job),
       applicationState: job.status,
     },
+    // job.key IS the authorization id (see contracts.ts doc comment) — no
+    // separate authorization store. Placeholder values before the job is
+    // actually authorized are informational only (e.g. the dev payload
+    // preview); the extension is never sent a payload before authorization.
+    authorization: {
+      authorizationId: job.key,
+      authorizedAction: "fill-and-submit",
+      authorizedAt: job.authorizedAt ?? "",
+      authorizedApplyUrl: job.authorizedApplyUrl ?? job.applyUrl ?? "",
+    },
     candidate: candidateSection,
     documents,
     generatedPackage: pkg
@@ -447,6 +457,12 @@ export function buildExtensionApplicationPayload(
       : null,
     resolvedAnswers,
     normalizedFields,
+    reusableAnswers: profile.reusableAnswers.map((a) => ({ ...a })),
+    demographicPolicy: {
+      policy: profile.demographicAnswerPolicy,
+      answers: { ...profile.demographicAnswers },
+    },
+    preferences: { overwriteExistingValues: false },
     unresolvedRequirements: { blocking, manualSteps },
     readiness: {
       state,

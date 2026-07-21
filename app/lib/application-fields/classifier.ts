@@ -113,6 +113,8 @@ const FIELD_SENSITIVITY: Record<NormalizedFieldId, SensitivityCategory> = {
   raceOrEthnicity: "NEVER_AUTO_FILL",
   veteranStatus: "NEVER_AUTO_FILL",
   disabilityStatus: "NEVER_AUTO_FILL",
+  sexualOrientation: "NEVER_AUTO_FILL",
+  transgenderStatus: "NEVER_AUTO_FILL",
   captcha: "NEVER_AUTO_FILL",
 };
 

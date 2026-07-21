@@ -1,0 +1,32 @@
+<form id="application_form" class="application--form" action="/testco/jobs/123">
+  <label for="first_name">First Name</label>
+  <input type="text" id="first_name" name="first_name" required />
+
+  <label for="email">Email</label>
+  <input type="email" id="email" name="email" required />
+
+  <label for="pre_filled">Pre-filled field</label>
+  <input type="text" id="pre_filled" name="pre_filled" value="already typed by the user" />
+
+  <label for="country_select">Country</label>
+  <select id="country_select" name="country">
+    <option value="">Select...</option>
+    <option value="DE">Germany</option>
+    <option value="US">United States</option>
+  </select>
+
+  <div>
+    <span>Willing to relocate?</span>
+    <input type="radio" id="relocate_yes" name="relocate" value="yes" />
+    <label for="relocate_yes">Yes</label>
+    <input type="radio" id="relocate_no" name="relocate" value="no" />
+    <label for="relocate_no">No</label>
+  </div>
+
+  <input type="checkbox" id="newsletter" name="newsletter" />
+  <label for="newsletter">Subscribe to newsletter</label>
+
+  <input type="file" id="resume" name="resume" required />
+
+  <button type="submit" id="submit_btn">Submit application</button>
+</form>

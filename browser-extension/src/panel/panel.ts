@@ -206,7 +206,7 @@ async function load(messageType: "GET_SCAN_RESULT" | "SCAN_PAGE"): Promise<void>
     const response = await sendMessageToActiveTab({ type: messageType });
     if (response.type === "SCAN_RESULT") {
       renderResult(response.payload, () => load("SCAN_PAGE"));
-    } else {
+    } else if (response.type === "SCAN_ERROR") {
       renderError(response.error.message, () => load("SCAN_PAGE"));
     }
   } catch {
@@ -218,4 +218,112 @@ async function load(messageType: "GET_SCAN_RESULT" | "SCAN_PAGE"): Promise<void>
   }
 }
 
-load("GET_SCAN_RESULT");
+/* ── Autonomous execution view (Part 2) ──────────────────── */
+
+interface ReviewRequiredDetail {
+  kind: string;
+  description: string;
+  requiredAction: string;
+  question?: string;
+}
+
+interface StoredExecutionRecord {
+  authorizationId: string;
+  stage: string;
+  submissionOutcome: string | null;
+  reviewRequired: ReviewRequiredDetail | null;
+  log: { stage: string; timestamp: string; message: string }[];
+  updatedAt: string;
+}
+
+function stageBadgeClass(stage: string): string {
+  if (stage === "SUBMITTED") return "badge-mapped";
+  if (stage === "REVIEW_REQUIRED" || stage === "FAILED") return "badge-unmapped";
+  return "badge-medium";
+}
+
+function stageLabel(stage: string): string {
+  return stage
+    .toLowerCase()
+    .split("_")
+    .map((w) => w[0]?.toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function renderExecution(record: StoredExecutionRecord): void {
+  const header = el("div", { class: "header" }, [
+    el("div", {}, [
+      el("div", { class: "title" }, ["Autonomous application"]),
+      el("div", { class: "subtitle" }, ["Monitoring — this run started from ApplyMate, not the popup."]),
+    ]),
+    el("span", { class: `badge ${stageBadgeClass(record.stage)}` }, [stageLabel(record.stage)]),
+  ]);
+
+  const body: (Node | string)[] = [header];
+
+  if (record.stage === "SUBMITTED") {
+    body.push(
+      el("div", { class: "state-banner" }, [
+        el("p", {}, ["✅ Application submitted."]),
+      ])
+    );
+  } else if (record.reviewRequired) {
+    body.push(
+      el("div", { class: "state-banner error" }, [
+        el("p", {}, [`Needs your review: ${record.reviewRequired.description}`]),
+        el("p", { class: "muted" }, [`→ ${record.reviewRequired.requiredAction}`]),
+      ])
+    );
+  } else {
+    body.push(el("p", { class: "muted" }, [`In progress — ${stageLabel(record.stage)}…`]));
+  }
+
+  if (record.log.length > 0) {
+    body.push(
+      el(
+        "ul",
+        { class: "evidence" },
+        record.log.slice(-8).map((entry) => el("li", {}, [`${stageLabel(entry.stage)}: ${entry.message}`]))
+      )
+    );
+  }
+
+  body.push(
+    el("p", { class: "footer-note" }, [
+      "This run is managed from the ApplyMate Tracker — stop, retry, and detailed status live there.",
+    ])
+  );
+
+  render(body);
+}
+
+async function getExecutionStatusForActiveTab(): Promise<StoredExecutionRecord | null> {
+  return new Promise((resolve) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tabId = tabs[0]?.id;
+      if (!tabId) {
+        resolve(null);
+        return;
+      }
+      chrome.runtime.sendMessage({ type: "GET_EXECUTION_STATUS_BY_TAB", tabId }, (response) => {
+        if (chrome.runtime.lastError || !response?.ok) {
+          resolve(null);
+          return;
+        }
+        resolve(response.record as StoredExecutionRecord);
+      });
+    });
+  });
+}
+
+async function bootstrap(): Promise<void> {
+  renderLoading();
+  const executionRecord = await getExecutionStatusForActiveTab();
+  if (executionRecord) {
+    renderExecution(executionRecord);
+    return;
+  }
+  await load("GET_SCAN_RESULT");
+}
+
+bootstrap();

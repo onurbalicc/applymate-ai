@@ -125,6 +125,13 @@ export const DEFAULT_CANDIDATE_PROFILE: CandidateProfile = {
   whyInterestedInRoleTemplate:
     "I am drawn to applied AI and data engineering roles where I can build systems that create real business value. I enjoy working across the full data stack — from pipelines and transformations to ML models and AI-powered features.",
   availabilityNote: "Available as a working student; open to internships and junior roles.",
+
+  // Autonomous execution — empty/unset by default; every required
+  // sensitive/demographic question routes to review-required until the
+  // user explicitly approves a reusable answer or sets a policy.
+  reusableAnswers: [],
+  demographicAnswerPolicy: "not-set",
+  demographicAnswers: {},
 };
 
 /* ── Store ───────────────────────────────────────────────── */

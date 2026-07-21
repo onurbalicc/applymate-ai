@@ -5,6 +5,7 @@ import Link from "next/link";
 import { navItems, type NavId } from "@/app/lib/nav-items";
 import { useI18n, useTheme } from "@/app/lib/i18n";
 import { useApplicationState } from "@/app/lib/application-state";
+import { useAutomationExecutionSync } from "@/app/lib/automation/orchestrator";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 
 /* ─────────────────────────────────────────────────────────
@@ -31,6 +32,9 @@ export default function DashboardLayout({
   const { theme, toggleTheme } = useTheme();
   const { t } = useI18n();
   const { pendingCount } = useApplicationState();
+  // Polls the extension for autonomous-execution progress while any job is
+  // in flight, syncing it into the AutomationJob store Tracker reads from.
+  useAutomationExecutionSync();
 
   /* Review Queue badge follows the demo state; other badges stay static */
   const badgeFor = (item: (typeof navItems)[number]) =>
