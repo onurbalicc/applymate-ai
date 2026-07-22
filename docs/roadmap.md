@@ -44,8 +44,9 @@ The core interaction: **swipe right → ApplyMate prepares the application autom
 - Missing-information interruption (NEEDS_USER_INPUT with compact answer request; nothing
   is ever invented) ✅
 - Automation progress UI in Tracker and on `/review` (pause / cancel / resume / retry) ✅
+- Local default résumé and optional cover-letter management (PDF/DOCX, IndexedDB, replace/delete, reload persistence) ✅
 - Profile editing UI (form fields for the structured profile) ⬜
-- Honest end state: pipeline stops at FORM_AUTOMATION_PENDING — no external submission exists yet ✅
+- Package preparation hands real jobs to the extension after authorization; demo jobs still stop honestly at FORM_AUTOMATION_PENDING ✅
 
 ## Phase 4 — Job Discovery ⬜
 
@@ -53,10 +54,10 @@ The core interaction: **swipe right → ApplyMate prepares the application autom
 - Match scoring against the candidate profile before jobs enter the queue
 - Queue populated by discovery instead of mock data
 
-## Phase 5 — Database + Authentication + Secure Document Storage ⬜
+## Phase 5 — Database + Authentication + Production Document Storage ⬜
 
 - User accounts; replace localStorage demo persistence
-- Encrypted profile and document storage; CV/letter file uploads
+- Encrypted cloud profile/document storage, cross-device sync and recovery (the local IndexedDB MVP is complete, not production storage)
 - GDPR-compliant deletion
 
 ## Phase 6 — Browser Extension / Automation Worker Prototype 🚧
@@ -85,12 +86,14 @@ Foundation implemented (see `docs/auto-apply-architecture.md` §1c):
 - Submission controller: idempotent (attempt-id based), page-match-verified, CAPTCHA-refusing, dry-run-capable; outcome detector never marks SUBMITTED without a real confirmed signal ✅
 - Extension ↔ web app bridge via a background service worker (`externally_connectable` + `chrome.storage.local`), a pinned manifest key for a stable extension id, and Tracker polling sync ✅
 - Review-required fallback with a structured, specific reason for every stop-short case ✅
-- **Known gap:** no résumé/cover-letter FILE exists anywhere in ApplyMate yet (`resumeFileAvailable` is always `false`) — any real ATS form requiring a résumé upload will currently always land in `review-required`, honestly, rather than skip or fabricate the upload. This is the primary blocker to true end-to-end autonomous submission on a real form today.
+- Real document pipeline: IndexedDB binary store, validated PDF/DOCX profile UI, frozen authorization-time references, checksum-verified attempt-scoped transfer, native `DataTransfer` upload, ATS confirmation and Tracker result metadata ✅
+- Generated résumé/cover-letter PDF rendering remains planned; generated package text is never pretended to be a file ⬜
 - Initial ATS targets remain Greenhouse, Lever; Workable considered afterward ⬜
 
 ## Phase 7 — One ATS End-to-End Application Pilot 🚧
 
-- Full flow through real external form filling and submission (review-first mode) — **achieved against a controlled local ATS fixture** (genuine fill → validate → click submit → detect a real success signal, verified via a real loaded extension); **not yet achieved against a real employer ATS**, blocked specifically on the résumé-file gap above (every real form tested stopped at review-required before reaching submission, correctly)
+- Full flow through real external form filling and submission — **achieved against controlled local fixtures**, including real document reconstruction/upload → validation → exactly-once submit → detected success; **not yet achieved against a real employer ATS**
+- Real public Greenhouse and Lever document controls validated in Chrome with harmless local PDFs, exact visible filename/success state, untouched sensitive fields and no final submit; the captured Lever form also passes production `runScan` without upload-status label pollution ✅
 - Submission receipts: screenshot, timestamp, field mapping ⬜
 - Duplicate prevention (idempotency key, `previousAttemptIds`) ✅; audit trail in Tracker (execution log synced, no screenshot/receipt persistence yet) 🚧
 

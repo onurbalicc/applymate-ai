@@ -105,6 +105,8 @@ function makeJob(overrides: Partial<AutomationJob> = {}): AutomationJob {
     submittedAt: null,
     submissionOutcome: null,
     reviewRequiredReason: null,
+    documentSelection: null,
+    documentUploadResults: [],
     ...overrides,
   };
 }
@@ -125,6 +127,31 @@ test("résumé file absence is a manual step, not a blocker — and stated hones
   assert.equal(payload.documents.coverLetterTextAvailable, true);
   assert.ok(payload.readiness.manualSteps.some((s) => s.toLowerCase().includes("résumé") || s.toLowerCase().includes("resume")));
   assert.equal(payload.readiness.isReady, true); // still ready — manual step only
+});
+
+test("frozen document references enter the payload without raw bytes", () => {
+  const job = makeJob({
+    executionAttemptId: "attempt-docs-1",
+    documentSelection: {
+      resolvedAt: "2026-07-22T10:00:00.000Z",
+      resume: {
+        documentId: "doc-resume-1",
+        type: "resume",
+        fileName: "Test_Resume.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 123,
+        checksum: "abc123",
+        selectionReason: "default",
+      },
+    },
+  });
+  const payload = buildExtensionApplicationPayload(job, makeProfile());
+  assert.equal(payload.metadata.schemaVersion, 3);
+  assert.equal(payload.authorization.attemptId, "attempt-docs-1");
+  assert.equal(payload.documents.resumeFileAvailable, true);
+  assert.equal(payload.documents.resume?.documentId, "doc-resume-1");
+  assert.equal(JSON.stringify(payload).includes("base64"), false);
+  assert.equal(JSON.stringify(payload).includes("%PDF"), false);
 });
 
 test("unanswered required questions → NEEDS_USER_INPUT with exact blockers", () => {

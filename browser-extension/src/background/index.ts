@@ -27,6 +27,10 @@
 
 /// <reference types="chrome" />
 
+import type { ExtensionApplicationPayload } from "../../../app/lib/extension-payload/contracts";
+import type { SerializableDocumentTransfer } from "../../../app/lib/documents/contracts";
+import { isAllowedApplyMateOrigin, TemporaryDocumentVault, validateAuthorizedDocumentTransfers } from "./document-transfer";
+
 interface StoredExecution {
   authorizationId: string;
   payload: unknown; // ExtensionApplicationPayload — kept untyped here to avoid pulling app/lib into the service worker bundle unnecessarily
@@ -39,9 +43,21 @@ interface StoredExecution {
   previousAttemptIds: string[];
   updatedAt: string;
   log: { stage: string; timestamp: string; message: string }[];
+  dryRun: boolean;
+  documentResults: {
+    documentId?: string;
+    kind: "resume" | "coverLetter";
+    fileName?: string;
+    status: string;
+    error?: string;
+  }[];
 }
 
 const STORAGE_PREFIX = "applymate-execution:";
+/** Raw bytes exist only here, scoped to one attempt. They are intentionally
+    absent from chrome.storage.local so a service-worker restart fails safe
+    and requires a fresh transfer from the authorized ApplyMate page. */
+const temporaryDocuments = new TemporaryDocumentVault();
 
 function storageKey(authorizationId: string): string {
   return `${STORAGE_PREFIX}${authorizationId}`;
@@ -63,15 +79,32 @@ function newAttemptId(): string {
 /* ── External messages: ApplyMate web app → extension ────── */
 
 type ExternalMessage =
-  | { type: "AUTHORIZE_EXECUTION"; payload: { authorization: { authorizationId: string; authorizedApplyUrl: string }; metadata: { applyUrl: string | null } }; dryRun?: boolean }
+  | { type: "AUTHORIZE_EXECUTION"; payload: ExtensionApplicationPayload; dryRun?: boolean }
+  | { type: "PROVIDE_AUTHORIZED_DOCUMENTS"; authorizationId: string; attemptId: string; documents: SerializableDocumentTransfer[]; dryRun?: boolean }
   | { type: "GET_EXECUTION_STATUS"; authorizationId: string }
   | { type: "STOP_EXECUTION"; authorizationId: string }
-  | { type: "RETRY_EXECUTION"; authorizationId: string };
+  | { type: "RETRY_EXECUTION"; authorizationId: string; attemptId: string; payload: ExtensionApplicationPayload; documents: SerializableDocumentTransfer[] };
 
-chrome.runtime.onMessageExternal.addListener((message: ExternalMessage, _sender, sendResponse) => {
+chrome.runtime.onMessageExternal.addListener((message: ExternalMessage, sender, sendResponse) => {
+  if (!isAllowedApplyMateSender(sender)) {
+    sendResponse({ ok: false, error: "Message origin is not an allowed ApplyMate origin." });
+    return false;
+  }
   handleExternalMessage(message).then(sendResponse);
   return true; // keep the message channel open for the async response
 });
+
+function isAllowedApplyMateSender(sender: chrome.runtime.MessageSender): boolean {
+  return isAllowedApplyMateOrigin(sender.url);
+}
+
+function validateAuthorizedDocuments(
+  record: StoredExecution,
+  attemptId: string,
+  documents: SerializableDocumentTransfer[]
+): Promise<string | null> {
+  return validateAuthorizedDocumentTransfers(record.payload as ExtensionApplicationPayload, record.attemptId, attemptId, documents);
+}
 
 async function handleExternalMessage(message: ExternalMessage): Promise<unknown> {
   switch (message.type) {
@@ -81,13 +114,19 @@ async function handleExternalMessage(message: ExternalMessage): Promise<unknown>
         return { ok: false, error: "No applyUrl on this authorization." };
       }
       const authorizationId = message.payload.authorization.authorizationId;
+      if (!authorizationId || authorizationId !== message.payload.metadata.automationJobKey) {
+        return { ok: false, error: "Authorization identity does not match the application job." };
+      }
 
       // Duplicate-safe: re-authorizing the same job while it's already
       // tracked reuses the existing record rather than starting a second
       // parallel execution (§16).
       const existing = await getExecution(authorizationId);
+      if (existing?.stage === "SUBMITTED") {
+        return { ok: false, error: "This application has already been submitted." };
+      }
       if (existing && !["SUBMITTED", "REVIEW_REQUIRED", "FAILED"].includes(existing.stage)) {
-        return { ok: true, authorizationId, reused: true };
+        return { ok: true, authorizationId, attemptId: existing.attemptId, reused: true };
       }
 
       const record: StoredExecution = {
@@ -98,14 +137,27 @@ async function handleExternalMessage(message: ExternalMessage): Promise<unknown>
         stage: "AUTHORIZED",
         submissionOutcome: null,
         reviewRequired: null,
-        attemptId: newAttemptId(),
+        attemptId: message.payload.authorization.attemptId || newAttemptId(),
         previousAttemptIds: existing ? existing.previousAttemptIds : [],
         updatedAt: new Date().toISOString(),
         log: [{ stage: "AUTHORIZED", timestamp: new Date().toISOString(), message: "Application authorized." }],
+        dryRun: message.dryRun ?? false,
+        documentResults: [],
       };
       await putExecution(record);
-      await openOrFocusApplicationTab(record, message.dryRun ?? false);
-      return { ok: true, authorizationId };
+      return { ok: true, authorizationId, attemptId: record.attemptId };
+    }
+
+    case "PROVIDE_AUTHORIZED_DOCUMENTS": {
+      const record = await getExecution(message.authorizationId);
+      if (!record) return { ok: false, error: "No authorized execution found." };
+      const invalid = await validateAuthorizedDocuments(record, message.attemptId, message.documents);
+      if (invalid) return { ok: false, error: invalid };
+      temporaryDocuments.put(message.authorizationId, message.attemptId, message.documents);
+      record.dryRun = message.dryRun ?? record.dryRun;
+      await putExecution(record);
+      await openOrFocusApplicationTab(record, record.dryRun);
+      return { ok: true };
     }
 
     case "GET_EXECUTION_STATUS": {
@@ -123,6 +175,10 @@ async function handleExternalMessage(message: ExternalMessage): Promise<unknown>
         requiredAction: "Retry from the Tracker when ready.",
       };
       record.updatedAt = new Date().toISOString();
+      temporaryDocuments.clear(message.authorizationId);
+      if (record.tabId) {
+        chrome.tabs.sendMessage(record.tabId, { type: "CANCEL_EXECUTION", authorizationId: message.authorizationId }, () => void chrome.runtime.lastError);
+      }
       await putExecution(record);
       return { ok: true };
     }
@@ -130,12 +186,26 @@ async function handleExternalMessage(message: ExternalMessage): Promise<unknown>
     case "RETRY_EXECUTION": {
       const record = await getExecution(message.authorizationId);
       if (!record) return { ok: false, error: "No execution found." };
+      if (record.stage === "SUBMITTED") return { ok: false, error: "A submitted application cannot be retried." };
+      if (
+        message.payload.authorization.authorizationId !== message.authorizationId ||
+        message.payload.metadata.automationJobKey !== message.authorizationId ||
+        message.payload.authorization.attemptId !== message.attemptId
+      ) return { ok: false, error: "Retry authorization identity does not match the stored application." };
+      const retryApplyUrl = message.payload.authorization.authorizedApplyUrl || message.payload.metadata.applyUrl;
+      if (retryApplyUrl !== record.applyUrl) {
+        return { ok: false, error: "Retry cannot change the authorized application URL." };
+      }
+      record.payload = message.payload;
       record.stage = "AUTHORIZED";
       record.reviewRequired = null;
-      record.attemptId = newAttemptId(); // fresh idempotency key — never reuse a stale one
+      record.attemptId = message.attemptId || newAttemptId(); // fresh idempotency key — never reuse a stale one
       record.updatedAt = new Date().toISOString();
+      const invalid = await validateAuthorizedDocuments(record, record.attemptId, message.documents);
+      if (invalid) return { ok: false, error: invalid };
+      temporaryDocuments.put(message.authorizationId, record.attemptId, message.documents);
       await putExecution(record);
-      await openOrFocusApplicationTab(record, false);
+      await openOrFocusApplicationTab(record, record.dryRun);
       return { ok: true };
     }
 
@@ -196,6 +266,7 @@ function sendRunExecutionWithRetry(tabId: number, record: StoredExecution, dryRu
       attemptId: record.attemptId,
       previousAttemptIds: record.previousAttemptIds,
       dryRun,
+      documents: temporaryDocuments.get(record.authorizationId, record.attemptId),
     },
     () => {
       if (chrome.runtime.lastError && attempt < MAX_ATTEMPTS) {
@@ -221,6 +292,7 @@ interface ExecutionResultMessage {
   submissionOutcome: string | null;
   reviewRequired: unknown | null;
   log: { stage: string; timestamp: string; message: string }[];
+  documents: StoredExecution["documentResults"];
 }
 
 interface GetStatusByTabMessage {
@@ -267,12 +339,20 @@ async function handleInternalMessage(message: ExecutionProgressMessage | Executi
   if (message.type === "EXECUTION_RESULT") {
     record.submissionOutcome = message.submissionOutcome;
     record.reviewRequired = message.reviewRequired;
+    record.documentResults = message.documents.map((document) => ({ ...document }));
     record.log.push(...message.log);
     if (message.stage === "SUBMITTED") {
       // Never retry a submitted application with the same attempt id.
       record.previousAttemptIds = [...record.previousAttemptIds, record.attemptId];
     }
+    temporaryDocuments.clear(message.authorizationId);
   }
 
   await putExecution(record);
 }
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  void findExecutionByTab(tabId).then((record) => {
+    if (record) temporaryDocuments.clear(record.authorizationId);
+  });
+});

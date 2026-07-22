@@ -3,9 +3,23 @@ import assert from "node:assert/strict";
 import { loadFixture } from "./test-utils";
 import { runExecution } from "../src/execution/execution-engine";
 import { makeExecutionPayload } from "./execution-fixtures";
+import type { SerializableDocumentTransfer } from "../../app/lib/documents/contracts";
 
 const LOCAL_FIXTURE_URL = "https://boards.greenhouse.io/fixtureco/jobs/999";
 const EXECUTION_FORM_URL = "https://boards.greenhouse.io/testco/jobs/123";
+
+function resumeTransfer(): SerializableDocumentTransfer {
+  const bytes = Buffer.from("%PDF-1.7\nlocal document fixture");
+  return {
+    documentId: "doc-e2e-resume",
+    type: "resume",
+    fileName: "Test_Resume.pdf",
+    mimeType: "application/pdf",
+    sizeBytes: bytes.byteLength,
+    checksum: "e2e-checksum",
+    base64: bytes.toString("base64"),
+  };
+}
 
 test("end-to-end: fills verified fields, validates, and (dry run) never actually submits", async () => {
   const { document, location } = loadFixture("local-ats-fixture.html", LOCAL_FIXTURE_URL, { runScripts: true });
@@ -84,7 +98,33 @@ test("end-to-end: missing required résumé (honest today) routes to review-requ
   });
 
   assert.equal(result.stage, "REVIEW_REQUIRED");
-  assert.equal(result.reviewRequired?.kind, "document-upload-failed");
+  assert.equal(result.reviewRequired?.kind, "resume-document-missing");
+});
+
+test("end-to-end: authorized résumé transfers, uploads, validates and submits exactly once", async () => {
+  const { document, location } = loadFixture("document-ats-fixture.html", LOCAL_FIXTURE_URL, { runScripts: true });
+  const transfer = resumeTransfer();
+  const payload = makeExecutionPayload({
+    metadata: { schemaVersion: 3, generatedAt: "", automationJobKey: "job-doc", jobTitle: "SWE", company: "Fixture Co", applyUrl: LOCAL_FIXTURE_URL, provider: "greenhouse:fixtureco", sourceLabel: "Greenhouse", expectedAts: "greenhouse", applicationState: "AUTHORIZED" },
+    authorization: { authorizationId: "job-doc", attemptId: "attempt-doc", authorizedAction: "fill-and-submit", authorizedAt: "", authorizedApplyUrl: LOCAL_FIXTURE_URL },
+    documents: {
+      resumeFileAvailable: true,
+      coverLetterFileAvailable: false,
+      coverLetterTextAvailable: false,
+      resume: { ...transfer, type: "resume", selectionReason: "default" },
+    },
+  });
+
+  const result = await runExecution(payload, document, location as unknown as Location, {
+    dryRun: false,
+    attemptId: "attempt-doc",
+    previousAttemptIds: [],
+    documents: [transfer],
+  });
+
+  assert.equal(result.stage, "SUBMITTED");
+  assert.equal(result.documents.find((item) => item.kind === "resume")?.status, "uploaded");
+  assert.equal(document.getElementById("submit-count")?.textContent, "1");
 });
 
 test("end-to-end: a NEVER_AUTO_FILL field with no explicit answer is never written to the DOM", async () => {
@@ -133,4 +173,23 @@ test("end-to-end: refuses to act when the live page doesn't match the authorizat
 
   assert.equal(result.stage, "REVIEW_REQUIRED");
   assert.equal(result.reviewRequired?.kind, "authorization-page-mismatch");
+});
+
+test("stop signal cancels before any field write or submit", async () => {
+  const { document, location } = loadFixture("local-ats-fixture.html", LOCAL_FIXTURE_URL, { runScripts: true });
+  const controller = new AbortController();
+  controller.abort();
+  const payload = makeExecutionPayload({
+    authorization: { authorizationId: "job-stop", attemptId: "attempt-stop", authorizedAction: "fill-and-submit", authorizedAt: "", authorizedApplyUrl: LOCAL_FIXTURE_URL },
+  });
+  const result = await runExecution(payload, document, location as unknown as Location, {
+    dryRun: false,
+    attemptId: "attempt-stop",
+    previousAttemptIds: [],
+    signal: controller.signal,
+  });
+  assert.equal(result.stage, "REVIEW_REQUIRED");
+  assert.equal(result.reviewRequired?.kind, "execution-interrupted");
+  assert.equal((document.getElementById("first_name") as HTMLInputElement).value, "");
+  assert.ok(document.getElementById("application_form"));
 });

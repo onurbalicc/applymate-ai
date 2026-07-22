@@ -158,11 +158,14 @@ export function buildExtensionApplicationPayload(
     },
   };
 
-  /* ── Documents — stated honestly; no résumé file exists anywhere ── */
+  /* ── Documents — frozen references only; bytes stay in IndexedDB. ── */
+  const frozenDocuments = job.documentSelection;
   const documents: ExtensionApplicationPayload["documents"] = {
-    resumeFileAvailable: false,
-    coverLetterFileAvailable: false,
+    resumeFileAvailable: Boolean(frozenDocuments?.resume),
+    coverLetterFileAvailable: Boolean(frozenDocuments?.coverLetter),
     coverLetterTextAvailable: !!pkg?.coverLetter?.body,
+    ...(frozenDocuments?.resume ? { resume: { ...frozenDocuments.resume } } : {}),
+    ...(frozenDocuments?.coverLetter ? { coverLetter: { ...frozenDocuments.coverLetter } } : {}),
   };
 
   /* ── Resolved answers (user overrides generated) ── */
@@ -276,21 +279,25 @@ export function buildExtensionApplicationPayload(
     );
   }
 
-  // Documents — honestly unavailable
+  // Documents — stable IDs only; the extension receives bytes separately.
   normalizedFields.push(
     candidate({
       field: "resumeFile",
-      value: null,
-      source: "unavailable",
+      value: frozenDocuments?.resume?.documentId ?? null,
+      source: frozenDocuments?.resume ? "documentStore" : "unavailable",
       inputType: "file",
-      note: "No résumé file exists in ApplyMate yet — attach your own file manually.",
+      note: frozenDocuments?.resume
+        ? `Selected ${frozenDocuments.resume.fileName} (${frozenDocuments.resume.selectionReason}).`
+        : "No résumé is stored in ApplyMate.",
     }),
     candidate({
       field: "coverLetterFile",
-      value: null,
-      source: "unavailable",
+      value: frozenDocuments?.coverLetter?.documentId ?? null,
+      source: frozenDocuments?.coverLetter ? "documentStore" : "unavailable",
       inputType: "file",
-      note: "Cover letter exists as text only — paste it, or attach your own file.",
+      note: frozenDocuments?.coverLetter
+        ? `Selected ${frozenDocuments.coverLetter.fileName} (${frozenDocuments.coverLetter.selectionReason}).`
+        : "No cover-letter file is stored; generated cover-letter text may still be available.",
     })
   );
 
@@ -355,12 +362,14 @@ export function buildExtensionApplicationPayload(
     }
   }
 
-  // Manual steps (honest, non-blocking for payload generation)
-  manualSteps.push({
-    id: "manual-resume-file",
-    kind: "missing-resume-file",
-    description: "No résumé file exists in ApplyMate — you will attach your own file on the form.",
-  });
+  // Manual steps (honest, non-blocking until a real form proves the upload required)
+  if (!frozenDocuments?.resume) {
+    manualSteps.push({
+      id: "manual-resume-file",
+      kind: "missing-resume-file",
+      description: "No résumé is stored in ApplyMate. A required résumé field will stop for review.",
+    });
+  }
   manualSteps.push({
     id: "manual-work-authorization",
     kind: "manual-sensitive-action",
@@ -408,7 +417,15 @@ export function buildExtensionApplicationPayload(
   } else if (
     status === "PACKAGE_READY" ||
     status === "FORM_AUTOMATION_PENDING" ||
-    status === "READY_TO_SUBMIT"
+    status === "AUTHORIZED" ||
+    status === "OPENING_APPLICATION" ||
+    status === "SCANNING_FORM" ||
+    status === "FILLING_FORM" ||
+    status === "ANSWERING_QUESTIONS" ||
+    status === "UPLOADING_DOCUMENTS" ||
+    status === "VALIDATING_FORM" ||
+    status === "READY_TO_SUBMIT" ||
+    status === "REVIEW_REQUIRED"
   ) {
     state = "READY_FOR_TEXT_FIELD_ASSISTANCE";
   } else {
@@ -436,6 +453,7 @@ export function buildExtensionApplicationPayload(
     // preview); the extension is never sent a payload before authorization.
     authorization: {
       authorizationId: job.key,
+      attemptId: job.executionAttemptId ?? "",
       authorizedAction: "fill-and-submit",
       authorizedAt: job.authorizedAt ?? "",
       authorizedApplyUrl: job.authorizedApplyUrl ?? job.applyUrl ?? "",

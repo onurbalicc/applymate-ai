@@ -20,6 +20,7 @@
 
 import type { PageScanResult } from "./contracts";
 import type { ExecutionResult } from "../execution/execution-types";
+import type { SerializableDocumentTransfer } from "../../../app/lib/documents/contracts";
 
 export interface SerializableExtensionError {
   message: string;
@@ -44,8 +45,10 @@ export type ExtensionMessage =
       attemptId: string;
       previousAttemptIds: string[];
       dryRun: boolean;
+      documents: SerializableDocumentTransfer[];
     }
   | { type: "EXECUTION_STARTED" }
+  | { type: "CANCEL_EXECUTION"; authorizationId: string }
   | { type: "EXECUTION_DONE"; result: ExecutionResult };
 
 export type ExtensionResponse =

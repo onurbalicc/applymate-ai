@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Greenhouse Document Fixture</title></head>
+<body>
+<div id="main">
+  <form id="application_form" action="#">
+    <div class="field upload" data-field="resume">
+      <label for="greenhouse_resume">Resume/CV*</label>
+      <input type="file" id="greenhouse_resume" name="job_application[resume]" required />
+      <span id="greenhouse-resume-status"></span>
+    </div>
+    <div class="field upload" data-field="cover-letter">
+      <label for="greenhouse_cover">Cover letter</label>
+      <input type="file" id="greenhouse_cover" name="job_application[cover_letter]" />
+      <span id="greenhouse-cover-status"></span>
+    </div>
+    <button type="submit">Submit application</button>
+  </form>
+  <output id="submit-count">0</output>
+</div>
+<script>
+  function wire(inputId, statusId) {
+    document.getElementById(inputId).addEventListener("change", function () {
+      document.getElementById(statusId).textContent = this.dataset.reject === "true"
+        ? "Upload failed: unsupported file type"
+        : this.files[0] ? "Uploaded: " + this.files[0].name : "";
+    });
+  }
+  wire("greenhouse_resume", "greenhouse-resume-status");
+  wire("greenhouse_cover", "greenhouse-cover-status");
+  document.getElementById("application_form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var output = document.getElementById("submit-count");
+    output.textContent = String(Number(output.textContent || "0") + 1);
+  });
+</script>
+</body>
+</html>

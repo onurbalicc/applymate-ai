@@ -347,14 +347,11 @@ plain HTTP, e.g. `python3 -m http.server 8000` from
 `browser-extension/tests/fixtures/`). This is the only page real
 (non-dry-run) submission was ever exercised against.
 
-## 13. Known limitations (Part 2)
+## 13. Known limitations at the Part 2 milestone
 
-- **No résumé/cover-letter file exists anywhere in ApplyMate.**
-  `resumeFileAvailable`/`coverLetterFileAvailable` are always `false` — any
-  real ATS form with a required résumé upload will always stop at
-  `review-required`. This is the primary blocker to genuine end-to-end
-  autonomous submission on a real form today; it is not a bug, it's an
-  honest reflection of upstream product state.
+- The Part 2 milestone had no résumé/cover-letter byte source and therefore
+  stopped at `review-required` on required uploads. Part 3 below supersedes
+  that limitation with the local IndexedDB document pipeline.
 - Fill verification retries up to 3 times (150ms/400ms/900ms) — a page that
   takes longer than ~1.5s to settle after a write could still report a
   false failure. Not observed in testing, but not proven impossible either.
@@ -373,3 +370,115 @@ plain HTTP, e.g. `python3 -m http.server 8000` from
 - Only one real employer ATS page (the same EarnIn Greenhouse posting from
   Part 1) was used for Part 2's real-page validation — an initial pass, not
   broad coverage.
+
+---
+
+# Part 3: Real Document Pipeline — Manual Testing
+
+## 14. Prepare documents in ApplyMate
+
+1. Run the web app and open `/profile`.
+2. Under **Application documents**, upload a real PDF or DOCX résumé of 5 MB
+   or less. Optionally upload a default cover letter.
+3. Confirm filename, type, size and upload date appear. Reload the page and
+   confirm the same metadata remains visible.
+4. Exercise **Replace** and **Remove**. Invalid extensions, empty files,
+   mismatched signatures and oversized files must show a clear error.
+
+These files are stored in this browser's IndexedDB. They are not cloud-backed;
+clearing site storage may delete them.
+
+## 15. Document authorization and transfer boundary
+
+For a real job, a right swipe freezes the selected document metadata into the
+application authorization. The schema-v3 JSON payload contains IDs, filename,
+MIME type, size and checksum only. A second message transfers base64 bytes for
+that exact attempt; the background worker verifies origin, authorization ID,
+attempt ID, document set, metadata, byte length and checksum. It retains bytes
+only in memory. Inspect `chrome.storage.local` and the Tracker: neither may
+contain document contents or base64.
+
+After a terminal result, Stop, or tab close, retrying must require a fresh
+transfer while keeping the same application authorization and a new attempt ID.
+Removing a Profile document must remove its IndexedDB bytes but must not expose
+or mutate unrelated documents.
+
+## 16. Controlled document fixture
+
+Use `tests/fixtures/document-ats-fixture.html` for the full execution flow,
+plus `greenhouse-document.html` and `lever-document.html` for platform-shaped
+native/hidden upload controls. They contain a required résumé, optional cover
+letter, simulated success/rejection status and submit counters. A
+non-dry-run test is safe only here: the document should be reconstructed as a
+`File`, accepted by the live input, pass readiness validation, submit once and
+show the fixture's success state. Reusing the same attempt ID must not create a
+second submission. The automated execution-engine suite covers this path.
+
+## 17. Real Greenhouse and Lever dry-run checklist
+
+Never submit a real employer application. Use the loaded unpacked extension and
+`dryRun: true`:
+
+- Greenhouse: confirm the actual résumé input is mapped, the authorized test
+  file is assigned, the filename/success state appears, and sensitive fields
+  remain untouched.
+- Lever: confirm the styled widget's hidden native input receives the exact
+  file, status text does not pollute its field label, and the file is not
+  uploaded twice.
+- In both cases, close the tab afterward and confirm temporary bytes are gone.
+
+If a public ATS, browser policy or anti-automation control prevents interaction,
+record the exact limitation and rely only on the controlled fixture result. Do
+not describe that as real-site validation.
+
+## 18. Current document-pipeline limitations
+
+- Generated résumé and cover-letter content is text only; PDF generation is not
+  implemented and the product never pretends the text is an uploaded file.
+- Local IndexedDB is an MVP boundary, not production encrypted storage or
+  backup. There is no cross-device sync.
+- The manifest requests no new broad host permission and still excludes
+  `<all_urls>`. The development web bridge accepts configured localhost origins;
+  a production origin must be added explicitly before release.
+- Automated controlled fixtures cover Greenhouse-like and Lever-like native and
+  hidden inputs. The current public controls were last checked on 2026-07-22;
+  repeat the no-submit gate whenever either ATS changes its upload markup.
+
+## 19. Dated public document-upload validation — 2026-07-22
+
+Two synthetic, one-page PDFs containing no real candidate data were used.
+Nothing was submitted to either employer.
+
+**Profile / IndexedDB:** upload A showed the exact filename, PDF type and 2 KB
+size. After reload, IndexedDB held 2,102 bytes with checksum
+`63d22a60…cafa` and signature bytes `[37,80,68,70,45]` (`%PDF-`). Replacing
+with B showed the new filename; after reload it held 2,113 bytes with checksum
+`36fe5a0f…664` and the same valid signature. The first pass exposed an orphan:
+the prior default's bytes survived replacement and remained hidden after the
+visible default was removed. `DocumentManager` now deletes the previous
+default after the replacement is safely stored. Repeating the full sequence
+left only B after replacement and an empty IndexedDB document list after
+Remove + reload.
+
+**Greenhouse:**
+`https://job-boards.greenhouse.io/earnin/jobs/8001075` (EarnIn, “Staff
+Analytics, Product & Marketing”) accepted PDF A through its actual résumé
+chooser. Greenhouse re-rendered the input and displayed the exact filename
+plus `Remove file`. Work authorization, immigration/sponsorship, pronoun,
+gender/ethnicity, veteran and disability controls were empty before and after
+the upload. `Submit application` was never activated.
+
+**Lever:**
+`https://jobs.lever.co/voltus/f13d367c-97c1-4af3-8e8b-06827017fee2/apply`
+(Voltus, “Software Engineer”) accepted PDF B through the styled control backed
+by hidden `#resume-upload-input`. The widget displayed the exact filename and
+visible `Success!`; failure and processing states remained hidden. Lever's own
+resume parser populated the harmless synthetic name `Alex Example`, but all
+work-authorization/sponsorship radios, pronoun checkboxes and gender/race/
+veteran selects remained untouched. The form was not submitted.
+
+The captured 21 KB post-upload Lever form was run through production
+`runScan`: detection `lever/high`, 18 total fields (15 mapped, 1 ambiguous,
+2 unmapped, 0 unsupported). The résumé field mapped to `resumeFile` at high
+confidence with raw label `Resume/CV ✱`; none of `Analyzing resume...`,
+`Success!`, upload failure or oversize text polluted its mapping.

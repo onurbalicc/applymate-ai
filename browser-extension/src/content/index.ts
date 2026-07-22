@@ -28,6 +28,7 @@ const INITIAL_SCAN_DELAY_MS = 800;
 const MUTATION_DEBOUNCE_MS = 1000;
 
 let latestResult: PageScanResult | null = null;
+const activeExecutions = new Map<string, AbortController>();
 
 function scanNow(): PageScanResult {
   latestResult = runScan(document, window.location);
@@ -89,12 +90,25 @@ function handleMessage(
 
   if (message.type === "RUN_EXECUTION") {
     sendResponse({ type: "EXECUTION_STARTED" });
+    const payload = message.payload as ExtensionApplicationPayload;
+    const controller = new AbortController();
+    activeExecutions.get(payload.authorization.authorizationId)?.abort();
+    activeExecutions.set(payload.authorization.authorizationId, controller);
     void runExecutionAndReport(
-      message.payload as ExtensionApplicationPayload,
+      payload,
       message.attemptId,
       message.previousAttemptIds,
-      message.dryRun
+      message.dryRun,
+      message.documents,
+      controller.signal
     );
+    return true;
+  }
+
+  if (message.type === "CANCEL_EXECUTION") {
+    activeExecutions.get(message.authorizationId)?.abort();
+    activeExecutions.delete(message.authorizationId);
+    sendResponse({ type: "EXECUTION_STARTED" });
     return true;
   }
 
@@ -109,7 +123,9 @@ async function runExecutionAndReport(
   payload: ExtensionApplicationPayload,
   attemptId: string,
   previousAttemptIds: string[],
-  dryRun: boolean
+  dryRun: boolean,
+  documents: import("../../../app/lib/documents/contracts").SerializableDocumentTransfer[],
+  signal: AbortSignal
 ): Promise<void> {
   const reportProgress = (stage: ExecutionStage, msg: string) => {
     chrome.runtime.sendMessage({
@@ -124,7 +140,7 @@ async function runExecutionAndReport(
 
   let result: ExecutionResult;
   try {
-    result = await runExecution(payload, document, window.location, { dryRun, attemptId, previousAttemptIds });
+    result = await runExecution(payload, document, window.location, { dryRun, attemptId, previousAttemptIds, documents, signal });
   } catch (err) {
     result = {
       authorizationId: payload.authorization.authorizationId,
@@ -149,7 +165,9 @@ async function runExecutionAndReport(
     submissionOutcome: result.submissionOutcome,
     reviewRequired: result.reviewRequired,
     log: result.log,
+    documents: result.documents,
   });
+  activeExecutions.delete(payload.authorization.authorizationId);
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

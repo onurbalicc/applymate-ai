@@ -1,4 +1,5 @@
 import type { ApplicationPackage } from "../ai/contracts";
+import type { ApplicationDocumentSelection, CandidateDocumentType } from "../documents/contracts";
 
 /* ─────────────────────────────────────────────────────────
    Application automation contracts.
@@ -82,6 +83,12 @@ export interface ReviewRequiredReason {
     | "unresolved-demographic-question"
     | "unsupported-ats-interaction"
     | "document-upload-failed"
+    | "resume-document-missing"
+    | "resume-transfer-failed"
+    | "resume-upload-rejected"
+    | "resume-upload-timeout"
+    | "cover-letter-required"
+    | "document-store-unavailable"
     | "unclear-submit-control"
     | "unknown-submission-outcome"
     | "external-assessment-required"
@@ -176,6 +183,19 @@ export interface AutomationJob {
   submissionOutcome: SubmissionOutcome | null;
   /** Present only when status is REVIEW_REQUIRED. */
   reviewRequiredReason: ReviewRequiredReason | null;
+
+  /** Document references frozen when the right-swipe authorization is
+      handed to the extension. Defaults may change later without mutating
+      this already-authorized application. */
+  documentSelection: ApplicationDocumentSelection | null;
+  /** Display/audit metadata only. Never contains raw bytes or base64. */
+  documentUploadResults: {
+    documentId?: string;
+    type: CandidateDocumentType;
+    fileName?: string;
+    status: string;
+    error?: string;
+  }[];
 }
 
 /** Data needed to create an automation job — independent of where the job came from. */

@@ -70,7 +70,7 @@ export function makeExecutionPayload(
 ): ExtensionApplicationPayload {
   return {
     metadata: {
-      schemaVersion: 2,
+      schemaVersion: 3,
       generatedAt: "2026-07-01T00:00:00.000Z",
       automationJobKey: "greenhouse:testco:123",
       jobTitle: "Analyst",
@@ -83,6 +83,7 @@ export function makeExecutionPayload(
     },
     authorization: {
       authorizationId: "greenhouse:testco:123",
+      attemptId: "attempt-test-1",
       authorizedAction: "fill-and-submit",
       authorizedAt: "2026-07-01T00:05:00.000Z",
       authorizedApplyUrl: "https://boards.greenhouse.io/testco/jobs/123",

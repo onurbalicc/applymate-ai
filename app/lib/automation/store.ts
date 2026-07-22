@@ -27,6 +27,8 @@ function backfillExecutionFields(job: AutomationJob): AutomationJob {
     submittedAt: job.submittedAt ?? null,
     submissionOutcome: job.submissionOutcome ?? null,
     reviewRequiredReason: job.reviewRequiredReason ?? null,
+    documentSelection: job.documentSelection ?? null,
+    documentUploadResults: job.documentUploadResults ?? [],
   };
 }
 
@@ -235,6 +237,8 @@ export function createAutomationJob(seed: AutomationJobSeed): AutomationJob {
     submittedAt: null,
     submissionOutcome: null,
     reviewRequiredReason: null,
+    documentSelection: null,
+    documentUploadResults: [],
   };
   write({ ...getMap(), [seed.key]: job });
   return job;

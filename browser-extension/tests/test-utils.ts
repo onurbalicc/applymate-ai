@@ -29,7 +29,22 @@ export function loadFixture(
   g.window = dom.window;
   g.CSS = dom.window.CSS;
   g.Event = dom.window.Event;
-  g.DataTransfer = dom.window.DataTransfer;
+  if (dom.window.DataTransfer) {
+    g.DataTransfer = dom.window.DataTransfer;
+  } else {
+    class TestDataTransfer {
+      private values: File[] = [];
+      items = { add: (file: File) => { this.values = [file]; } };
+      get files() { return this.values; }
+    }
+    g.DataTransfer = TestDataTransfer;
+    const fileSymbol = Symbol("test-files");
+    Object.defineProperty(dom.window.HTMLInputElement.prototype, "files", {
+      configurable: true,
+      get() { return (this as unknown as Record<symbol, File[]>)[fileSymbol] ?? []; },
+      set(value) { (this as unknown as Record<symbol, File[]>)[fileSymbol] = Array.from(value ?? []); },
+    });
+  }
   g.File = dom.window.File;
   g.HTMLElement = dom.window.HTMLElement;
   g.HTMLInputElement = dom.window.HTMLInputElement;

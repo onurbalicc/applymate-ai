@@ -34,10 +34,39 @@ export function validateForm(
   const optionalUnanswered: FieldIssue[] = [];
 
   const resultByFieldId = new Map(fieldResults.map((r) => [r.fieldId, r]));
+  const documentByFieldId = new Map(documentResults.filter((result) => result.fieldId).map((result) => [result.fieldId!, result]));
 
   for (const field of fields) {
     const result = resultByFieldId.get(field.raw.scanFieldId);
     const label = labelOf(field);
+
+    if (field.raw.inputType === "file") {
+      const documentResult = documentByFieldId.get(field.raw.scanFieldId);
+      const accepted = documentResult?.status === "uploaded" || documentResult?.status === "already-present";
+      const liveInput = accepted ? locateElement(field, doc) as HTMLInputElement | null : null;
+      const expectedFileStillAttached = Boolean(
+        accepted &&
+        liveInput?.type === "file" &&
+        documentResult?.fileName &&
+        liveInput.files?.[0]?.name === documentResult.fileName
+      );
+      if (accepted && !expectedFileStillAttached) {
+        unresolvedRequired.push({
+          fieldId: field.raw.scanFieldId,
+          label,
+          reason: "The ATS replaced or cleared the uploaded document before final validation.",
+        });
+      } else if (field.raw.required && !accepted) {
+        unresolvedRequired.push({
+          fieldId: field.raw.scanFieldId,
+          label,
+          reason: documentResult?.error ?? "Required document has not been accepted by the ATS.",
+        });
+      } else if (!field.raw.required && !accepted) {
+        optionalUnanswered.push({ fieldId: field.raw.scanFieldId, label, reason: documentResult?.error ?? "Optional document was not uploaded." });
+      }
+      continue;
+    }
 
     if (field.raw.required) {
       if (!result || result.status === "unresolved-required" || result.status === "blocked" || result.status === "failed") {
@@ -69,10 +98,10 @@ export function validateForm(
   }
 
   for (const doc_ of documentResults) {
-    if (doc_.status === "not-available" || doc_.status === "failed") {
-      // Only a hard blocker if a matching field exists and is required —
-      // the caller passes documentResults already scoped to required
-      // upload fields it attempted.
+    if (!["uploaded", "already-present", "skipped-no-field"].includes(doc_.status)) {
+      const matchingField = fields.find((field) => field.raw.scanFieldId === doc_.fieldId);
+      if (matchingField && !matchingField.raw.required) continue;
+      if (unresolvedRequired.some((issue) => issue.fieldId === (doc_.fieldId ?? `document-${doc_.kind}`))) continue;
       unresolvedRequired.push({
         fieldId: doc_.fieldId ?? `document-${doc_.kind}`,
         label: doc_.kind === "resume" ? "Résumé" : "Cover letter",

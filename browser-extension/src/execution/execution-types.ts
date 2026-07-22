@@ -93,8 +93,19 @@ export type DocumentKind = "resume" | "coverLetter";
 
 export interface DocumentUploadResult {
   kind: DocumentKind;
-  status: "uploaded" | "not-available" | "failed" | "skipped-no-field";
+  documentId?: string;
+  fileName?: string;
+  status:
+    | "uploaded"
+    | "already-present"
+    | "rejected"
+    | "missing-document"
+    | "unsupported-widget"
+    | "processing-timeout"
+    | "failed"
+    | "skipped-no-field";
   fieldId?: string;
+  detectedFileName?: string;
   error?: string;
 }
 
@@ -148,6 +159,12 @@ export interface ReviewRequiredDetail {
     | "unresolved-demographic-question"
     | "unsupported-ats-interaction"
     | "document-upload-failed"
+    | "resume-document-missing"
+    | "resume-transfer-failed"
+    | "resume-upload-rejected"
+    | "resume-upload-timeout"
+    | "cover-letter-required"
+    | "document-store-unavailable"
     | "unclear-submit-control"
     | "unknown-submission-outcome"
     | "external-assessment-required"

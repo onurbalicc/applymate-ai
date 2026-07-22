@@ -11,6 +11,7 @@ const MasterCvPreview = dynamic(() => import("@/app/components/MasterCvPreview")
 import { useI18n } from "@/app/lib/i18n";
 import type { TKey } from "@/app/lib/translations";
 import { useCandidateProfile, saveProfile } from "@/app/lib/candidate-profile";
+import DocumentManager from "@/app/components/DocumentManager";
 
 /* ─────────────────────────────────────────────────────────
    ApplyMate AI – Profile Setup
@@ -165,6 +166,9 @@ export default function ProfilePage() {
 
         {/* ── Master CV Preview ─────────────────────── */}
         <MasterCvPreview />
+
+        {/* Binary application documents — stored locally in IndexedDB. */}
+        <DocumentManager />
 
         {/* ── Target Roles ───────────────── */}
         <section>

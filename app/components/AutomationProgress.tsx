@@ -357,6 +357,25 @@ export default function AutomationProgress({
         )}
       </div>
 
+      {job.documentSelection && (job.documentSelection.resume || job.documentSelection.coverLetter) && (
+        <div className="rounded-lg px-3.5 py-2.5 text-[11px] flex flex-col gap-1.5"
+             style={{ background: "var(--bg-raised)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}>
+          <p className="font-semibold" style={{ color: "var(--text-primary)" }}>Application documents</p>
+          {job.documentSelection.resume && (
+            <p>Résumé: {job.documentSelection.resume.fileName} · {job.documentSelection.resume.selectionReason.replaceAll("-", " ")}</p>
+          )}
+          {job.documentSelection.coverLetter && (
+            <p>Cover letter: {job.documentSelection.coverLetter.fileName} · {job.documentSelection.coverLetter.selectionReason.replaceAll("-", " ")}</p>
+          )}
+          {job.documentUploadResults.map((result, index) => (
+            <p key={`${result.documentId ?? result.type}-${index}`} style={{ color: result.status === "uploaded" || result.status === "already-present" ? "#4ade80" : "#fb923c" }}>
+              {result.type === "resume" ? "Résumé" : "Cover letter"} upload: {result.status.replaceAll("-", " ")}
+              {result.error ? ` — ${result.error}` : ""}
+            </p>
+          ))}
+        </div>
+      )}
+
       {/* Honest completion note */}
       {job.status === "FORM_AUTOMATION_PENDING" && !job.applyUrl && (
         <div className="rounded-lg px-3.5 py-2.5 text-[12px]"

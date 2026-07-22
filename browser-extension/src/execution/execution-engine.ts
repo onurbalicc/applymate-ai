@@ -23,6 +23,7 @@
    ───────────────────────────────────────────────────────── */
 
 import type { ExtensionApplicationPayload } from "../../../app/lib/extension-payload/contracts";
+import type { SerializableDocumentTransfer } from "../../../app/lib/documents/contracts";
 import type { NormalizedDetectedField } from "../shared/contracts";
 import { detectAts } from "../ats/detect";
 import { mapFields } from "../shared/mapper";
@@ -108,6 +109,8 @@ export interface RunExecutionOptions {
   dryRun: boolean;
   previousAttemptIds: string[];
   attemptId: string;
+  documents?: SerializableDocumentTransfer[];
+  signal?: AbortSignal;
 }
 
 export async function runExecution(
@@ -120,6 +123,12 @@ export async function runExecution(
   const record = (stage: ExecutionStage, message: string) => log.push({ stage, timestamp: new Date().toISOString(), message });
 
   const authorizationId = payload.authorization.authorizationId;
+  const interrupted = () => terminal(authorizationId, "REVIEW_REQUIRED", log, reviewRequired(
+    "execution-interrupted",
+    "Automation was stopped before submission.",
+    "Retry from Tracker when ready."
+  ));
+  if (options.signal?.aborted) return interrupted();
 
   /* 1. Confirm the page matches the authorization. */
   if (!pageMatchesAuthorization(location, payload.authorization.authorizedApplyUrl)) {
@@ -168,6 +177,7 @@ export async function runExecution(
   const fieldResults: FieldExecutionResult[] = [];
 
   for (const field of scannedFields) {
+    if (options.signal?.aborted) return interrupted();
     if (field.raw.inputType === "file") continue; // handled in the upload pass
     const resolution = resolveFieldValue(field, payload);
     const decision = decideFieldAction(field, resolution, payload);
@@ -192,38 +202,49 @@ export async function runExecution(
   const resumeField = scannedFields.find((f) => f.normalizedField === "resumeFile") ?? null;
   const coverLetterField = scannedFields.find((f) => f.normalizedField === "coverLetterFile") ?? null;
   const documentResults: DocumentUploadResult[] = [
-    uploadDocument(resumeField, "resume", payload, doc),
-    uploadDocument(coverLetterField, "coverLetter", payload, doc),
-  ].filter((r) => r.status !== "skipped-no-field" || false); // keep all — "skipped-no-field" means no upload field exists, not a blocker
+    await uploadDocument(resumeField, "resume", payload, doc, options.documents ?? [], undefined, options.signal),
+    await uploadDocument(coverLetterField, "coverLetter", payload, doc, options.documents ?? [], undefined, options.signal),
+  ];
+  if (options.signal?.aborted) return interrupted();
 
   const requiredDocumentIssues = documentResults.filter(
-    (r) => r.status !== "skipped-no-field" && (r.status === "not-available" || r.status === "failed") &&
+    (r) => !["skipped-no-field", "uploaded", "already-present"].includes(r.status) &&
       ((r.kind === "resume" && resumeField?.raw.required) || (r.kind === "coverLetter" && coverLetterField?.raw.required))
   );
 
   /* 7. Validate readiness. */
   record("VALIDATING_FORM", "Validating required fields.");
-  const readiness = validateForm(scannedFields, fieldResults, requiredDocumentIssues, doc);
+  const readiness = validateForm(scannedFields, fieldResults, documentResults, doc);
 
   if (!readiness.ready) {
     const firstIssue = readiness.unresolvedRequired[0] ?? readiness.validationErrors[0];
     const isDemographic = scannedFields.some(
       (f) => f.category === "demographicQuestions" && fieldResults.some((r) => r.fieldId === f.raw.scanFieldId && (r.status === "unresolved-required" || r.status === "blocked"))
     );
+    const documentIssue = requiredDocumentIssues[0];
+    const documentKind: ReviewRequiredDetail["kind"] = documentIssue?.kind === "resume"
+      ? documentIssue.status === "missing-document" ? "resume-document-missing"
+        : documentIssue.status === "rejected" ? "resume-upload-rejected"
+          : documentIssue.status === "processing-timeout" ? "resume-upload-timeout"
+            : "resume-transfer-failed"
+      : documentIssue?.kind === "coverLetter" ? "cover-letter-required" : "document-upload-failed";
     const kind: ReviewRequiredDetail["kind"] = requiredDocumentIssues.length > 0
-      ? "document-upload-failed"
+      ? documentKind
       : isDemographic
         ? "unresolved-demographic-question"
         : "missing-required-answer";
     return terminal(authorizationId, "REVIEW_REQUIRED", log, reviewRequired(
       kind,
       `${readiness.unresolvedRequired.length} required field(s) unresolved. ${firstIssue ? `First: "${firstIssue.label ?? firstIssue.fieldId}" — ${firstIssue.reason}` : ""}`,
-      "Save the missing information (a reusable answer, profile field, or demographic policy) in ApplyMate, then retry.",
+      requiredDocumentIssues.length > 0
+        ? "Open Profile → Application documents, fix the document issue, then retry from Tracker."
+        : "Save the missing information (a reusable answer, profile field, or demographic policy) in ApplyMate, then retry.",
       firstIssue?.label ?? undefined
     ), fieldResults, documentResults, readiness);
   }
 
   record("READY_TO_SUBMIT", "All required fields resolved and valid.");
+  if (options.signal?.aborted) return interrupted();
 
   /* 8. Submit (or dry-run). */
   record(options.dryRun ? "READY_TO_SUBMIT" : "SUBMITTING", options.dryRun ? "Dry run — identifying the submit control without clicking it." : "Submitting the application.");

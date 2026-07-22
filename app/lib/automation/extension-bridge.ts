@@ -25,6 +25,7 @@
    ───────────────────────────────────────────────────────── */
 
 import type { ExtensionApplicationPayload } from "../extension-payload/contracts";
+import type { SerializableDocumentTransfer } from "../documents/contracts";
 
 /** Pinned via browser-extension/manifest.json's `key` field — see the
     file header. Override via NEXT_PUBLIC_APPLYMATE_EXTENSION_ID for a
@@ -79,11 +80,32 @@ function sendToExtension<T>(message: unknown): Promise<BridgeResult<T>> {
   });
 }
 
-export function authorizeExecution(
+export async function authorizeExecution(
   payload: ExtensionApplicationPayload,
-  options: { dryRun?: boolean } = {}
-): Promise<BridgeResult<{ ok: boolean; authorizationId: string; reused?: boolean }>> {
-  return sendToExtension({ type: "AUTHORIZE_EXECUTION", payload, dryRun: options.dryRun ?? false });
+  options: { dryRun?: boolean; documents?: SerializableDocumentTransfer[] } = {}
+): Promise<BridgeResult<{ authorizationId: string; reused?: boolean }>> {
+  const authorized = await sendToExtension<{ ok: boolean; authorizationId?: string; attemptId?: string; reused?: boolean; error?: string }>({
+    type: "AUTHORIZE_EXECUTION",
+    payload,
+    dryRun: options.dryRun ?? false,
+  });
+  if (!authorized.ok) return authorized;
+  if (!authorized.data.ok || !authorized.data.authorizationId) {
+    return { ok: false, reason: authorized.data.error ?? "authorization-rejected" };
+  }
+
+  // Bytes travel separately from the persisted execution payload and are
+  // retained by the extension only in memory for this exact attempt.
+  const provided = await sendToExtension<{ ok: boolean; error?: string }>({
+    type: "PROVIDE_AUTHORIZED_DOCUMENTS",
+    authorizationId: payload.authorization.authorizationId,
+    attemptId: authorized.data.attemptId ?? payload.authorization.attemptId,
+    documents: options.documents ?? [],
+    dryRun: options.dryRun ?? false,
+  });
+  if (!provided.ok) return provided;
+  if (!provided.data.ok) return { ok: false, reason: provided.data.error ?? "document-transfer-rejected" };
+  return { ok: true, data: { authorizationId: authorized.data.authorizationId, reused: authorized.data.reused } };
 }
 
 export interface StoredExecutionRecord {
@@ -93,6 +115,13 @@ export interface StoredExecutionRecord {
   reviewRequired: { kind: string; description: string; requiredAction: string; question?: string } | null;
   log: { stage: string; timestamp: string; message: string }[];
   updatedAt: string;
+  documentResults: {
+    documentId?: string;
+    kind: "resume" | "coverLetter";
+    fileName?: string;
+    status: string;
+    error?: string;
+  }[];
 }
 
 export function getExecutionStatus(authorizationId: string): Promise<BridgeResult<StoredExecutionRecord>> {
@@ -110,6 +139,15 @@ export function stopExecution(authorizationId: string): Promise<BridgeResult<{ o
   return sendToExtension({ type: "STOP_EXECUTION", authorizationId });
 }
 
-export function retryExecution(authorizationId: string): Promise<BridgeResult<{ ok: boolean }>> {
-  return sendToExtension({ type: "RETRY_EXECUTION", authorizationId });
+export function retryExecution(
+  payload: ExtensionApplicationPayload,
+  documents: SerializableDocumentTransfer[]
+): Promise<BridgeResult<{ ok: boolean }>> {
+  return sendToExtension({
+    type: "RETRY_EXECUTION",
+    authorizationId: payload.authorization.authorizationId,
+    attemptId: payload.authorization.attemptId,
+    payload,
+    documents,
+  });
 }

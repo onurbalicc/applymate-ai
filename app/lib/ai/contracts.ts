@@ -212,6 +212,12 @@ export interface ApplicationPackage {
   applicationAnswers: ApplicationAnswer[];
   missingInformation: string[];
   recommendedNextStep: string;
+  /** Stable document references selected outside the AI response. Raw bytes
+      are never part of an application package. */
+  documents?: {
+    resumeDocumentId?: string;
+    coverLetterDocumentId?: string;
+  };
 }
 
 /* ── AI Response wrapper ─────────────────────────────────── */

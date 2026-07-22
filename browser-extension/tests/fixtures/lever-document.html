@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Lever Document Fixture</title></head>
+<body>
+<div class="posting-apply">
+  <form class="application-form" data-qa="postings-apply-form">
+    <div class="application-question upload" data-field="resume">
+      <div class="application-label">Resume/CV <span class="required">✱</span></div>
+      <a href="#" class="postings-btn"><span>ATTACH RESUME/CV</span>
+        <input type="file" id="lever_resume" name="resume" required style="display:none" />
+      </a>
+      <span id="lever-resume-status" class="resume-upload-label"></span>
+    </div>
+    <div class="application-question upload" data-field="cover-letter">
+      <div class="application-label">Cover letter</div>
+      <a href="#" class="postings-btn"><span>ATTACH COVER LETTER</span>
+        <input type="file" id="lever_cover" name="coverLetter" style="display:none" />
+      </a>
+      <span id="lever-cover-status" class="cover-letter-upload-label"></span>
+    </div>
+    <button type="submit">Submit application</button>
+  </form>
+  <output id="submit-count">0</output>
+</div>
+<script>
+  function wire(inputId, statusId) {
+    document.getElementById(inputId).addEventListener("change", function () {
+      document.getElementById(statusId).textContent = this.dataset.reject === "true"
+        ? "Upload failed: unsupported file type"
+        : this.files[0] ? "Success! " + this.files[0].name : "";
+    });
+  }
+  wire("lever_resume", "lever-resume-status");
+  wire("lever_cover", "lever-cover-status");
+  document.querySelector("form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var output = document.getElementById("submit-count");
+    output.textContent = String(Number(output.textContent || "0") + 1);
+  });
+</script>
+</body>
+</html>

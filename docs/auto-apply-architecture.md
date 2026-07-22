@@ -277,12 +277,11 @@ failure; re-locating (not reusing the original element reference) was the fix th
 detached, stale reference always "verifies successfully" against itself even when the live page never
 received the write.
 
-**Document upload** (`document-uploader.ts`): the real technique (`DataTransfer` + a native file
-input) is implemented and tested, but `resolveDocumentSource()` always returns `null` today —
-`resumeFileAvailable`/`coverLetterFileAvailable` are always `false` (no résumé/cover-letter FILE
-exists anywhere in ApplyMate yet, unchanged from Part 1). This is stated honestly rather than
-skipped or faked: any required upload field routes the whole application to review-required with
-kind `document-upload-failed`.
+**Document upload at the Part 2 milestone** (`document-uploader.ts`): that sprint implemented the
+`DataTransfer` + native file-input technique but still had no source bytes. The Part 3 pipeline in
+§1h supersedes that limitation: `resolveDocumentSource()` now accepts only the exact frozen,
+checksum-matched transfer for the active attempt and required failures route to precise document
+review reasons.
 
 **Submission controller** (`submit-controller.ts`) — every gate checked before any click, in order:
 duplicate idempotency-key rejection → authorized-URL page match → form readiness → CAPTCHA absence →
@@ -366,6 +365,77 @@ Both fixes are structural (they change how filling/messaging is verified, not a 
 are exactly the kind of finding that only running the real, loaded extension against real page
 timing can surface — reinforcing why this validation step is not optional for a feature this
 consequential.
+
+---
+
+## 1h. Local MVP document pipeline (implemented)
+
+The former `resumeFileAvailable: false` placeholder has been replaced by a real local document
+pipeline. This design deliberately separates metadata from bytes so the storage implementation can
+later be replaced without changing application selection or extension execution contracts.
+
+**Storage and contracts.** `app/lib/documents/` defines stable string document IDs, sanitized and
+original filenames, type/source, MIME type, size, timestamps, SHA-256 checksum, default status and
+optional job/package associations. PDF and DOCX files are validated by extension, MIME type and byte
+signature, limited to 5 MB, and persisted as `ArrayBuffer` in the versioned
+`applymate-documents` IndexedDB database. Large files, `File` objects, blob URLs and base64 strings
+never enter localStorage or normal application state. IndexedDB failure, quota, missing/corrupt,
+duplicate and migration cases surface typed errors. The Profile document manager lets the user
+upload, replace and remove a default résumé and an optional default cover letter, while stating that
+the files exist only in this browser.
+
+**Selection and freezing.** Résumé and cover-letter selection are independent and deterministic:
+matching job-specific generated document → matching explicitly selected job document → default →
+missing. A document associated with another job/package is rejected. The chosen metadata is copied
+into `AutomationJob.documentSelection` at authorization time, including the selection reason. Later
+changes to defaults cannot change that frozen attempt; retry fills only a previously missing slot and
+preserves an already selected reference. Generated package text is still text only and is never
+claimed to be a PDF; deterministic ATS-friendly PDF rendering remains future work.
+
+**Trust boundary and transfer.** The normal schema-v3 extension payload carries only frozen
+document references and checksums. After `AUTHORIZE_EXECUTION`, the web app reads only those exact
+IDs from IndexedDB and sends a separate `PROVIDE_AUTHORIZED_DOCUMENTS` message with short-lived
+base64 transport data. The background worker accepts messages only from configured localhost
+ApplyMate origins, requires the existing authorization and exact attempt ID/document set, and
+recomputes SHA-256 before retaining bytes in an in-memory attempt-scoped vault. ATS content scripts
+cannot enumerate or request documents. Raw bytes are never written to `chrome.storage.local`, logs,
+Tracker or the application package. They disappear on terminal result, stop, tab close or service
+worker reload; the next retry must explicitly re-transfer them.
+
+**ATS interaction and fail-safe behavior.** The content script reconstructs a browser `File`, assigns
+it to the exact mapped native/hidden input through `DataTransfer`, dispatches `input` and `change`,
+then re-locates the control after framework rerenders. Success requires the expected file in the live
+input, visible filename/success state and no rejection/processing state. Missing, rejected,
+unsupported, stale, failed and timed-out uploads block form readiness and produce precise
+review-required reasons. An optional cover letter may remain empty; a required one may not. Stop
+cancels polling and clears temporary bytes without deleting the user's IndexedDB copy.
+
+**Validation boundary.** Automated tests cover IndexedDB persistence, document selection, exact
+authorization/checksum transfer, native and hidden Greenhouse/Lever-like inputs, rejection/timeouts,
+form readiness, cancellation and exactly-once fixture submission. Real public Greenhouse/Lever
+upload-control compatibility is a separate Chrome release gate: use harmless local fixtures,
+exercise the current native/hidden input, run production mapping against the live form DOM, and
+record the exact visible status while leaving sensitive fields and submit untouched. The complete
+authorization/checksum transfer and non-dry-run submit path remains confined to the controlled
+fixture until an explicitly authorized pilot.
+
+**2026-07-22 Chrome validation.** Two synthetic one-page PDFs were exercised through Profile
+upload → reload → replace → reload → delete. Direct IndexedDB diagnostics confirmed exact byte
+lengths, SHA-256 checksums and `%PDF-` signatures after reload, and an empty document store after
+the final delete. This exposed a Profile defect: replacing a default document only moved the
+default flag, leaving the previous bytes as an invisible orphan. The Profile replacement flow now
+deletes the previous default only after its replacement is safely stored, without changing the
+repository's intentional ability to retain non-default/job-specific documents. The same harmless
+PDFs were then attached, without submitting, to current public EarnIn Greenhouse and Voltus Lever
+forms in Chrome. Both showed the exact filename and accepted state; work-authorization,
+sponsorship, pronoun and EEO controls remained untouched. A captured post-upload Lever form run
+through the production scanner detected Lever at high confidence, found 18 fields (15 mapped,
+1 ambiguous, 2 unmapped), and mapped the hidden résumé input to `resumeFile` with label
+`Resume/CV ✱`; `Analyzing resume...`, `Success!` and failure text did not enter the mapping.
+
+**MVP limitation.** IndexedDB is local browser storage, not encrypted cloud backup. Clearing site
+data can remove documents, and there is no cross-device recovery. Production storage remains part
+of the future authentication/database/security milestone.
 
 ---
 

@@ -21,12 +21,13 @@
 import type { ApplicationPackage, DemographicAnswerPolicy, DemographicAnswers } from "../ai/contracts";
 import type { AutomationStatus } from "../automation/contracts";
 import type { ApplicationFieldCandidate } from "../application-fields/contracts";
+import type { SelectedApplicationDocument } from "../documents/contracts";
 
 /** v2 (Browser Extension MVP Part 2): added `authorization` (the right
     swipe's one-time authorization for this exact application — see
     docs/auto-apply-architecture.md §1f), `reusableAnswers`, and
     `demographicPolicy`. Additive only; every v1 field is unchanged. */
-export const EXTENSION_PAYLOAD_SCHEMA_VERSION = 2;
+export const EXTENSION_PAYLOAD_SCHEMA_VERSION = 3;
 
 /** ATS the extension should expect at the apply URL, when known. */
 export type ExpectedAts = "greenhouse" | "lever" | "unknown";
@@ -79,6 +80,9 @@ export interface ExtensionApplicationPayload {
    */
   authorization: {
     authorizationId: string;
+    /** Added in schema v3. Legacy payloads may omit it; the background
+        worker generates a defensive fallback attempt id. */
+    attemptId?: string;
     authorizedAction: "fill-and-submit";
     authorizedAt: string; // ISO 8601
     authorizedApplyUrl: string;
@@ -130,6 +134,10 @@ export interface ExtensionApplicationPayload {
     coverLetterFileAvailable: boolean;
     /** The generated cover letter exists as TEXT, not as a file. */
     coverLetterTextAvailable: boolean;
+    /** Frozen references only; byte content crosses in a separate,
+        short-lived authorized transfer message. */
+    resume?: SelectedApplicationDocument;
+    coverLetter?: SelectedApplicationDocument;
   };
 
   /** The AI-generated package for this job, or null when not generated. */

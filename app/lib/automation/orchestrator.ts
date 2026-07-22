@@ -21,6 +21,10 @@ import {
 } from "./missing-info";
 import { buildExtensionApplicationPayload } from "../extension-payload/builder";
 import { authorizeExecution, getExecutionStatus, stopExecution as bridgeStop, retryExecution as bridgeRetry } from "./extension-bridge";
+import { documentRepository, DocumentStoreError } from "../documents/document-store";
+import { selectApplicationDocuments } from "../documents/selection";
+import { prepareAuthorizedDocumentTransfers } from "../documents/transfer";
+import type { ApplicationDocumentSelection } from "../documents/contracts";
 
 /* ─────────────────────────────────────────────────────────
    Application automation orchestrator.
@@ -119,19 +123,62 @@ export async function generateMasterCvNow(): Promise<{ result: MasterCvResult; i
  * real `applyUrl` and honestly stop at FORM_AUTOMATION_PENDING, same as
  * Part 1 — there is nothing to open or authorize.
  */
+async function resolveAndFreezeDocuments(
+  job: AutomationJob,
+  preserve: ApplicationDocumentSelection | null = job.documentSelection
+): Promise<ApplicationDocumentSelection> {
+  const available = await documentRepository.listDocuments();
+  const resolved = selectApplicationDocuments(available, {
+    jobId: job.sourceJobId,
+    applicationPackageId: job.id,
+  });
+  return preserve
+    ? {
+        resolvedAt: preserve.resolvedAt,
+        resume: preserve.resume ?? resolved.resume,
+        coverLetter: preserve.coverLetter ?? resolved.coverLetter,
+      }
+    : resolved;
+}
+
 async function handOffToExtension(key: string): Promise<void> {
   setAutomationStatus(key, "FORM_AUTOMATION_PENDING", { progress: 100 });
 
   const job = getAutomationJob(key);
   if (!job || !job.applyUrl) return;
 
-  const authorizedAt = new Date().toISOString();
+  const authorizedAt = job.authorizedAt ?? new Date().toISOString();
   const attemptId = `attempt-${key}-${Date.now()}`;
+  let documentSelection: ApplicationDocumentSelection;
+  try {
+    documentSelection = await resolveAndFreezeDocuments(job);
+  } catch (error) {
+    const storageUnavailable = error instanceof DocumentStoreError &&
+      (error.code === "storage-unavailable" || error.code === "migration-failure" || error.code === "quota-exceeded");
+    setExecutionStatus(key, "REVIEW_REQUIRED", {
+      reviewRequiredReason: {
+        kind: storageUnavailable ? "document-store-unavailable" : "resume-transfer-failed",
+        description: error instanceof Error ? error.message : "Application documents could not be resolved.",
+        requiredAction: "Open Profile → Application documents, fix the document issue, then retry from Tracker.",
+      },
+    });
+    return;
+  }
   updateAutomationJob(key, {
     authorizedAt,
     authorizedAction: "fill-and-submit",
     authorizedApplyUrl: job.applyUrl,
     executionAttemptId: attemptId,
+    documentSelection,
+    package: job.package
+      ? {
+          ...job.package,
+          documents: {
+            ...(documentSelection.resume ? { resumeDocumentId: documentSelection.resume.documentId } : {}),
+            ...(documentSelection.coverLetter ? { coverLetterDocumentId: documentSelection.coverLetter.documentId } : {}),
+          },
+        }
+      : job.package,
   });
 
   const authorizedJob = getAutomationJob(key);
@@ -140,7 +187,21 @@ async function handOffToExtension(key: string): Promise<void> {
 
   setExecutionStatus(key, "AUTHORIZED");
 
-  const result = await authorizeExecution(payload);
+  let transfers;
+  try {
+    transfers = await prepareAuthorizedDocumentTransfers(documentSelection);
+  } catch (error) {
+    setExecutionStatus(key, "REVIEW_REQUIRED", {
+      reviewRequiredReason: {
+        kind: "resume-transfer-failed",
+        description: error instanceof Error ? error.message : "The selected document could not be read from local storage.",
+        requiredAction: "Restore the selected document in Profile, then retry from Tracker.",
+      },
+    });
+    return;
+  }
+
+  const result = await authorizeExecution(payload, { documents: transfers });
   if (!result.ok) {
     setExecutionStatus(key, "REVIEW_REQUIRED", {
       reviewRequiredReason: {
@@ -178,8 +239,37 @@ export async function retryExecution(key: string): Promise<void> {
   const job = getAutomationJob(key);
   if (!job || (job.status !== "REVIEW_REQUIRED" && job.status !== "FAILED")) return;
   const attemptId = `attempt-${key}-${Date.now()}`;
-  updateAutomationJob(key, { executionAttemptId: attemptId, reviewRequiredReason: null });
-  const result = await bridgeRetry(key);
+  let selection: ApplicationDocumentSelection;
+  try {
+    selection = await resolveAndFreezeDocuments(job);
+  } catch (error) {
+    setExecutionStatus(key, "REVIEW_REQUIRED", {
+      reviewRequiredReason: {
+        kind: "document-store-unavailable",
+        description: error instanceof Error ? error.message : "Application documents could not be resolved.",
+        requiredAction: "Open Profile → Application documents, fix the issue, then retry.",
+      },
+    });
+    return;
+  }
+  updateAutomationJob(key, { executionAttemptId: attemptId, reviewRequiredReason: null, documentSelection: selection });
+  const updated = getAutomationJob(key);
+  if (!updated) return;
+  const payload = buildExtensionApplicationPayload(updated, getProfileSnapshot());
+  let transfers;
+  try {
+    transfers = await prepareAuthorizedDocumentTransfers(selection);
+  } catch (error) {
+    setExecutionStatus(key, "REVIEW_REQUIRED", {
+      reviewRequiredReason: {
+        kind: "resume-transfer-failed",
+        description: error instanceof Error ? error.message : "The selected document could not be transferred.",
+        requiredAction: "Restore the selected document in Profile, then retry.",
+      },
+    });
+    return;
+  }
+  const result = await bridgeRetry(payload, transfers);
   if (!result.ok) {
     setExecutionStatus(key, "REVIEW_REQUIRED", {
       reviewRequiredReason: {
@@ -217,6 +307,13 @@ export function useAutomationExecutionSync(): void {
           setExecutionStatus(key, record.stage as AutomationStatus, {
             submissionOutcome: (record.submissionOutcome as AutomationJob["submissionOutcome"]) ?? null,
             reviewRequiredReason: record.reviewRequired as AutomationJob["reviewRequiredReason"],
+            documentUploadResults: (record.documentResults ?? []).map((document) => ({
+              documentId: document.documentId,
+              type: document.kind === "resume" ? "resume" : "cover-letter",
+              fileName: document.fileName,
+              status: document.status,
+              error: document.error,
+            })),
             ...(record.stage === "SUBMITTED" ? { submittedAt: new Date().toISOString() } : {}),
           });
         });

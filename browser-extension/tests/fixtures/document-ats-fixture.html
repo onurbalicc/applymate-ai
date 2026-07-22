@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Local ATS Document Fixture</title></head>
+<body>
+<form id="application_form" class="application--form" action="#">
+  <label for="first_name">First Name*</label>
+  <input type="text" id="first_name" name="first_name" required />
+  <label for="last_name">Last Name*</label>
+  <input type="text" id="last_name" name="last_name" required />
+  <label for="email">Email*</label>
+  <input type="email" id="email" name="email" required />
+  <div class="application-field" data-field="resume">
+    <label for="resume">Résumé*</label>
+    <input type="file" id="resume" name="resume" required />
+    <span id="resume-status"></span>
+  </div>
+  <div class="application-field" data-field="cover-letter">
+    <label for="cover_letter">Cover letter</label>
+    <input type="file" id="cover_letter" name="cover_letter" />
+    <span id="cover-status"></span>
+  </div>
+  <button type="submit" id="submit_btn">Submit application</button>
+</form>
+<div id="confirmation" style="display:none"><h2>Thank you for applying!</h2></div>
+<output id="submit-count">0</output>
+<script>
+  document.getElementById("resume").addEventListener("change", function () {
+    document.getElementById("resume-status").textContent = this.files[0] ? "Uploaded: " + this.files[0].name : "";
+  });
+  document.getElementById("cover_letter").addEventListener("change", function () {
+    document.getElementById("cover-status").textContent = this.files[0] ? "Uploaded: " + this.files[0].name : "";
+  });
+  document.getElementById("application_form").addEventListener("submit", function (event) { event.preventDefault(); });
+  document.getElementById("submit_btn").addEventListener("click", function () {
+    var count = Number(document.getElementById("submit-count").textContent || "0") + 1;
+    document.getElementById("submit-count").textContent = String(count);
+    document.getElementById("application_form").remove();
+    document.getElementById("confirmation").style.display = "block";
+    history.pushState({}, "", window.location.pathname + "#confirmation");
+  });
+</script>
+</body>
+</html>

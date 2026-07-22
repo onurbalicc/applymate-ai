@@ -181,6 +181,7 @@ export type FieldValueSource =
   | "masterCv"         // AI-polished Master CV content
   | "generatedPackage" // per-job AI-generated content
   | "userAnswer"       // explicit answer the user typed for this application
+  | "documentStore"    // frozen reference to a locally stored document
   | "unavailable";     // nothing exists to fill this (e.g. no resume file)
 
 /**

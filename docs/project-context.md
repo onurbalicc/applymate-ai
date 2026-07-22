@@ -1,6 +1,6 @@
 # ApplyMate AI — Current Project Context
 
-**Last reconciled:** 2026-07-21  
+**Last reconciled:** 2026-07-22
 **Purpose:** Give future Codex sessions a short, durable handoff without requiring old ChatGPT prompts to be copied manually.
 
 ## Product direction
@@ -20,11 +20,14 @@ The implementation and `docs/roadmap.md` are newer than the frontend-demo langua
 - Next.js web app with profile, discovery, review queue, package generation, automation progress, tracker, and inbox surfaces.
 - Gemini-backed structured generation with an explicitly labelled mock fallback when no API key is configured.
 - Live public-job ingestion adapters for configured Greenhouse boards and Lever sites, plus demo data.
-- Chrome Manifest V3 extension for Greenhouse and Lever detection, field mapping, value resolution, safe filling, document handling, validation, idempotent submission, and outcome detection.
+- Chrome Manifest V3 extension for Greenhouse and Lever detection, field mapping, value resolution, safe filling, real PDF/DOCX upload through native file inputs, validation, idempotent submission, and outcome detection.
 - Web app to extension bridge and Tracker status synchronization.
 - Sensitive-field controls that refuse fabrication and require exact approved answers where applicable.
-- Local fixture end-to-end submission verified; no real-employer end-to-end submission has been completed.
-- Client state and candidate data are still stored in `localStorage`; authentication, database storage, and secure document storage do not exist yet.
+- Default résumé and optional cover-letter management on Profile, with validated binary files persisted in IndexedDB and metadata kept out of ordinary application JSON.
+- Authorization-time document selection and a checksum-verified, attempt-scoped web-to-extension transfer. Raw bytes are never persisted in Tracker or `chrome.storage.local`.
+- Local document fixture end-to-end upload, validation and exactly-once submission verified; no real-employer end-to-end submission has been completed.
+- Dated Chrome validation on 2026-07-22 verified Profile PDF upload/reload/replace/delete against real IndexedDB bytes, plus no-submit uploads on current public EarnIn Greenhouse and Voltus Lever forms. Lever's captured live form rescanned with production `runScan` mapped the résumé cleanly without upload-status text leaking into the label.
+- Client state and candidate data are still stored locally in the browser. Authentication, a production database, encrypted cloud document storage, cross-device sync and recovery do not exist yet.
 
 ## Completed handoff
 
@@ -34,21 +37,11 @@ Source: https://chatgpt.com/share/6a5fb3f9-e49c-83eb-9325-933ba312ec07
 
 ## Current primary blocker
 
-ApplyMate has no real résumé or cover-letter file pipeline. `resumeFileAvailable` and `coverLetterFileAvailable` remain `false`, so a real ATS requiring a résumé upload correctly stops at review-required. This is the main blocker to a real-employer end-to-end pilot.
+The local MVP document pipeline is implemented; automated fixtures prove selection → transfer → native upload → validation → exactly-once submission, and dated Chrome checks now prove Profile binary persistence plus current public Greenhouse/Lever upload-widget compatibility without submission. The remaining high-risk gate is an explicitly authorized controlled pilot with durable receipt evidence. Generated résumé/cover-letter text is still not rendered into PDF; users must upload real PDF/DOCX files for now.
 
 ## Recommended next milestone
 
-Build the document pipeline before expanding ATS coverage or adding payments:
-
-1. Decide the document trust boundary and storage model; do not place résumé binaries or sensitive document contents in ordinary `localStorage`.
-2. Add résumé upload/import with type, size, and integrity validation.
-3. Define a versioned document record and explicit per-application document selection.
-4. Pass an authorized document reference through the web-to-extension contract.
-5. Implement extension-side retrieval/upload without fabricating file availability.
-6. Add unit, integration, and browser-fixture tests for success, missing document, stale reference, wrong file, retry, and cancellation paths.
-7. Run a dry-run pilot, then one explicitly authorized real-employer application with a submission receipt and audit trail.
-
-Profile editing, authentication/database work, GDPR controls, and stale documentation reconciliation remain important follow-up milestones. The document pipeline comes first because it is the narrowest blocker to proving the existing autonomous vertical slice.
+Run one explicitly authorized controlled pilot and add a durable submission receipt. Keep the current Greenhouse/Lever no-submit checks as regression gates whenever ATS markup changes. Generated PDF export, profile editing, authentication/database work, encrypted cloud storage, GDPR controls and broader ATS coverage remain follow-up milestones.
 
 ## Working agreement for future Codex sessions
 
