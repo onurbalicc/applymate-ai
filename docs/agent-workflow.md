@@ -1,7 +1,8 @@
 # ApplyMate AI Agent Council Workflow
 
-> Mandatory decision process for all meaningful product updates.
-> Reference: [docs/agents.md](file:///Users/onurbalic/applymate-ai/docs/agents.md)
+> **Historical process document.** This council format is no longer a mandatory repository instruction. Current Codex rules live in [`../AGENTS.md`](../AGENTS.md); current state and roadmap live in [`project-context.md`](project-context.md) and [`roadmap.md`](roadmap.md).
+>
+> Reference: [`agents.md`](agents.md)
 > Last updated: July 2, 2026
 
 ---
@@ -52,7 +53,7 @@ The Agent Council is **optional** for:
 
 ## 3. Required Agent Roles
 
-Every Agent Council run must include opinions from all defined agents. See [docs/agents.md](file:///Users/onurbalic/applymate-ai/docs/agents.md) for full role definitions.
+Every historical Agent Council run included opinions from all defined agents. See [`agents.md`](agents.md) for the original role definitions.
 
 | Agent | Core question |
 |-------|---------------|

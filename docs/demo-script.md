@@ -1,4 +1,6 @@
-# ApplyMate AI — 2-Minute Demo Script
+# ApplyMate AI — historical 2-minute frontend demo script
+
+> **Historical demo only.** This script describes the original review-first frontend mock and must not be used as current product or architecture documentation. See [`project-context.md`](project-context.md) and [`roadmap.md`](roadmap.md) for current behavior.
 
 > Before demoing: open the Control Center and click **"↺ Reset demo data"** so the checklist and queue start fresh. Language can be switched to EN/TR/DE at any point via the header or sidebar pills.
 

@@ -1,6 +1,8 @@
 # ApplyMate AI Multi-Agent Product Team
 
-> Internal operating system for product development decisions.
+> **Historical role catalog.** This is not the current instruction source for Codex and its product assumptions may reflect the early frontend demo. Use [`../AGENTS.md`](../AGENTS.md), [`project-context.md`](project-context.md), and [`roadmap.md`](roadmap.md) for current work.
+>
+> Original internal operating system for product development decisions.
 > Last updated: July 2, 2026
 
 ---

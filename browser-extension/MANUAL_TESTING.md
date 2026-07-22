@@ -1,13 +1,26 @@
 # Manual Testing — ApplyMate Browser Extension
 
-**Part 1** (detection + field mapping) shipped read-only. **Part 2** (this
-update) adds autonomous execution: once a job is authorized via a right
-swipe in the ApplyMate web app, the extension opens the application, fills
-and answers what it can verify or has an explicit approved answer for, and
-submits — no further per-field or per-submit confirmation. Sections 1–8
-below cover the original Part 1 read-only scanner (still exactly as
-described — the popup's own scan/"Scan again" flow is unchanged). Part 2's
-own validation is documented in its own section further down.
+## Standard validation workflow
+
+Use this sequence for meaningful browser-extension changes. The detailed setup,
+expected results, limitations, and historical findings remain below.
+
+1. Build the extension with `cd browser-extension && npm run build`.
+2. Launch Chrome for Testing through the documented two-phase Playwright persistent-profile workflow so Developer mode is enabled.
+3. Load `browser-extension/` as the unpacked extension and verify the content script, background worker, and popup load without extension errors.
+4. Validate scanning, filling, upload, validation, outcome detection, cancellation, and idempotency as relevant on controlled local fixtures. Only fixtures may receive real submit events during ordinary development.
+5. Validate a current public Greenhouse application in `dryRun: true` mode. Confirm exact mapping/upload behavior and that sensitive fields and submit remain untouched.
+6. Validate a current public Lever application in `dryRun: true` mode with the same safeguards.
+7. Capture exact URLs, browser/build method, field counts, visible upload state, stop reason, console errors, and anything not tested. Distinguish fixture evidence from real-site evidence.
+8. Never submit an application to a real employer during ordinary development testing. A real submission requires the user's explicit authorization for a controlled pilot.
+
+## Document history
+
+Part 1 shipped detection and field mapping as a read-only scanner. Part 2 added
+autonomous execution after one right-swipe authorization. Part 3 added the
+persistent IndexedDB PDF/DOCX pipeline and checksum-verified transfer. Sections
+below retain the original validation evidence; read scope-specific statements in
+that historical context.
 
 ## 1. Build
 

@@ -1,123 +1,62 @@
-# ApplyMate AI — Roadmap
+# ApplyMate AI — roadmap
 
-**Product promise:** "Swipe right. ApplyMate handles the application."
-**Motto:** "Let AI handle the applications. You focus on improving your profile, skills, and interviews."
+**Product promise:** “Swipe right. ApplyMate handles the application.”
+**Status basis:** baseline `ea921d6`
 
-ApplyMate is an **autonomous application system**, not an autofill assistant. The user completes
-their profile once; a single swipe-right is the one-time authorization for ApplyMate to prepare,
-fill, and submit exactly that application without further per-field or per-submit confirmation.
-Human review is the exception path — used only when an application cannot be completed truthfully
-or technically (see `docs/auto-apply-architecture.md` §1g) — not the default. The product stays
-honest: no application is ever marked submitted without a real, detected external submission
-signal, no legal or demographic answer is ever fabricated, and nothing acts on a page that doesn't
-match the exact application the user authorized.
+This file describes what is complete, partial, next, and later. Current implementation detail belongs in [`project-context.md`](project-context.md); execution design belongs in [`auto-apply-architecture.md`](auto-apply-architecture.md).
 
-Status key: ✅ Done · 🚧 In progress · ⬜ Planned
+## Completed or largely completed
 
----
+- Core responsive UI, navigation, localization, theme, dashboard, review queue, package review, Tracker, and inbox foundations.
+- Typed candidate-profile foundation used by generation, ranking, and automation.
+- Gemini-backed structured analysis and application-package generation with an honest labelled fallback when Gemini is unavailable.
+- Greenhouse and Lever public-job discovery foundation plus normalized demo inputs.
+- Deterministic job filtering, ranking, stable IDs, deduplication, match reasons, and caution reasons.
+- Swipe-right authorization for one exact application.
+- Background application-package orchestration with missing-information interruption, pause, cancel, resume, and retry states.
+- Chrome Manifest V3 Greenhouse/Lever detection, form scanning, label resolution, normalized mapping, and popup diagnostics.
+- Autonomous extension execution: value resolution, safety classification, framework-aware filling, validation, guarded submission, outcome detection, and Tracker synchronization.
+- Duplicate-submission protection through stable authorization identity, fresh attempt IDs, prior-attempt tracking, URL matching, and reload-safe review routing.
+- Persistent local PDF/DOCX pipeline: validation, IndexedDB bytes, metadata/checksums, defaults, authorization-time selection, attempt-scoped transfer, native upload, and cleanup.
+- Controlled fixture submission including document upload, confirmed outcome, and exactly-once behavior.
+- Real public Greenhouse and Lever résumé-upload validation in Chrome without employer submission.
+- Tracker integration for preparation/execution progress, structured review reasons, upload metadata, and confirmed outcomes; detailed execution logs remain in extension execution records.
 
-## Phase 1 — MVP Demo ✅
+## Partially completed
 
-- Landing page with review-first positioning (EN/TR/DE)
-- Control Center, Review Queue, Application Package viewer, Tracker, Inbox (mock data)
-- Typed dependency-free i18n (EN first, TR/DE), dark/light themes
-- Approve / decline / skip demo state (localStorage)
+- **Candidate profile:** typed model and document management exist; the UI does not edit every profile field.
+- **Generated documents:** CV adaptation and cover-letter text exist; deterministic ATS-friendly PDF/DOCX generation does not.
+- **ATS coverage:** Greenhouse and Lever foundations are implemented and validated on limited public variants; custom domains and other ATS platforms are unsupported.
+- **Recovery and receipt UX:** interruptions and structured review states exist; guided recovery, screenshots, and durable confirmation receipts do not.
+- **Production application evidence:** execution logs and upload metadata exist; durable tamper-resistant evidence does not.
+- **Autopilot rules:** every right swipe uses hard safety gates; user-configurable thresholds, exclusions, and an autonomous/review-first preference are not implemented.
+- **Discovery breadth:** configured Greenhouse/Lever sources work, but broad source coverage and production ingestion operations remain limited.
 
-## Phase 2 — Real AI Analyzer + Shared AI Foundation ✅
+## Next
 
-- `/analyze`: paste CV + JD → real AI match analysis (`POST /api/analyze`)
-- Shared Gemini provider (`app/lib/ai/provider.ts`), contracts, prompt builders
-- Honest demo fallback labelling when `GEMINI_API_KEY` is not configured
+1. Generate ATS-friendly résumé and cover-letter PDFs from verified profile and package data, with deterministic layout, checksum integration, and browser-upload validation.
+2. Complete the structured profile editor so users can safely maintain all facts and approved reusable answers used by automation.
+3. Add durable submission receipt/evidence and clearer recovery UX before any ordinary real-employer use.
+4. Run an explicitly authorized controlled real-employer pilot only after receipt and recovery gates are ready.
+5. Extend ATS coverage incrementally, keeping Greenhouse/Lever fixtures and public no-submit checks as regression gates.
 
-## Phase 3 — Automation-First Vertical Slice 🚧
+## Not yet production-ready / later production work
 
-The core interaction: **swipe right → ApplyMate prepares the application automatically.**
+- Authentication and account recovery.
+- Production user database.
+- Encrypted cloud document storage, backup, and cross-device sync.
+- GDPR export, deletion, retention, and consent tooling.
+- Billing, subscriptions, and usage limits.
+- Production observability, alerting, audit retention, and support tooling.
+- Deployment hardening, secrets management, origin configuration, extension distribution, and security review.
+- Broad web-app and browser end-to-end coverage across supported environments.
+- More ATS adapters, localization-aware outcome detection, and custom-domain strategy.
 
-- Structured `CandidateProfile` model (one-time profile as the only substantial user task) ✅
-- Swipe-right / "Apply with ApplyMate" trigger in the Review Queue (touch + button + keyboard) ✅
-- Background automation orchestrator (`app/lib/automation/`) with the full status lifecycle
-  (QUEUED → … → PACKAGE_READY → FORM_AUTOMATION_PENDING) ✅
-- Automatic Master CV preparation (cached, reused across applications; regeneration is a
-  secondary action, not the main flow) ✅
-- Automatic Application Package generation (job-specific CV adaptation, motivation letter,
-  recruiter message, application answers) ✅
-- Missing-information interruption (NEEDS_USER_INPUT with compact answer request; nothing
-  is ever invented) ✅
-- Automation progress UI in Tracker and on `/review` (pause / cancel / resume / retry) ✅
-- Local default résumé and optional cover-letter management (PDF/DOCX, IndexedDB, replace/delete, reload persistence) ✅
-- Profile editing UI (form fields for the structured profile) ⬜
-- Package preparation hands real jobs to the extension after authorization; demo jobs still stop honestly at FORM_AUTOMATION_PENDING ✅
+## Permanent non-goals
 
-## Phase 4 — Job Discovery ⬜
-
-- Real job-source ingestion (compliant sources only)
-- Match scoring against the candidate profile before jobs enter the queue
-- Queue populated by discovery instead of mock data
-
-## Phase 5 — Database + Authentication + Production Document Storage ⬜
-
-- User accounts; replace localStorage demo persistence
-- Encrypted cloud profile/document storage, cross-device sync and recovery (the local IndexedDB MVP is complete, not production storage)
-- GDPR-compliant deletion
-
-## Phase 6 — Browser Extension / Automation Worker Prototype 🚧
-
-Foundation implemented (see `docs/auto-apply-architecture.md` §1c):
-
-- Unified ATS-independent application field contract (`app/lib/application-fields/`) ✅
-- Deterministic sensitive-question classifier (SAFE / NEEDS_CONFIRMATION / NEVER_AUTO_FILL), unit-tested ✅
-- Strict missing-information enforcement at the domain level ✅
-- Browser-extension application data contract + payload builder with honest readiness states ✅
-
-**Browser Extension MVP Part 1: Detection and Field Mapping** ✅ (see `docs/auto-apply-architecture.md` §1d, `browser-extension/`)
-- Chrome Manifest V3 extension package (Greenhouse + Lever), read-only ✅
-- ATS detection (hostname + DOM markers, fails safe to "unsupported") ✅
-- Form field discovery + label resolution + stable locator generation ✅
-- Deterministic field mapping into the existing Unified Field Contract, reusing the real classifier ✅
-- Read-only popup panel (detected ATS, field counts, per-field mapping/confidence/safety) ✅
-- Automatic + manual ("Scan again") scan lifecycle, debounced MutationObserver ✅
-
-**Browser Extension MVP Part 2: Autonomous Application Execution** ✅ (see `docs/auto-apply-architecture.md` §1e–§1g, `browser-extension/src/execution/`)
-- Right swipe is the one-time application authorization; `job.key` doubles as the authorization id — no separate authorization store ✅
-- Full execution engine: scan → resolve values → decide per-field action → fill → upload documents → validate → submit → detect outcome, with a structured execution log at every stage ✅
-- Strict source-priority value resolution (approved answer → verified profile → reusable answer → generated package → deterministic derivation → unresolved), never fabricated ✅
-- Independent, defense-in-depth sensitivity gate (`answer-resolver.ts`): NEVER_AUTO_FILL fields fill ONLY from an explicit per-question approved answer or an explicit demographic policy — refused even if a value happened to resolve from an unsafe source ✅
-- Real DOM filling via the native-setter + dispatched-event technique, with re-locate-and-verify retries — found necessary against a real, still-hydrating React ATS page during live validation ✅
-- Submission controller: idempotent (attempt-id based), page-match-verified, CAPTCHA-refusing, dry-run-capable; outcome detector never marks SUBMITTED without a real confirmed signal ✅
-- Extension ↔ web app bridge via a background service worker (`externally_connectable` + `chrome.storage.local`), a pinned manifest key for a stable extension id, and Tracker polling sync ✅
-- Review-required fallback with a structured, specific reason for every stop-short case ✅
-- Real document pipeline: IndexedDB binary store, validated PDF/DOCX profile UI, frozen authorization-time references, checksum-verified attempt-scoped transfer, native `DataTransfer` upload, ATS confirmation and Tracker result metadata ✅
-- Generated résumé/cover-letter PDF rendering remains planned; generated package text is never pretended to be a file ⬜
-- Initial ATS targets remain Greenhouse, Lever; Workable considered afterward ⬜
-
-## Phase 7 — One ATS End-to-End Application Pilot 🚧
-
-- Full flow through real external form filling and submission — **achieved against controlled local fixtures**, including real document reconstruction/upload → validation → exactly-once submit → detected success; **not yet achieved against a real employer ATS**
-- Real public Greenhouse and Lever document controls validated in Chrome with harmless local PDFs, exact visible filename/success state, untouched sensitive fields and no final submit; the captured Lever form also passes production `runScan` without upload-status label pollution ✅
-- Submission receipts: screenshot, timestamp, field mapping ⬜
-- Duplicate prevention (idempotency key, `previousAttemptIds`) ✅; audit trail in Tracker (execution log synced, no screenshot/receipt persistence yet) 🚧
-
-## Phase 8 — Configurable Autopilot Rules 🚧
-
-The core "submit without asking again" behavior described here is now the Phase 6 baseline — every
-right swipe already only submits when all conditions pass (no missing info, no unresolved sensitive
-question, no CAPTCHA) and stops otherwise, with pause/stop and a full execution log ✅. What remains
-is user-configurable RULES layered on top of that baseline:
-
-- Per-user thresholds beyond match score (e.g. auto-submit only above a higher bar than the review-queue's own minimum)
-- Explicit company/keyword exclusion rules scoped to autonomous execution specifically
-- A visible, user-facing on/off switch for autonomous execution vs. review-first-always, if requested
-
-## Phase 9 — Payments and Usage Limits ⬜
-
-- Application packages per month as the billing unit; Free / Pro tiers
-- No paywall before real submission value is live
-
----
-
-## Non-Goals (permanent)
-
-- Silent or unauthorized submission — SUBMITTED requires a real external submission receipt
-- CAPTCHA solving or anti-bot circumvention
-- Fabricated answers, invented experience, or inferred sensitive data
-- Fake urgency, fake testimonials, invented user counts, volume-based growth metrics
+- Unauthorized or bulk submission outside one exact right-swipe authorization.
+- CAPTCHA solving, authentication bypass, identity-verification bypass, or anti-bot circumvention.
+- Fabricated candidate facts or inferred legal, sponsorship, work-authorization, consent, or demographic answers.
+- Marking an application submitted without a confirmed external success signal.
+- Storing raw document bytes in ordinary JSON state, Tracker, logs, or extension persistent storage.
+- Guaranteed interviews, acceptance, or volume-first claims.

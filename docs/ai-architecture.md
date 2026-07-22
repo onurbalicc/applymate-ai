@@ -1,6 +1,8 @@
 # ApplyMate AI — AI Architecture Plan
 
-**Status:** Draft v1  
+> **Historical planning document.** This predates the current Gemini package pipeline and autonomous right-swipe execution model. It is retained for early design context only. Use [`project-context.md`](project-context.md), [`auto-apply-architecture.md`](auto-apply-architecture.md), and the code contracts as current sources of truth.
+
+**Status:** Historical draft v1
 **Purpose:** Define how ApplyMate moves from frontend mock outputs to real AI-generated application packages. This document is the contract between the product and the engineering/AI layer.
 
 ---
@@ -13,7 +15,7 @@ ApplyMate's current frontend demo uses carefully crafted mock data to simulate A
 - What inputs each AI surface requires
 - What structured outputs each surface must produce
 - How to roll out AI incrementally without sacrificing quality or cost control
-- How to preserve the core invariant: **nothing is submitted without user approval**
+- How the early plan proposed user approval; the current invariant is one explicit right swipe authorizing one exact application
 
 ---
 

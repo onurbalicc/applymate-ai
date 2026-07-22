@@ -1,640 +1,171 @@
-# ApplyMate AI — Automatic Application Architecture
-
-**Status:** Architecture document — the in-app orchestration layer is implemented; external form automation is the next integration step
-**Purpose:** Define how ApplyMate fills and submits real job application forms safely and within user-controlled boundaries.
-
----
-
-## 1. Product Promise and Hard Constraints
-
-ApplyMate's promise is:
-
-> "Swipe right. ApplyMate handles the application."
-
-Backed by three hard constraints:
-
-> "Reduce or eliminate repetitive form filling. Never fabricate information. Never submit outside explicit user authorization."
-
-Every architectural choice must honour these constraints. They are non-negotiable and must be enforced at the system level, not just the UI level.
-
-## 1b. What Exists Today (in-app orchestration)
-
-The swipe-right trigger and the background preparation pipeline are implemented in the
-Next.js app (`app/lib/automation/`):
-
-- **Trigger:** swipe right / "Apply with ApplyMate" in the Review Queue creates one
-  `AutomationJob` per job (duplicate-safe).
-- **Pipeline:** ANALYZING_JOB → PREPARING_MASTER_CV (cached and reused) →
-  GENERATING_JOB_SPECIFIC_CV → GENERATING_COVER_LETTER → PREPARING_FORM_ANSWERS →
-  CHECKING_MISSING_INFORMATION → PACKAGE_READY → **FORM_AUTOMATION_PENDING**.
-- **Interruptions:** NEEDS_USER_INPUT (incomplete profile or unresolved package
-  answers — nothing is invented), MANUAL_ACTION_REQUIRED (e.g. no job description),
-  FAILED (retryable), PAUSED (including reload interruption), CANCELLED.
-- **Honest stop:** the pipeline ends at FORM_AUTOMATION_PENDING. SUBMITTED is never
-  set — no external submission capability exists yet. That capability is the worker /
-  extension described below.
-
-## 1c. Implemented Extension Foundation (in code, not just prose)
-
-The following browser-extension prerequisites are now **implemented as real
-TypeScript modules** — no extension, DOM automation, or ATS selectors exist yet,
-but the data layer an extension will consume is in place:
-
-### Unified Application Field Contract — `app/lib/application-fields/contracts.ts`
-An ATS-independent field vocabulary: 13 categories (identity, contact,
-professionalLinks, documents, location, workAuthorization, salary, education,
-experience, generatedAnswers, legalDeclarations, demographicQuestions,
-customQuestions) and ~50 normalized field ids (givenName … captcha), each field
-candidate carrying value, source, input type, confidence, sensitivity,
-review-requirement, fill status, and required flag. Strict TypeScript unions
-throughout; dependency-free so a future extension can share it directly.
-
-### Deterministic Sensitive-Question Classifier — `app/lib/application-fields/classifier.ts`
-No LLM involved. Classifies a normalized field and/or raw label into exactly one of:
-
-| Category | Behavior |
-|---|---|
-| `SAFE_AUTO_FILL` | Objective facts (name, email, phone, links, education/experience facts) — fill without pausing |
-| `NEEDS_CONFIRMATION` | Known but high-stakes (salary, notice period, start date, relocation, all AI-generated content, ambiguous/unknown labels) — pre-fill allowed, blocked until the user confirms |
-| `NEVER_AUTO_FILL` | Work authorization, sponsorship, visa status, criminal history, gender, race/ethnicity, veteran status, disability, pronouns, legal certifications, consent checkboxes, background checks, CAPTCHA — never touched automatically, even when the profile stores a value |
-
-Safety rules enforced in code and covered by unit tests: label evidence can only
-**escalate** severity, never reduce it; unknown fields default to
-NEEDS_CONFIRMATION, never SAFE; sensitive answers are never inferred from
-indirect data (the classifier produces no values at all).
-
-### Strict Missing-Information Enforcement — `app/lib/automation/missing-info.ts`
-The previous flaw (a job could advance with partially-answered missing
-information) is fixed at the domain level: every required item must have a
-non-whitespace answer, matched by a stable derived id (with legacy
-question-text matching for old localStorage records), before the orchestrator
-allows PACKAGE_READY / FORM_AUTOMATION_PENDING. Partial submissions keep the
-job in NEEDS_USER_INPUT and narrow the visible list to exactly what remains.
-Previously saved answers are never discarded.
-
-### Browser Extension Data Contract + Builder — `app/lib/extension-payload/`
-`buildExtensionApplicationPayload(job, profile)` produces one validated,
-self-contained payload per AutomationJob (schemaVersion 1) with: metadata
-(including expected ATS detection), form-relevant candidate facts only,
-**honest document availability** (`resumeFileAvailable: false` — no résumé file
-generation exists anywhere yet), the generated package, resolved answers with
-user-over-generated precedence, pre-classified normalized field candidates, and
-an explicit readiness verdict:
-
-`READY_FOR_TEXT_FIELD_ASSISTANCE` · `NEEDS_USER_INPUT` · `PACKAGE_NOT_READY` · `INVALID_APPLICATION_STATE`
-
-plus blockingReasons / manualSteps / warnings. The name of the ready state is
-deliberate: only **text-field assistance** is in scope — final submission
-always remains a manual user action, and nothing in this foundation fills or
-submits any external form today.
-
-## 1d. Browser Extension MVP Part 1: Detection and Field Mapping (implemented)
-
-The extension itself now exists — `browser-extension/` — as a standalone
-Chrome Manifest V3 package (its own `package.json`/`tsconfig.json`, built
-with `esbuild`, no framework). It is **read-only**: it detects the ATS,
-discovers form fields, and maps them into ApplyMate's Unified Application
-Field Contract, but never fills in, changes, or submits anything. Automatic
-form filling is the next sprint (Part 2), not this one.
-
-**Scan lifecycle:**
-1. A content script (`src/content/index.ts`) is injected on
-   `*.greenhouse.io`, `*.grnh.se`, and `*.lever.co` pages only
-   (`manifest.json` → `content_scripts`), and runs a delayed (800 ms) initial
-   scan so client-side-rendered questions have time to appear.
-2. A debounced (1000 ms) `MutationObserver` on `document.body` triggers
-   re-scans on meaningful DOM changes (e.g. async question lists) — never on
-   every mutation, and the scanner performs no writes, so it cannot trigger
-   itself in a loop.
-3. The popup panel (`src/panel/panel.ts`, no background service worker)
-   messages the content script directly (`GET_SCAN_RESULT` / `SCAN_PAGE`)
-   and renders the latest `PageScanResult`.
-
-**Detection (`src/ats/detect.ts` + `src/ats/{greenhouse,lever}.ts`):**
-Each adapter scores hostname, URL path, and DOM markers (e.g. Greenhouse's
-`job_application[...]` field naming; Lever's `.application-question` cards)
-into a `high` / `medium` / `low` confidence `AtsDetectionResult`. A page that
-matches neither adapter is always `unsupported` — the detector never
-guesses a platform for an unrecognized site.
-
-**Field discovery (`src/shared/dom-utils.ts`):** ATS-agnostic. Discovers
-every interactive control, resolves a label per the priority order
-`for=` → wrapping `<label>` → `aria-labelledby` → `aria-label` →
-ATS-specific container → nearby question text → placeholder → name/id,
-collapses radio/checkbox groups sharing a `name` into one logical field
-(and — because a group's representative input often carries its own
-option-level `for` label like "Yes"/"No" — skips the direct-association
-steps for grouped fields so the real question text is found instead), and
-derives a locator (id → name → stable data attribute → label association →
-scoped CSS selector → structural fallback, each flagged `fragile: true` when
-it depends on DOM position). No sensitive values are ever read — only
-whether a field currently has one (`hasValue: boolean`).
-
-**Mapping (`src/shared/mapper.ts` + `src/shared/field-signals.ts`):**
-Deterministic, scoring-based — no LLM. Combines label/name/id/placeholder/
-aria-label/option-text signals against a table of patterns for every
-`NormalizedFieldId`, with input-type corroboration bonuses. A field is
-`mapped` only when one candidate clearly wins; tied or close candidates stay
-`ambiguous` (with `alternativeFields` listed); no signal match is `unmapped`;
-an unrecognized input type (e.g. a slider) is `unsupported`. Sensitivity is
-computed by the **existing** `classifySensitivity()` from
-`app/lib/application-fields/classifier.ts` — imported directly, not
-reimplemented — so a field that maps ambiguously between, say,
-`sponsorshipRequired` and `visaStatus` is still correctly surfaced as
-`NEVER_AUTO_FILL` from the raw label alone, even with no confirmed
-`normalizedField`.
-
-**Privacy:** the extension requests only `activeTab` plus host permissions
-scoped to the three supported domains (no `<all_urls>`); it never sends page
-data anywhere (no network calls at all); it never logs a field's actual
-value, only whether one is present; and — confirmed by grepping the source
-for any `.value =`, `.checked =`, `.click(`, or `.submit(` call — it performs
-no writes to the page whatsoever.
-
-**Known limitation:** custom-domain Greenhouse/Lever deployments (e.g. a
-company's own `careers.` subdomain proxying a Greenhouse board) are not
-matched by the current host permissions; broadening to `<all_urls>` was
-deliberately avoided in favor of this narrower, safer default. See
-`browser-extension/MANUAL_TESTING.md` for the full limitations list and
-manual verification steps.
-
-## 1e. Live-browser validation findings (initial pass)
-
-The extension was validated two ways against real, public Greenhouse and
-Lever job postings — see `browser-extension/MANUAL_TESTING.md` for URLs,
-method, and the CLI-loading recipe: first by running the production
-scanning logic (`runScan` and everything it calls) directly in-page, then
-by actually loading the unpacked extension into a real Chromium instance
-(Playwright + `--load-extension`, with Developer mode enabled in the
-profile first — `chrome://extensions`'s own UI was never opened by hand)
-and exercising the real content script, the real popup at
-`chrome-extension://<id>/dist/panel.html`, and a real `chrome.tabs.sendMessage`
-"Scan again" round-trip (verified by injecting a harmless extra field into
-the live DOM and confirming the popup's unmapped count updated). Six real
-defects were found and fixed:
-
-1. **Safety gap (most important — shared `classifier.ts`):** real EEO
-   question phrasing — "sexual orientation," "transgender," "racial/ethnic
-   background" — was not matching `NEVER_LABEL_PATTERNS` (only bare
-   "gender"/"race"/"ethnicity" were covered), so these fell through to
-   `NEEDS_CONFIRMATION` instead of `NEVER_AUTO_FILL`. Patterns broadened to
-   `/\bsex(ual)?\b/`, `/sexual\s+orientation/`, `/transgender/`, `/\blgbtq/`,
-   `/\brac(e|ial)\b/`, `/ethnic/` — an escalation-only change (can only add
-   `NEVER_AUTO_FILL` matches, never remove them), covered by new tests.
-2. **Duplicate phantom fields:** react-select/intl-tel-input libraries
-   inject invisible native shadow `<input>`s (validation targets, internal
-   search boxes) alongside the real styled combobox — these were being
-   reported as confusing duplicate/near-duplicate entries. `discoverFieldsGeneric`
-   now skips invisible elements — **except `type="file"`**, since hiding
-   the native file input behind a styled "Attach" button is the near-
-   universal accessible upload pattern (confirmed live on Lever; the first
-   version of this fix incorrectly dropped the résumé field entirely).
-3. **Underscore-separated ids not matching signal patterns:** Greenhouse's
-   cover-letter upload (`id="cover_letter"`, no distinguishing label) missed
-   `/cover\s*letter/` because of the underscore. The mapper now humanizes
-   `name`/`id` (`_`/`-` → spaces) before matching.
-4. **Unrelated page text leaking into labels:** a label container can also
-   wrap dynamic widget state ("Analyzing resume...Success!", full EEO
-   option descriptions) — `resolveLabel` now strips
-   `[role="status"]`/`[class*="loading"]`/`[class*="description"]`-style
-   descendants before reading text, plus a 200-char cap as a final
-   safeguard, directly satisfying "avoid collecting unrelated page text."
-5. **Required-field detection:** many custom-styled forms mark a field
-   required only visually (a trailing `*`/`✱` in the label), with the HTML
-   `required` attribute living on a hidden shadow input instead. `required`
-   is now also true when the resolved label ends in `*`/`✱`.
-6. **Upload-status noise the first noise selector missed:** Lever's résumé
-   widget uses class `resume-upload-label` for its status text ("Couldn't
-   auto-read resume.", "Analyzing resume...", "Success!") — no "status" or
-   "loading" substring, so fix #4's selector missed it initially. Found via
-   the real loaded popup (not the in-page injection pass, which happened
-   before this class name was known); `[class*="upload"]` added to the
-   noise selector.
-
-All six are escalation-only or purely additive fixes, covered by regression
-tests (`browser-extension/tests/fixtures/greenhouse-live-quirks.html`,
-`browser-extension/tests/fixtures/lever.html`,
-`browser-extension/tests/scan.test.ts`).
-
----
-
-## 1f. Browser Extension MVP Part 2: Autonomous Application Execution (implemented)
-
-The extension is no longer a read-only scanner. The right swipe that creates an `AutomationJob`
-(unchanged from Phase 3) is now also the **one-time authorization** for ApplyMate to autonomously
-fill and submit that exact application — no further per-field or per-submit confirmation. `job.key`
-doubles as the authorization id (`ExtensionApplicationPayload.authorization.authorizationId`); there
-is deliberately no separate authorization store, per the "don't create a second disconnected
-application state" constraint this sprint was built under.
-
-**Lifecycle** (`app/lib/automation/orchestrator.ts` → `browser-extension/src/execution/`):
-
-1. `runPipeline()` reaches `FORM_AUTOMATION_PENDING` exactly as before, then (for any job with a
-   real `applyUrl` — mock/demo jobs honestly stop here, same as Part 1) immediately calls
-   `handOffToExtension()`: sets `authorizedAt`/`authorizedApplyUrl`/`executionAttemptId`, builds the
-   `ExtensionApplicationPayload` (`app/lib/extension-payload/builder.ts`, schema v2 — additive over
-   Part 1's v1: `authorization`, `reusableAnswers`, `demographicPolicy`, `preferences`), and sends it
-   to the extension via `chrome.runtime.sendMessage(EXTENSION_ID, ...)`.
-2. The extension's background service worker (`src/background/index.ts` — Part 2's only new
-   background script; Part 1 deliberately had none) receives it via `onMessageExternal`, persists it
-   to `chrome.storage.local` keyed by authorization id, and opens (or focuses) the application tab
-   itself — the user never has to open the popup.
-3. Once the tab finishes loading, the background worker sends `RUN_EXECUTION` to that tab's content
-   script, which runs `execution-engine.ts`'s `runExecution()`: detect ATS + scan (reusing Part 1's
-   exact `runScan`/adapters/mapper) → resolve each field's value → decide the field action → fill →
-   upload documents → validate → submit (or dry-run) → detect the outcome. Every stage is logged and
-   relayed back to the background worker, which the web app polls (`useAutomationExecutionSync()`,
-   ~3s interval) to keep the Tracker's `AutomationJob` in sync — the single source of truth Tracker
-   already read from stays the single source of truth.
-
-**Value resolution** (`value-resolver.ts`) — strict priority, never fabricated:
-explicit per-job approved answer → verified candidate profile value → previously-approved reusable
-answer (`CandidateProfile.reusableAnswers`, matched via the same `missingInfoId` stable-question-key
-function used everywhere else in the product) → generated application-package answer → deterministic
-derivation (e.g. full name from given+family name) → unresolved. An unresolved field is never
-guessed; it becomes `unresolved-required` (blocks) or `skipped-optional`.
-
-**Sensitivity enforcement — the safety-critical layer** (`answer-resolver.ts`), a second, independent
-gate that never trusts value-resolver.ts's source alone:
-- `SAFE_AUTO_FILL` / `NEEDS_CONFIRMATION`: any properly-sourced resolution fills.
-- `NEVER_AUTO_FILL`: fills **only** from an explicit per-question approved/reusable answer — refused
-  even if value-resolver.ts somehow resolved a value from the candidate profile or generated content
-  (tested directly: `answer-resolver.test.ts`'s "refused even when value-resolver somehow found a
-  value from an unsafe source"). For the `demographicQuestions` category specifically, a new
-  `CandidateProfile.demographicAnswerPolicy` (`"not-set"` by default | `"decline"` |
-  `"use-explicit-profile-answer"`) additionally allows selecting the ATS's own decline option or an
-  explicit stored answer for that *exact* field — never inferred, never borrowed from a related
-  field. Two new `NormalizedFieldId`s (`sexualOrientation`, `transgenderStatus`) were added to close
-  a mapping gap Part 1's live validation had already found but not fully closed.
-
-**Form filling** (`field-filler.ts`): native-setter + dispatched input/change/blur events — the
-standard technique for framework-controlled inputs. **Live validation finding:** against a real,
-still-hydrating Greenhouse React page, a synchronous "it didn't throw" success was not enough
-evidence a write actually persisted — the framework's own render can silently discard it moments
-later, or replace the DOM node entirely. Every fill now re-locates the element fresh and verifies the
-value stuck, retrying up to 3 times with increasing delay (150ms/400ms/900ms) before reporting
-failure; re-locating (not reusing the original element reference) was the fix that mattered — a
-detached, stale reference always "verifies successfully" against itself even when the live page never
-received the write.
-
-**Document upload at the Part 2 milestone** (`document-uploader.ts`): that sprint implemented the
-`DataTransfer` + native file-input technique but still had no source bytes. The Part 3 pipeline in
-§1h supersedes that limitation: `resolveDocumentSource()` now accepts only the exact frozen,
-checksum-matched transfer for the active attempt and required failures route to precise document
-review reasons.
-
-**Submission controller** (`submit-controller.ts`) — every gate checked before any click, in order:
-duplicate idempotency-key rejection → authorized-URL page match → form readiness → CAPTCHA absence →
-confident submit-control identification (scoped to the detected form root; refuses ambiguous or
-external-auth-looking buttons). `dryRun: true` runs every gate and identifies the exact control that
-*would* be clicked without clicking it — the mode used for all real, public Greenhouse/Lever
-validation below; `dryRun: false` was only ever exercised against the controlled local fixture.
-
-**Outcome detection** (`outcome-detector.ts`): SUBMITTED requires a real signal (confirmation text,
-URL transition to a confirmation-looking path, or form removal + URL change) — never "the button was
-clicked." CAPTCHA/login/validation-rejected/external-redirect are detected explicitly; anything
-inconclusive is `"unknown"`, which becomes review-required, never SUBMITTED.
-
-**Review-required fallback**: a structured `ReviewRequiredDetail { kind, description, requiredAction,
-question? }` for every stop-short case (13 `kind` values covering CAPTCHA, login, missing
-answers/verification, unresolved legal/demographic questions, unsupported ATS interaction, upload
-failure, unclear submit control, unknown outcome, page mismatch, and reload interruption) — never a
-silent failure.
-
-**Web app side**: `AutomationStatus` gained the execution-phase states (`AUTHORIZED` →
-`OPENING_APPLICATION` → `SCANNING_FORM` → `FILLING_FORM` → `ANSWERING_QUESTIONS` →
-`UPLOADING_DOCUMENTS` → `VALIDATING_FORM` → `READY_TO_SUBMIT` → `SUBMITTING` → `SUBMITTED` |
-`REVIEW_REQUIRED`), with their own `executionProgress`/`EXECUTION_STEPS` scale kept deliberately
-separate from the existing `progress`/`PIPELINE_STEPS` (package-preparation) scale so neither phase's
-meaning gets diluted. `AutomationProgress.tsx` renders the execution checklist, a review-required
-detail panel with an "Open application" link, and Stop/Retry controls — no mandatory "Confirm Fill"
-or "Confirm Submit" step exists anywhere; the right swipe is the confirmation, per this sprint's
-explicit design constraint.
-
-**Extension ↔ web app bridge**: `chrome.runtime.sendMessage(EXTENSION_ID, ...)`, which Chrome exposes
-to any page matching the extension's `externally_connectable.matches` manifest entry
-(`http://localhost/*`, `http://localhost:3000/*` today — a production deployment would add its real
-origin). `EXTENSION_ID` is stable across reloads because `manifest.json` now pins a `key` (an RSA
-public key whose SHA-256 hash Chrome uses to derive the id deterministically) — without it, an
-unpacked extension's id regenerates every reload, which would break the bridge constantly during
-development. `chrome.storage.local` (not the web page's own `localStorage`, which a content script on
-a different origin can't reach anyway) is the persistence layer — it survives popup reload, web page
-reload, and extension reload, satisfying the recovery requirement.
-
-**Permissions added**: `storage` (chrome.storage.local), `tabs` (reading a tab's URL to match against
-an authorization, and `chrome.tabs.create`/`onUpdated`), and the `externally_connectable` entry above.
-`host_permissions` are unchanged from Part 1 — still scoped to the three ATS domains, no `<all_urls>`.
-
----
-
-## 1g. Part 2 live-browser validation findings
-
-Validated via the same Playwright + Chrome for Testing approach as Part 1 (see
-`browser-extension/MANUAL_TESTING.md`), extended with: (a) a controlled local ATS fixture
-(`browser-extension/tests/fixtures/local-ats-fixture.html`, served over `http://localhost`) for
-genuine end-to-end fill → submit → outcome-detection testing without ever touching a real employer,
-and (b) `dryRun: true` runs against the same real Greenhouse posting used in Part 1's validation, to
-confirm real-page field filling and the review-required stop **without ever clicking submit**.
-
-**Local fixture, real (non-dry-run) execution**: genuinely filled every field, validated, clicked the
-real submit button, and correctly detected `"submitted"` from the fixture's own confirmation text —
-proof the full pipeline works end-to-end in an actually-loaded extension, not just in jsdom. A
-second attempt with the same idempotency key was correctly refused before touching the DOM.
-
-**Real Greenhouse posting, dry-run**: correctly scanned 20 fields (matching Part 1's count exactly),
-correctly stopped at `REVIEW_REQUIRED` before ever reaching the submit gate (6 required fields
-unresolved, résumé upload unavailable), and — critically — the work-authorization field
-(`NEVER_AUTO_FILL`) was confirmed still empty on the live page throughout.
-
-Two real defects were found and fixed during this pass, both invisible to jsdom testing by
-construction (jsdom has no real page-load timing or hydration):
-
-1. **Message-delivery race**: the very first `RUN_EXECUTION` sent to a freshly-created tab was
-   silently dropped — `chrome.tabs.onUpdated`'s `"complete"` status is not the same event as "the
-   content script's `onMessage` listener is registered." Fixed with a retry loop keyed off
-   `chrome.runtime.lastError` (up to 10 attempts, 400ms apart) rather than a guessed fixed delay.
-2. **Stale element reference in fill verification**: the first fix attempt (verify-after-write) still
-   failed for `first_name` specifically, while `email` on the same page succeeded — because the
-   verification re-read the *same* captured element reference rather than re-querying the live DOM.
-   A framework can swap the node out entirely, not just reset its value; a detached reference always
-   "verifies successfully" against itself. Fixed by re-locating fresh on every attempt. After the
-   fix, `first_name`, `email`, `phone`, and `country` all confirmed correctly filled on the real page
-   in a follow-up run, with the work-authorization field still confirmed empty.
-
-Both fixes are structural (they change how filling/messaging is verified, not a one-off patch) and
-are exactly the kind of finding that only running the real, loaded extension against real page
-timing can surface — reinforcing why this validation step is not optional for a feature this
-consequential.
-
----
-
-## 1h. Local MVP document pipeline (implemented)
-
-The former `resumeFileAvailable: false` placeholder has been replaced by a real local document
-pipeline. This design deliberately separates metadata from bytes so the storage implementation can
-later be replaced without changing application selection or extension execution contracts.
-
-**Storage and contracts.** `app/lib/documents/` defines stable string document IDs, sanitized and
-original filenames, type/source, MIME type, size, timestamps, SHA-256 checksum, default status and
-optional job/package associations. PDF and DOCX files are validated by extension, MIME type and byte
-signature, limited to 5 MB, and persisted as `ArrayBuffer` in the versioned
-`applymate-documents` IndexedDB database. Large files, `File` objects, blob URLs and base64 strings
-never enter localStorage or normal application state. IndexedDB failure, quota, missing/corrupt,
-duplicate and migration cases surface typed errors. The Profile document manager lets the user
-upload, replace and remove a default résumé and an optional default cover letter, while stating that
-the files exist only in this browser.
-
-**Selection and freezing.** Résumé and cover-letter selection are independent and deterministic:
-matching job-specific generated document → matching explicitly selected job document → default →
-missing. A document associated with another job/package is rejected. The chosen metadata is copied
-into `AutomationJob.documentSelection` at authorization time, including the selection reason. Later
-changes to defaults cannot change that frozen attempt; retry fills only a previously missing slot and
-preserves an already selected reference. Generated package text is still text only and is never
-claimed to be a PDF; deterministic ATS-friendly PDF rendering remains future work.
-
-**Trust boundary and transfer.** The normal schema-v3 extension payload carries only frozen
-document references and checksums. After `AUTHORIZE_EXECUTION`, the web app reads only those exact
-IDs from IndexedDB and sends a separate `PROVIDE_AUTHORIZED_DOCUMENTS` message with short-lived
-base64 transport data. The background worker accepts messages only from configured localhost
-ApplyMate origins, requires the existing authorization and exact attempt ID/document set, and
-recomputes SHA-256 before retaining bytes in an in-memory attempt-scoped vault. ATS content scripts
-cannot enumerate or request documents. Raw bytes are never written to `chrome.storage.local`, logs,
-Tracker or the application package. They disappear on terminal result, stop, tab close or service
-worker reload; the next retry must explicitly re-transfer them.
-
-**ATS interaction and fail-safe behavior.** The content script reconstructs a browser `File`, assigns
-it to the exact mapped native/hidden input through `DataTransfer`, dispatches `input` and `change`,
-then re-locates the control after framework rerenders. Success requires the expected file in the live
-input, visible filename/success state and no rejection/processing state. Missing, rejected,
-unsupported, stale, failed and timed-out uploads block form readiness and produce precise
-review-required reasons. An optional cover letter may remain empty; a required one may not. Stop
-cancels polling and clears temporary bytes without deleting the user's IndexedDB copy.
-
-**Validation boundary.** Automated tests cover IndexedDB persistence, document selection, exact
-authorization/checksum transfer, native and hidden Greenhouse/Lever-like inputs, rejection/timeouts,
-form readiness, cancellation and exactly-once fixture submission. Real public Greenhouse/Lever
-upload-control compatibility is a separate Chrome release gate: use harmless local fixtures,
-exercise the current native/hidden input, run production mapping against the live form DOM, and
-record the exact visible status while leaving sensitive fields and submit untouched. The complete
-authorization/checksum transfer and non-dry-run submit path remains confined to the controlled
-fixture until an explicitly authorized pilot.
-
-**2026-07-22 Chrome validation.** Two synthetic one-page PDFs were exercised through Profile
-upload → reload → replace → reload → delete. Direct IndexedDB diagnostics confirmed exact byte
-lengths, SHA-256 checksums and `%PDF-` signatures after reload, and an empty document store after
-the final delete. This exposed a Profile defect: replacing a default document only moved the
-default flag, leaving the previous bytes as an invisible orphan. The Profile replacement flow now
-deletes the previous default only after its replacement is safely stored, without changing the
-repository's intentional ability to retain non-default/job-specific documents. The same harmless
-PDFs were then attached, without submitting, to current public EarnIn Greenhouse and Voltus Lever
-forms in Chrome. Both showed the exact filename and accepted state; work-authorization,
-sponsorship, pronoun and EEO controls remained untouched. A captured post-upload Lever form run
-through the production scanner detected Lever at high confidence, found 18 fields (15 mapped,
-1 ambiguous, 2 unmapped), and mapped the hidden résumé input to `resumeFile` with label
-`Resume/CV ✱`; `Analyzing resume...`, `Success!` and failure text did not enter the mapping.
-
-**MVP limitation.** IndexedDB is local browser storage, not encrypted cloud backup. Clearing site
-data can remove documents, and there is no cross-device recovery. Production storage remains part
-of the future authentication/database/security milestone.
-
----
-
-## 2. Approval Model
-
-**Superseded by Part 2's implementation** (§1f) — recorded below for history, then reconciled with
-what actually shipped.
-
-This section originally proposed two modes: "Review-First" (every package waits for individual
-approval before any form is touched) as the default, and an opt-in "Approved Autopilot" with its own
-enable flow and rule set. What was actually built, per this sprint's explicit product-intent
-constraint ("the default behavior is autonomous completion and submission... human review is an
-exception used only when the application cannot be completed truthfully or technically"), is closer
-to a single model:
-
-- **The right swipe is the one-time authorization** for exactly one application — there is no
-  separate "enable autopilot" step, toggle, or second confirmation. This is a deliberate reversal of
-  this document's original "final submission always remains a manual user action" framing; see the
-  roadmap for the product-direction note.
-- Every one of the old "Autopilot must not submit when..." conditions is enforced as a hard gate in
-  the shipped code, not a configurable rule a user could loosen: CAPTCHA presence
-  (`submit-controller.ts`), sensitive/legal declarations and demographic questions with no explicit
-  approved answer (`answer-resolver.ts`), unresolved required fields (`form-validator.ts`), and
-  duplicate submission (idempotency keys in `submit-controller.ts`).
-- What was **not** built: a distinct minimum-match-score-for-autonomous-execution setting, an
-  explicit company/category exclusion list scoped to execution (the review queue's own match-score
-  filtering still applies before a job is ever swiped on), and a visible on/off toggle for
-  autonomous-vs-manual behavior. These remain real, honest gaps — see `docs/roadmap.md` Phase 8.
-- Full execution log is captured for every run (`ExecutionResult.log`, synced into the Tracker) —
-  the "full audit log" requirement is met at the field/stage level; a submission *receipt*
-  (screenshot, persisted confirmation artifact) is not yet implemented (`docs/roadmap.md` Phase 7).
-
----
-
-## 3. System Architecture
-
-The complete auto-apply system requires three separate layers:
-
-### 3.1 Next.js Web Application (already being built)
-
-Responsibilities:
-- Candidate profile management.
-- Job queue and application package generation.
-- Approval rules configuration.
-- Approval UI (review-first and autopilot settings).
-- Application tracker.
-- Submission receipts and audit trail display.
-- Encrypted profile data export to the automation layer.
-
-### 3.2 Automation Worker / Browser Extension (Phase 6+)
-
-Responsible for the actual form interaction. Two viable implementation approaches:
-
-**A. Browser Extension**
-- Runs in the user's own browser session.
-- The user navigates to the job application page.
-- Extension detects form fields and maps them to profile data.
-- Extension shows a sidebar with proposed field fills.
-- User reviews mapped fields before any submit action.
-- No third-party servers see the user's browser session or credentials.
-- Works with most ATS platforms by design (in the user's authenticated session).
-
-*Pros:* Privacy (no server session needed), works with MFA, no server costs, compliant with most TOS (user-initiated action in their own browser).  
-*Cons:* Requires browser extension install, manual page navigation for review-first mode, complex to auto-navigate in autopilot mode.
-
-**B. Playwright Automation Worker (server or local)**
-- A controlled browser instance managed by a local or server-side process.
-- Navigates to application URLs automatically.
-- Better for autopilot mode where hands-free navigation is desired.
-- Requires handling login sessions securely (credentials must never leave the user's device in plaintext).
-
-*Pros:* Fully automated navigation, works for autopilot.  
-*Cons:* More complex credential management, higher risk of ATS detection, server-side variant requires encrypted credential storage.
-
-**Recommended approach for Phase 6 prototype:** Browser extension for review-first mode, with a local Playwright agent as a later autopilot option.
-
-### 3.3 Backend Job System (Phase 7+)
-
-Responsibilities:
-- Encrypted user data store.
-- Application job queue and status tracking.
-- Automation status (DISCOVERED → SUBMITTED lifecycle).
-- Retry policy and failure handling.
-- Audit trail, screenshots, and submission receipts.
-- Duplicate application prevention.
-
----
-
-## 4. Evaluated Approaches
-
-| Approach | Feasibility | Risk | Notes |
-|---|---|---|---|
-| Browser extension | High | Low | User's own session; compliant with most TOS |
-| Local Playwright agent | Medium | Medium | Good for autopilot; needs local install |
-| Server Playwright worker | Medium | High | Credential storage risk; TOS concerns |
-| ATS-specific API integrations | Low (limited) | Low | Few public APIs available |
-| Supported public application APIs | Low | Low | Rare; mostly enterprise ATS |
-
----
-
-## 5. Application Form Field Mapping Contract
-
-When a form is detected, each field is mapped using this contract:
-
-```json
-{
-  "fieldLabel": "string",
-  "fieldType": "text | textarea | select | radio | checkbox | file | date",
-  "normalizedField": "email | phone | fullName | salary | workAuthorization | linkedIn | coverLetter | resumeFile | custom",
-  "value": "string | boolean | null",
-  "confidence": 0.0,
-  "requiresUserReview": true,
-  "sensitiveField": false
-}
+# ApplyMate AI — autonomous application architecture
+
+**Status:** Current architecture at baseline `ea921d6`
+**Purpose:** Explain how one right-swipe authorization becomes a guarded ATS submission attempt.
+
+Permanent safety and workflow rules live in [`../AGENTS.md`](../AGENTS.md). Current feature status lives in [`project-context.md`](project-context.md). Manual browser validation lives in [`../browser-extension/MANUAL_TESTING.md`](../browser-extension/MANUAL_TESTING.md).
+
+## Product contract
+
+ApplyMate's promise is: **“Swipe right. ApplyMate handles the application.”**
+
+The swipe authorizes autonomous fill and submission for one exact job and application URL. It is not approval for unrelated jobs, bulk submission, guessed answers, access-control bypass, or an uncertain re-submission. Human review is the exception when truthful or technically safe execution cannot continue.
+
+## Canonical flow
+
+```text
+job discovery
+→ user right swipe
+→ automation authorization
+→ package preparation
+→ document selection frozen at authorization
+→ extension handoff
+→ ATS detection and scanning
+→ value resolution
+→ document transfer
+→ field filling
+→ document upload
+→ validation
+→ submission
+→ outcome detection
+→ Tracker synchronization
 ```
 
-**Field confidence thresholds:**
-- `>= 0.9`: Auto-fill allowed in autopilot mode if `sensitiveField = false`.
-- `0.7 – 0.9`: Flag for user review even in autopilot mode.
-- `< 0.7`: Always require user confirmation.
+### 1. Discovery and selection
 
-**Fields always requiring user review (regardless of confidence or mode):**
-- Salary and compensation
-- Work authorization and visa status
-- Disability, demographic, gender, ethnicity questions
-- Legal declarations ("I confirm I am eligible to work…")
-- Any field not mapped to a known `normalizedField`
+Provider adapters normalize Greenhouse, Lever, and demo jobs to stable string IDs. Ranking and user preferences determine which jobs reach the review queue. A right swipe creates or reuses the single `AutomationJob` keyed by that job ID.
 
----
+### 2. Authorization and package preparation
 
-## 6. Application Lifecycle
+The right swipe is the one-time authorization to `fill-and-submit` the exact job. The web orchestrator prepares the application package from verified profile data and grounded generated content. Missing required information stops the pipeline; it is never invented.
 
-```
-DISCOVERED          — Job found in queue; package not yet generated
-→ ANALYZED          — Match score computed; above/below threshold determined
-→ PACKAGE_PREPARED  — Cover letter, CV adaptation, answers generated
-→ WAITING_FOR_APPROVAL — User must review (review-first) or threshold check (autopilot)
-→ APPROVED          — User approved or autopilot rules passed
-→ FORM_OPENED       — Browser navigated to application page
-→ FIELDS_MAPPED     — Form fields detected and matched to profile
-→ MISSING_INFORMATION — One or more required fields cannot be filled; user notified
-→ READY_TO_SUBMIT   — All required fields filled; user confirmation pending (review-first)
-                      OR autopilot conditions all met
-→ SUBMITTED         — Form submitted
-→ FAILED            — Error during submission
-→ MANUAL_ACTION_REQUIRED — CAPTCHA, unusual declaration, or unresolvable field
-```
+For a real job, the handoff records:
 
-States `MISSING_INFORMATION` and `MANUAL_ACTION_REQUIRED` always block submission and surface to the user, regardless of approval mode.
+- `authorizationId`: the stable automation job key;
+- `authorizedAt`;
+- `authorizedApplyUrl`;
+- a fresh `executionAttemptId`; and
+- immutable document references selected for that authorization.
 
----
+Demo jobs or jobs without a real `applyUrl` stop at `FORM_AUTOMATION_PENDING`.
 
-## 7. Realistic First ATS Targets
+### 3. Document selection and transfer
 
-The following ATS platforms are candidates for Phase 6 integration. None of them is guaranteed to work reliably — page structure changes frequently.
+Selection order is deterministic and independent for résumé and cover letter: matching job-specific generated file, matching explicitly selected job file, then default file. A document associated with another job or package is rejected.
 
-| ATS | Notes |
-|---|---|
-| Greenhouse | Structured forms, relatively stable DOM |
-| Lever | Similar to Greenhouse; well-structured |
-| Workable | Common in European startups |
-| SmartRecruiters | Used by many mid-large companies |
-| Personio | Common in German-speaking market |
-| Direct company forms | Highly variable; lowest reliability |
-| LinkedIn Easy Apply | Possible via extension in user's own session |
+The authorization freezes metadata including stable document ID, type, filename, MIME type, byte size, checksum, and selection reason. Changing defaults afterward does not change an authorized attempt. A retry may fill a previously missing slot but does not silently replace an already frozen selection.
 
-**Important:** Not every website can be supported reliably. ATS providers update their interfaces, add bot detection, and change field structures. The system must handle failures gracefully and route them to `MANUAL_ACTION_REQUIRED` rather than failing silently.
+The schema-v3 JSON payload contains references only. The web app separately reads the exact files from IndexedDB and sends an attempt-scoped transfer. The background worker accepts it only when origin, authorization ID, attempt ID, expected document set, metadata, byte length, and SHA-256 checksum match.
 
----
+### 4. Extension handoff and ATS scanning
 
-## 8. Security and Compliance Requirements
+The web app sends the authorized payload through the extension's externally connectable bridge. The Manifest V3 background worker persists JSON execution state, opens or focuses the authorized URL, and retries delivery until the content script is ready.
 
-| Requirement | Implementation |
-|---|---|
-| No plaintext credential storage | Credentials managed in user's own session; server never sees passwords |
-| Sensitive data encryption | Profile data encrypted at rest in Phase 7 backend |
-| No CAPTCHA bypass | Any CAPTCHA → `MANUAL_ACTION_REQUIRED` immediately |
-| No anti-bot circumvention | No user-agent spoofing, no rate circumvention, no TOS bypass |
-| ATS TOS compliance | User-initiated actions only; no mass crawling |
-| Duplicate prevention | Application hash stored; re-submission blocked |
-| Audit trail | Every submission: timestamp, form URL, screenshot, field mapping, decision |
-| User data deletion | Full profile and submission data deletion on request |
-| Submission evidence | Screenshot of confirmation page retained for 90 days |
-| No fabricated answers | All answers must trace back to profile or be marked needs-user-input |
-| Autopilot pause | User can pause or disable autopilot at any time with immediate effect |
+The content script detects Greenhouse or Lever from host, URL, and DOM evidence. Unsupported or low-confidence interaction fails safely. Scanning discovers controls, resolves labels, groups radio/checkbox options, creates locators, and maps fields into the shared normalized field vocabulary without reading or logging entered values.
 
----
+### 5. Value resolution and sensitive fields
 
-## 9. Non-Goals for Auto-Apply Architecture
+Normal value resolution uses this precedence:
 
-- Mass application submission without per-job packages.
-- Bypassing login screens (the user must be authenticated in their own session).
-- Solving CAPTCHAs or circumventing bot detection.
-- Storing user passwords on any server.
-- Answering sensitive demographic questions automatically.
-- Fabricating availability, salary, or work authorization.
-- Applying to jobs with match scores below the user's configured threshold.
-- Guaranteeing application acceptance or interview callbacks.
+1. explicit job-specific user answer;
+2. verified candidate-profile value;
+3. explicitly approved reusable answer;
+4. grounded generated package answer;
+5. deterministic derivation from verified facts; or
+6. unresolved.
 
----
+The sensitivity gate is independent from value resolution:
 
-*This document is the architectural specification for Phase 6+. Implementation begins after Phase 5 (database + authentication + secure storage) is complete.*
+- `SAFE_AUTO_FILL`: may fill from an allowed verified source.
+- `NEEDS_CONFIRMATION`: may fill only when the source and current policy permit it; ambiguity remains review-required.
+- `NEVER_AUTO_FILL`: requires an exact explicitly approved answer or exact demographic policy for that field. A profile value, related field, or generated guess is insufficient.
+
+Legal attestations, work authorization, sponsorship, criminal history, identity verification, consent, and demographic questions are never inferred. Required unresolved fields block submission; optional unresolved fields are skipped and recorded.
+
+### 6. Filling and document upload
+
+Text and choice controls are filled through native setters plus browser events. The engine re-locates and verifies controls after framework rerenders, with bounded retries. Existing values are preserved by default.
+
+For documents, the content script receives only the files for the active attempt, reconstructs a browser `File`, assigns it through `DataTransfer` to the mapped native or hidden input, dispatches events, then re-locates the control. Upload success requires the expected file plus accepted visible/native state and no rejection or processing timeout.
+
+An optional cover letter may be absent. A required résumé or cover letter cannot be bypassed. Upload failures become precise review-required reasons.
+
+### 7. Validation and submission
+
+Before any submit click, the controller checks in order:
+
+1. the attempt/idempotency key is not stale or previously used;
+2. the current page matches the authorized application URL;
+3. the detected form and required fields are ready;
+4. no CAPTCHA, login, identity verification, or external assessment blocks execution; and
+5. one unambiguous submit control exists inside the detected form.
+
+`dryRun: true` exercises gates without activating submit and is mandatory on real public ATS pages during ordinary development. `dryRun: false` is confined to controlled fixtures unless the user explicitly authorizes a controlled real-employer pilot.
+
+### 8. Outcome and Tracker synchronization
+
+Clicking submit does not equal success. `SUBMITTED` requires a confirmed signal such as explicit confirmation content, a confirmation-like URL transition, or a corroborated form removal/navigation change.
+
+Validation rejection, CAPTCHA, login, external redirect, duplicate application, rate limiting, failure, and unknown outcomes remain non-submitted. Unknown or interrupted outcomes route to review rather than retrying silently.
+
+The background record and execution log are polled by the web app and merged into the existing `AutomationJob` store used by Tracker. Tracker receives progress, upload-result metadata, outcome, timestamps, and structured review-required detail. Receipt screenshots and durable confirmation artifacts are not implemented.
+
+## Trust boundaries
+
+### Web application
+
+Owns the candidate profile, job discovery records, application package, authorization, frozen document references, and canonical Tracker automation record. It may read candidate bytes from its own IndexedDB only for the exact active authorization.
+
+### IndexedDB document store
+
+Stores validated candidate document metadata and binary bytes under stable IDs in `applymate-documents`. It is local to the web-app origin and is the current MVP binary store, not encrypted cloud backup.
+
+### Extension background worker
+
+Validates externally connected origins and authorization/attempt messages, opens the exact URL, persists byte-free execution state in `chrome.storage.local`, and holds verified document bytes only in an in-memory attempt vault.
+
+### Content script
+
+Runs on supported ATS hosts, scans and modifies the live form for the authorized attempt, and receives only its attempt's documents. It cannot enumerate the IndexedDB store or request arbitrary files.
+
+### External ATS page
+
+Is untrusted, mutable third-party DOM and network behavior. Detection, locators, framework state, upload widgets, validation, submission controls, and outcome signals must all be re-verified at runtime.
+
+## Identity, idempotency, and URL rules
+
+- Job IDs, document IDs, authorization IDs, and attempt IDs are strings.
+- One automation job exists per stable job key; no parallel authorization store is introduced.
+- The authorization ID remains stable for the job. Each explicit retry receives a fresh attempt ID.
+- Previous attempt IDs are retained so repeated or delayed messages cannot submit again.
+- A page must match the authorized application URL before filling/submission. Redirects to login, assessment, unrelated paths, or ambiguous pages stop execution.
+- Reload-interrupted execution becomes review-required; it never resumes submission automatically.
+
+## Document integrity and cleanup
+
+- Candidate files are validated by extension, MIME type, size limit, and byte signature before IndexedDB persistence.
+- SHA-256 binds the frozen reference to the transferred bytes.
+- Raw bytes and base64 never enter localStorage, Tracker, payload JSON, logs, or `chrome.storage.local`.
+- The background vault is cleared on terminal result, explicit stop, tab close, or service-worker loss.
+- A retry requires a fresh transfer. Cleanup never deletes the user's persistent IndexedDB copy.
+
+## Review-required behavior
+
+Execution stops with a structured kind, description, and required action for cases including:
+
+- missing verified or explicitly approved answers;
+- unresolved legal or demographic fields;
+- missing, rejected, timed-out, or unavailable documents;
+- unsupported ATS behavior or unclear submit control;
+- CAPTCHA, login, identity verification, or external assessment;
+- authorization/page mismatch;
+- unknown submission outcome; and
+- interrupted execution.
+
+Review-required is a safe terminal/resting state, not evidence of submission and not permission to weaken a gate.
+
+## Current scope and deferred production architecture
+
+Current ATS support is Greenhouse and Lever on explicitly permitted hosts. The local storage and browser-extension design proves the MVP flow without production accounts or cloud infrastructure.
+
+Deferred work includes generated résumé/cover-letter files, complete profile editing, more ATS adapters, durable receipt evidence, production authentication/database, encrypted cloud document storage, GDPR tooling, cross-device recovery, billing, observability, and hardened deployment. See [`roadmap.md`](roadmap.md).

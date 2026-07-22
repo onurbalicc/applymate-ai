@@ -1,52 +1,114 @@
-# ApplyMate AI — Current Project Context
+# ApplyMate AI — current project context
 
-**Last reconciled:** 2026-07-22
-**Purpose:** Give future Codex sessions a short, durable handoff without requiring old ChatGPT prompts to be copied manually.
+**Baseline:** `ea921d6`
 
-## Product direction
+**Reconciled:** 2026-07-22
+**Purpose:** Concise answer to “What exists right now?”
 
-ApplyMate is an autonomous, safety-constrained job application system for students and junior candidates targeting Germany and Europe.
+Permanent implementation and safety rules live in [`../AGENTS.md`](../AGENTS.md). The deeper execution design lives in [`auto-apply-architecture.md`](auto-apply-architecture.md).
 
-The intended core flow is:
+## Product vision
 
-`Discover → Rank → Swipe right to authorize one application → Prepare truthful materials → Fill and submit when safe → Stop for review when blocked → Track the verified outcome`
+ApplyMate is a safety-constrained autonomous job application system for students and junior candidates, initially focused on Germany and Europe. A right swipe authorizes ApplyMate to prepare, fill, and submit one exact application. Human review is an exception when the system cannot proceed truthfully or safely.
 
-A right swipe is the one-time authorization for that exact job. It is not permission for unrelated or bulk submissions. ApplyMate must stop when required information is missing, a sensitive answer lacks explicit approval, a CAPTCHA appears, the live page does not match the authorized application, or submission success cannot be verified.
+## Current user flow
 
-The implementation and `docs/roadmap.md` are newer than the frontend-demo language still present in parts of `README.md`, `docs/ai-architecture.md`, and `docs/demo-script.md`. Until those documents are reconciled, do not infer current product behavior from their older “frontend-only” or “review-first” statements.
+`Profile → Discover and rank jobs → Swipe right → Prepare application package → Freeze documents → Hand off to extension → Fill and submit if every gate passes → Synchronize outcome to Tracker`
 
-## Verified implementation state
+The user can pause, stop, retry, or resolve a structured review-required state. Demo jobs without a real application URL stop honestly before extension execution.
 
-- Next.js web app with profile, discovery, review queue, package generation, automation progress, tracker, and inbox surfaces.
-- Gemini-backed structured generation with an explicitly labelled mock fallback when no API key is configured.
-- Live public-job ingestion adapters for configured Greenhouse boards and Lever sites, plus demo data.
-- Chrome Manifest V3 extension for Greenhouse and Lever detection, field mapping, value resolution, safe filling, real PDF/DOCX upload through native file inputs, validation, idempotent submission, and outcome detection.
-- Web app to extension bridge and Tracker status synchronization.
-- Sensitive-field controls that refuse fabrication and require exact approved answers where applicable.
-- Default résumé and optional cover-letter management on Profile, with validated binary files persisted in IndexedDB and metadata kept out of ordinary application JSON.
-- Authorization-time document selection and a checksum-verified, attempt-scoped web-to-extension transfer. Raw bytes are never persisted in Tracker or `chrome.storage.local`.
-- Local document fixture end-to-end upload, validation and exactly-once submission verified; no real-employer end-to-end submission has been completed.
-- Dated Chrome validation on 2026-07-22 verified Profile PDF upload/reload/replace/delete against real IndexedDB bytes, plus no-submit uploads on current public EarnIn Greenhouse and Voltus Lever forms. Lever's captured live form rescanned with production `runScan` mapped the résumé cleanly without upload-status text leaking into the label.
-- Client state and candidate data are still stored locally in the browser. Authentication, a production database, encrypted cloud document storage, cross-device sync and recovery do not exist yet.
+## Web application
 
-## Completed handoff
+- Next.js 16 App Router application with landing, dashboard, profile, analyzer, review queue, application-package review, Tracker, and inbox surfaces.
+- Client-side stores use `localStorage` for candidate profile, discovered jobs, decisions, generated package state, and automation records.
+- `/api/analyze` and the package pipeline use Gemini structured generation when configured and clearly labelled mock fallback data otherwise.
+- The web app sends one authorized execution payload to the extension and polls execution status back into the existing automation record used by Tracker.
 
-The shared ChatGPT handoff titled **“Handoff ve Sprint Planı”** corresponds to commit `49081a9` (`feat: add autonomous application execution`). The file list and scope in that handoff match the commit: background service worker, execution engine, web-to-extension bridge, Tracker automation states, ATS fixtures/tests, and architecture documentation.
+## Candidate profile
 
-Source: https://chatgpt.com/share/6a5fb3f9-e49c-83eb-9325-933ba312ec07
+- A typed `CandidateProfile` is the factual source for AI generation and form-value resolution.
+- It includes identity/contact information, experience, education, projects, skills, languages, job preferences, reusable approved answers, and demographic-answer policy.
+- The current Profile UI manages application documents and Master CV generation, but is not yet a complete editor for every structured profile field.
+- Sensitive answers remain unset unless explicitly provided or approved; defaults are not treated as evidence.
 
-## Current primary blocker
+## Job discovery
 
-The local MVP document pipeline is implemented; automated fixtures prove selection → transfer → native upload → validation → exactly-once submission, and dated Chrome checks now prove Profile binary persistence plus current public Greenhouse/Lever upload-widget compatibility without submission. The remaining high-risk gate is an explicitly authorized controlled pilot with durable receipt evidence. Generated résumé/cover-letter text is still not rendered into PDF; users must upload real PDF/DOCX files for now.
+- Server-side provider adapters ingest configured public Greenhouse boards and Lever sites; demo data remains available as fallback/input.
+- Jobs are normalized to stable string IDs, deduplicated, filtered by exclusions, and persisted locally with provider and decision metadata.
+- Discovery health distinguishes successful, partial-error, and failed runs.
 
-## Recommended next milestone
+## Matching and ranking
 
-Run one explicitly authorized controlled pilot and add a durable submission receipt. Keep the current Greenhouse/Lever no-submit checks as regression gates whenever ATS markup changes. Generated PDF export, profile editing, authentication/database work, encrypted cloud storage, GDPR controls and broader ATS coverage remain follow-up milestones.
+- Deterministic ranking compares normalized jobs with profile roles, skills, locations, work mode, employment type, and exclusions.
+- Jobs below the configured minimum score do not enter the visible queue.
+- Match reasons and caution reasons are retained; scoring is not evidence that a sensitive application answer is known.
 
-## Working agreement for future Codex sessions
+## Automation orchestration
 
-- The repository is the source of truth; old chat prompts are historical context, not executable specifications.
-- The user can describe outcomes naturally. Codex should inspect current code, translate the request into an implementation plan, make scoped changes, run proportionate verification, and report the result.
-- Do not ask the user to manufacture sprint prompts or manually relay terminal output that Codex can inspect itself.
-- Preserve the safety invariants in `docs/auto-apply-architecture.md`.
-- After a material milestone, update this file and `docs/roadmap.md` so the next session starts from verified state.
+- Swipe right creates one duplicate-safe `AutomationJob` and is the authorization for that exact job/application URL.
+- The package pipeline analyzes the job, prepares/reuses a Master CV basis, generates job-specific CV adaptation text, cover-letter text, recruiter content and form answers, and checks missing information.
+- Real jobs then receive an authorization timestamp, frozen document selection, and fresh execution attempt ID before extension handoff.
+- Reloaded in-flight execution never resumes silently; it becomes review-required to avoid duplicate or uncertain submission.
+
+## Browser extension
+
+- A Chrome Manifest V3 extension supports Greenhouse and Lever detection, scanning, deterministic field mapping, value resolution, filling, document upload, validation, guarded submission, and outcome detection.
+- The background service worker accepts authorized messages from configured ApplyMate origins, opens/focuses the exact application tab, stores JSON execution state in `chrome.storage.local`, and keeps transferred document bytes only in memory.
+- The execution engine does not overwrite existing values by default and routes unsupported, missing, sensitive, authentication, CAPTCHA, upload, page-match, or outcome uncertainty to structured review-required states.
+
+## Greenhouse support
+
+- Host and DOM detection, form discovery, label resolution, field mapping, framework-aware filling, hidden/native file upload, validation, submit-control identification, and outcome detection exist.
+- Public EarnIn Greenhouse upload behavior was validated in Chrome on 2026-07-22 with a synthetic PDF and no submission. Sensitive controls remained untouched.
+
+## Lever support
+
+- Host and DOM detection, styled-widget discovery, label cleanup, field mapping, filling, hidden native file upload, validation, submit-control identification, and outcome detection exist.
+- Public Voltus Lever upload behavior was validated in Chrome on 2026-07-22 with a synthetic PDF and no submission. The production scanner mapped the résumé input without upload-status text polluting its label.
+
+## Document pipeline
+
+- Real PDF and DOCX files up to 5 MB are validated by name, MIME type, size, and byte signature.
+- Metadata uses stable string IDs and SHA-256 checksums; bytes persist in the versioned `applymate-documents` IndexedDB database.
+- Default résumé and optional cover-letter upload, reload persistence, replacement, and deletion exist in Profile.
+- Document choice is deterministic and frozen at authorization. References travel in payload JSON; bytes use a separate checksum-verified, attempt-scoped transfer.
+- Generated résumé and cover-letter content is still text only. ATS-friendly PDF generation is not implemented.
+
+## Tracker
+
+- Tracker reads the existing local automation store, including preparation and extension-execution states, progress, upload metadata, outcome, and structured review-required reasons.
+- `SUBMITTED` is recorded only after the extension reports a confirmed success signal.
+- Execution logs exist, but durable screenshots, confirmation-page captures, and receipt persistence do not.
+
+## Storage model
+
+- Ordinary application/profile/discovery/automation JSON: browser `localStorage`.
+- Extension execution records without document bytes: `chrome.storage.local`.
+- Candidate document metadata and bytes: IndexedDB in the web-app origin.
+- Transferred document bytes: temporary in-memory extension vault scoped to one authorization attempt.
+- Production authentication, user database, encrypted cloud storage, backup, cross-device sync, and recovery are not implemented.
+
+## Test status
+
+- Root tests cover the sensitive-field classifier, missing-information enforcement, extension payload construction, IndexedDB document persistence, and document selection.
+- Extension tests cover ATS scanning/mapping, value and answer resolution, field filling, document transfer/upload, form validation, submission guards, execution flow, cancellation, outcomes, and exactly-once fixture submission.
+- Loaded-extension Chrome validation has covered controlled fixtures and non-submitting public Greenhouse/Lever checks. No real-employer application has been submitted.
+- Detailed reproducible evidence is in [`../browser-extension/MANUAL_TESTING.md`](../browser-extension/MANUAL_TESTING.md).
+
+## Current known limitations
+
+- No complete profile editor for all profile fields.
+- No generated résumé or cover-letter PDF/DOCX renderer.
+- ATS execution coverage is limited to Greenhouse and Lever host patterns and tested variants.
+- No durable submission receipt or screenshot evidence.
+- No production auth, database, encrypted cloud document storage, GDPR tooling, cross-device sync, billing, observability, or hardened deployment.
+- Broad web-application end-to-end coverage is not in place.
+
+## Immediate likely roadmap areas
+
+1. Generate deterministic ATS-friendly résumé and cover-letter PDFs from verified profile/package data.
+2. Complete the structured profile editor and document-selection UX.
+3. Add durable receipt/evidence and recovery UX, then consider an explicitly authorized real-employer pilot.
+4. Expand ATS coverage only after Greenhouse/Lever regression gates remain stable.
+
+See [`roadmap.md`](roadmap.md) for prioritization rather than implementation history.

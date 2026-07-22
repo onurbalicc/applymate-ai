@@ -1,17 +1,19 @@
 # ApplyMate AI
 
-**ApplyMate AI is a quality-first, user-approved job application operating system.** It helps candidates build one strong profile, generate a Master CV foundation, review AI-prepared application packages, approve what moves forward, and track replies.
+**ApplyMate AI is a safety-constrained autonomous job application system.** Candidates build one verified profile, discover suitable jobs, and swipe right to authorize ApplyMate to prepare, fill, and submit one exact application. Human review is the exception when truthful or technically safe execution cannot continue.
 
 > **Core motto:** *"Let AI handle the applications. You focus on improving your profile, skills, and interviews."*
 
-## ⚠️ Project status — frontend MVP demo
+## Project status — local autonomous MVP
 
-This is a **frontend-only MVP/demo**:
+The repository currently includes:
 
-- **No real external applications are submitted.** Nothing leaves your browser.
-- **No real AI API is connected yet.** All generated content (CVs, cover letters, replies) is realistic mock data.
-- **Application state is demo-only**, persisted in `localStorage` (approve/decline/skip decisions, Master CV preview, language, theme).
-- No accounts, no backend, no payments.
+- a Next.js web app with Gemini-backed structured package generation and a labelled fallback;
+- Greenhouse and Lever discovery, ranking, swipe authorization, and Tracker orchestration;
+- a Chrome extension that detects, fills, validates, uploads documents, submits when every safety gate passes, and verifies outcomes; and
+- a persistent local PDF/DOCX store in IndexedDB with checksum-verified attempt-scoped transfer.
+
+The autonomous path is validated end to end on controlled fixtures. Public Greenhouse and Lever upload controls have been validated without submission. No real-employer application has been submitted during development. Authentication, a production database, encrypted cloud document storage, generated PDF output, durable receipts, and production deployment hardening are not implemented.
 
 ## Who it's for
 
@@ -25,21 +27,21 @@ Job searching is a repetitive workflow done with scattered tools: searching five
 
 ApplyMate treats the job search as one operated workflow:
 
-**Scan → Match → Prepare → Approve → Track**
+**Discover → Match → Swipe right → Prepare → Fill and submit when safe → Track**
 
-The AI scans trusted sources, hides low-fit roles below your match threshold, and prepares a complete **application package** per role (tailored cover letter, CV adaptation notes, recruiter message, risk analysis, interview prep). Then it stops and waits.
+The system scans configured sources, hides low-fit roles below the candidate's threshold, prepares a grounded application package, and hands the exact authorized application to the extension. Missing, sensitive, blocked, or uncertain cases stop for review.
 
 ## Key differentiator
 
-**Nothing is submitted without your approval. Ever.**
+**One right swipe authorizes one exact application.**
 
-Unlike volume-first auto-apply tools (Auto/Hybrid modes, credits, "hundreds of applications daily"), ApplyMate runs in a single **review-first approval mode**: *AI prepares → You approve → 0 sent without review*. Fewer, better applications — approved by you.
+Unlike volume-first auto-apply tools, ApplyMate binds authorization to the job and application URL, refuses fabricated or inferred sensitive answers, prevents duplicate submission, and records `SUBMITTED` only after a confirmed ATS success signal.
 
 ## Current demo flow
 
 ```
-Landing → Control Center → Profile Setup → Master CV Preview
-        → Review Queue → Application Package → Approve → Tracker → Inbox
+Profile → Job discovery → Review Queue → Swipe right
+        → Package preparation → Browser extension → Tracker
 ```
 
 Try it: start at `/`, follow the **Getting started** checklist on the Control Center.
@@ -47,13 +49,13 @@ Try it: start at `/`, follow the **Getting started** checklist on the Control Ce
 ## Current features
 
 - **Landing page** — positioning, workflow story, control-room previews, free-beta pricing preview with demo waitlist
-- **Control Center** (`/dashboard`) — engine status (scan stats, job sources, match rules), approval trust metrics ("0 sent without review"), review-first mode panel, onboarding checklist, next actions, usage & plan preview, demo reset
-- **Profile Setup** (`/profile`) — one profile, readiness score, impact preview, **Master CV Preview** (mock generation)
-- **Review Queue** (`/review-queue`) — swipe-style approve / decline / skip with keyboard shortcuts
+- **Control Center** (`/dashboard`) — engine status, discovery health, onboarding, navigation, and demo surfaces
+- **Profile Setup** (`/profile`) — structured profile foundation, Master CV generation, and persistent default résumé/cover-letter management
+- **Review Queue** (`/review-queue`) — swipe-style authorize / decline / skip flow with keyboard shortcuts
 - **Application Package** (`/review?job=N`) — full package: cover letter, CV adaptation, recruiter message, quality score, risk & gap analysis, interview prep
-- **Tracker** (`/tracker`) — pipeline board (Applied → Reply → Follow-up → Interview → Archived); approved packages land here with links back to their packages
+- **Tracker** (`/tracker`) — package-preparation and autonomous-execution progress, review-required reasons, upload metadata, and confirmed outcomes
 - **Inbox** (`/inbox`) — mock reply center with contextual recommended steps and approval-gated draft replies
-- **Demo state** — decisions persist across pages and refreshes via `localStorage`
+- **Local state** — ordinary JSON state persists in `localStorage`; candidate document bytes persist separately in IndexedDB
 - **i18n** — EN / TR / DE with a typed, dependency-free dictionary (English-first development)
 - **Dark / light theme**
 - Internal tool: `/analyze` (manual CV/job analyzer, not in navigation)
@@ -75,10 +77,15 @@ npm run build
 
 ## Docs
 
-- [Current project context and handoff](docs/project-context.md)
+- [Permanent Codex instructions](AGENTS.md)
+- [Current project context](docs/project-context.md)
+- [AI development workflow](docs/ai-development-workflow.md)
+- [Codex sprint template](docs/codex-sprint-template.md)
+- [Autonomous application architecture](docs/auto-apply-architecture.md)
+- [Browser-extension manual validation](browser-extension/MANUAL_TESTING.md)
 - [Demo script (2 minutes)](docs/demo-script.md)
 - [Roadmap](docs/roadmap.md)
-- [Agent council workflow](docs/agent-workflow.md) — how product decisions are made
+- [Historical agent council workflow](docs/agent-workflow.md)
 
 ## Author
 
